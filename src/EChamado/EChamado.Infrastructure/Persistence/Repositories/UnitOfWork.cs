@@ -1,78 +1,76 @@
 ﻿using EChamado.Core.Repositories;
+using EChamado.Core.Repositories.Orders;
 using EChamado.Core.Shared;
-using Microsoft.EntityFrameworkCore.Storage;
+using EChamado.Infrastructure.Persistence.Repositories.Orders;
 
 namespace EChamado.Infrastructure.Persistence.Repositories;
 
 public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
-    private IDbContextTransaction? _currentTransaction;
-    private readonly Dictionary<Type, object> _repositories = new Dictionary<Type, object>();
 
     public UnitOfWork(ApplicationDbContext context)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _context = context;
     }
 
-    public IRepository<TEntity> Repository<TEntity>() where TEntity : IEntity
-    {
-        if (!_repositories.ContainsKey(typeof(TEntity)))
-        {
-            var repositoryType = typeof(Repository<>).MakeGenericType(typeof(TEntity));
-            var repositoryInstance = Activator.CreateInstance(repositoryType, _context);
-            _repositories.Add(typeof(TEntity), repositoryInstance!);
-        }
+    private ICategoryRepository? _categoryRepository;
+    public ICategoryRepository Categories => 
+        _categoryRepository ??= new CategoryRepository(_context);
 
-        return (IRepository<TEntity>)_repositories[typeof(TEntity)];
-    }
+    private IDepartmentRepository? _departmentsRepository;
+    public IDepartmentRepository Departments =>
+        _departmentsRepository ??= new DepartmentRepository(_context);
 
-    public async Task BeginTransactionAsync()
-    {
-        if (_currentTransaction == null)
-        {
-            _currentTransaction = await _context.Database.BeginTransactionAsync();
-        }
-    }
+    private IOrderRepository? _ordersRepository;
+    public IOrderRepository Orders =>
+        _ordersRepository ??= new OrderRepository(_context);
 
-    public async Task CommitAsync()
-    {
-        try
-        {
-            await _context.SaveChangesAsync();
+    private IOrderTypeRepository? _orderTypesRepository;
+    public IOrderTypeRepository OrderTypes =>
+        _orderTypesRepository ??= new OrderTypeRepository(_context);
 
-            if (_currentTransaction != null)
-            {
-                await _currentTransaction.CommitAsync();
-                await _currentTransaction.DisposeAsync();
-                _currentTransaction = null;
-            }
-        }
-        catch
-        {
-            await RollbackAsync();
-            throw;
-        }
-    }
+    private IStatusTypeRepository? _statusTypesRepository;
+    public IStatusTypeRepository StatusTypes =>
+        _statusTypesRepository ??= new StatusTypeRepository(_context);
 
-    public async Task RollbackAsync()
-    {
-        if (_currentTransaction != null)
-        {
-            await _currentTransaction.RollbackAsync();
-            await _currentTransaction.DisposeAsync();
-            _currentTransaction = null;
-        }
-    }
+    private ISubCategoryRepository? _subCategoriesRepository;
+    public ISubCategoryRepository SubCategories =>
+        _subCategoriesRepository ??= new SubCategoryRepository(_context);
+
 
     public async Task<int> SaveChangesAsync()
     {
         return await _context.SaveChangesAsync();
     }
 
+    public async Task BeginTransactionAsync()
+    {
+        if (_context.Database.CurrentTransaction == null)
+        {
+            await _context.Database.BeginTransactionAsync();
+        }
+    }
+
+    public async Task CommitAsync()
+    {
+        if (_context.Database.CurrentTransaction != null)
+        {
+            await _context.SaveChangesAsync();
+            await _context.Database.CommitTransactionAsync();
+        }
+    }
+
+    public async Task RollbackAsync()
+    {
+        if (_context.Database.CurrentTransaction != null)
+        {
+            await _context.Database.RollbackTransactionAsync();
+        }
+    }
+
     public void Dispose()
     {
-        _currentTransaction?.Dispose();
         _context.Dispose();
     }
 }

@@ -6,4 +6,27 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Auth\Commands\" />
+    <Folder Include="Features\Auth\ViewModels\" />
+    <Folder Include="Features\Auth\Notifications\" />
+    <Folder Include="Features\Categories\" />
+    <Folder Include="Features\Departments\" />
+    <Folder Include="Features\SubCategories\" />
+    <Folder Include="Features\StatusType\" />
+    <Folder Include="Features\Orders\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="LinqKit.Core" Version="1.2.7" />
+    <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="8.1.7" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="8.0.1" />
+  </ItemGroup>
+
 </Project>

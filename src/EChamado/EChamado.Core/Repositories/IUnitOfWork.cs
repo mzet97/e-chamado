@@ -1,10 +1,15 @@
-﻿using EChamado.Core.Shared;
+﻿using EChamado.Core.Repositories.Orders;
 
 namespace EChamado.Core.Repositories;
 
 public interface IUnitOfWork : IDisposable
 {
-    IRepository<TEntity> Repository<TEntity>() where TEntity : IEntity;
+    ICategoryRepository Categories { get; }
+    IDepartmentRepository Departments { get; }
+    IOrderRepository Orders { get; }
+    IOrderTypeRepository OrderTypes { get; }
+    IStatusTypeRepository StatusTypes { get; }
+    ISubCategoryRepository SubCategories { get; }
 
     Task BeginTransactionAsync();
 
