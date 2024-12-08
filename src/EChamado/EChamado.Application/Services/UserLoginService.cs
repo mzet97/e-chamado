@@ -2,7 +2,7 @@
 using EChamado.Core.Services.Interface;
 using Microsoft.AspNetCore.Identity;
 
-namespace EChamado.Core.Services;
+namespace EChamado.Application.Services;
 
 public class UserLoginService : IUserLoginService
 {

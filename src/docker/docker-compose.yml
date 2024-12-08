@@ -10,7 +10,7 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     networks:
-      - elk-network
+      - stack-network
     command:
       - bash
       - -c
@@ -27,7 +27,7 @@ services:
     volumes:
       - /dados/elasticsearch:/usr/share/elasticsearch/data
     networks:
-      - elk-network
+      - stack-network
     ports:
       - 127.0.0.1:9200:9200
     restart: unless-stopped
@@ -48,7 +48,7 @@ services:
     ports:
       - 127.0.0.1:5601:5601
     networks:
-      - elk-network
+      - stack-network
     depends_on:
       - elasticsearch
     environment:
@@ -70,7 +70,7 @@ services:
           echo "Starting logstash";
           /usr/share/logstash/bin/logstash -f /usr/share/logstash/pipeline/logstash.conf
       networks:
-        - elk-network
+        - stack-network
       ports:
         - 5044:5044
       environment:
@@ -95,7 +95,32 @@ services:
       - "4317:4317"
       - "4318:4318"
     networks:
-      - elk-network
+      - stack-network
+
+  postgres:
+    image: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - stack-network
+    volumes:
+      - /dados/postgres:/var/lib/postgresql/data
+
+  pgadmin:
+      image: dpage/pgadmin4
+      ports:
+        - '15432:80'
+      environment:
+        - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+        - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      networks:
+        - stack-network
+      volumes:
+        - /dados/pgadmin:/var/lib/pgadmin
 
   redis:
     image: "redis:alpine"
@@ -106,7 +131,7 @@ services:
       - /dados/redis:/data
       - /dados/redis/logs:/logs
     networks:
-      - elk-network
+      - stack-network
     restart: unless-stopped
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -126,20 +151,6 @@ services:
       timeout: 10s
       retries: 5
 
-volumes:
-  elasticsearch-data:
-    driver: local
-  redis-data:
-    driver: local
-  redis-logs:
-    driver: local
-  logstash-data:
-    driver: local
-  logstash-logs:
-    driver: local
-  kibana-logs:
-    driver: local
-
 networks:
-  elk-network:
+  stack-network:
     external: true

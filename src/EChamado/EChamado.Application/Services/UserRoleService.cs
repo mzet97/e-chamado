@@ -3,7 +3,7 @@ using EChamado.Core.Services.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace EChamado.Core.Services;
+namespace EChamado.Application.Services;
 
 public class UserRoleService : IUserRoleService
 {

@@ -3,7 +3,7 @@ using EChamado.Core.Services.Interface;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
-namespace EChamado.Core.Services;
+namespace EChamado.Application.Services;
 
 public class UserClaimService : IUserClaimService
 {

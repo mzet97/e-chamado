@@ -7,9 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Auth\Commands\" />
     <Folder Include="Features\Auth\ViewModels\" />
-    <Folder Include="Features\Auth\Notifications\" />
     <Folder Include="Features\Categories\" />
     <Folder Include="Features\Departments\" />
     <Folder Include="Features\SubCategories\" />
@@ -27,6 +25,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EChamado.Core\EChamado.Core.csproj" />
+    <ProjectReference Include="..\EChamado.Infrastructure\EChamado.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

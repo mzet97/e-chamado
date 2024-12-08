@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace EChamado.Core.Responses;
+﻿namespace EChamado.Core.Responses;
 
 public class BaseResult
 {
@@ -16,7 +14,24 @@ public class BaseResult
 
 public class BaseResult<T> : BaseResult
 {
-    public BaseResult(IEnumerable<T> data, PagedResult pagedResult, bool success = true, string message = "") : base(success, message)
+    public BaseResult(
+        T data,
+        bool success = true,
+        string message = "") : base(success, message)
+    {
+        Data = data;
+    }
+
+    public T Data { get; private set; }
+}
+
+public class BaseResultList<T> : BaseResult
+{
+    public BaseResultList(
+        IEnumerable<T> data,
+        PagedResult pagedResult,
+        bool success = true,
+        string message = "") : base(success, message)
     {
         Data = data;
         PagedResult = pagedResult;

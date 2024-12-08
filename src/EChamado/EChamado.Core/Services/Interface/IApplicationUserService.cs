@@ -5,21 +5,21 @@ namespace EChamado.Core.Services.Interface;
 
 public interface IApplicationUserService
 {
-    Task<IdentityResult> CreateUserAsync(ApplicationUser user, string password);
-    Task<ApplicationUser?> GetUserByIdAsync(Guid userId);
-    Task<ApplicationUser?> GetUserByEmailAsync(string email);
+    Task<IdentityResult> CreateAsync(ApplicationUser user, string password);
+    Task<ApplicationUser?> FindByIdAsync(Guid userId);
+    Task<ApplicationUser?> FindByEmailAsync(string email);
     Task<IEnumerable<ApplicationUser>> GetAllUsersAsync();
-    Task<IdentityResult> UpdateUserAsync(ApplicationUser user);
-    Task<IdentityResult> DeleteUserAsync(Guid userId);
+    Task<IdentityResult> UpdateAsync(ApplicationUser user);
+    Task<IdentityResult> DeleteAsync(Guid userId);
     Task<bool> CheckPasswordAsync(ApplicationUser user, string password);
 
     // Claims
-    Task<IList<ApplicationUserClaim>> GetUserClaimsAsync(ApplicationUser user);
+    Task<IList<ApplicationUserClaim>> GetClaimsAsync(ApplicationUser user);
     Task<IdentityResult> AddClaimToUserAsync(ApplicationUser user, string claimType, string claimValue);
     Task<IdentityResult> RemoveClaimFromUserAsync(ApplicationUser user, string claimType);
 
     // Roles
-    Task<IList<string>> GetUserRolesAsync(ApplicationUser user);
+    Task<IList<string>> GetRolesAsync(ApplicationUser user);
     Task<IdentityResult> AddUserToRoleAsync(ApplicationUser user, string roleName);
     Task<IdentityResult> RemoveUserFromRoleAsync(ApplicationUser user, string roleName);
 
@@ -37,6 +37,8 @@ public interface IApplicationUserService
     // SignInManager Methods
     Task<SignInResult> CheckPasswordSignInAsync(ApplicationUser user, string password, bool lockoutOnFailure);
     Task RefreshSignInAsync(ApplicationUser user);
+
+    Task TrySignInAsync(ApplicationUser user);
 
     // Email Confirmation
     Task<string> GenerateEmailConfirmationTokenAsync(ApplicationUser user);

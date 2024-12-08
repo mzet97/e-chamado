@@ -14,12 +14,12 @@ namespace EChamado.Infrastructure.Persistence.Mappings
 
             builder.Property(x => x.Name)
                 .IsRequired(true)
-                .HasColumnType("NVARCHAR")
+                .HasColumnType("varchar")
                 .HasMaxLength(100);
 
             builder.Property(x => x.Description)
                 .IsRequired(false)
-                .HasColumnType("NVARCHAR")
+                .HasColumnType("varchar")
                 .HasMaxLength(500);
 
             builder.Property(x => x.CategoryId)

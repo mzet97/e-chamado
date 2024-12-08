@@ -26,7 +26,7 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
         await Db.SaveChangesAsync();
     }
 
-    public virtual async Task<BaseResult<TEntity>> SearchAsync(
+    public virtual async Task<BaseResultList<TEntity>> SearchAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         int pageSize = 10, int page = 1)
@@ -50,7 +50,7 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
         }
 
         var data = await query.Skip(paged.Skip()).Take(pageSize).ToListAsync();
-        return new BaseResult<TEntity>(data, paged);
+        return new BaseResultList<TEntity>(data, paged);
     }
 
     public virtual async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)

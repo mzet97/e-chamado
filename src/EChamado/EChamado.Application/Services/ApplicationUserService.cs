@@ -3,7 +3,7 @@ using EChamado.Core.Services.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace EChamado.Core.Services;
+namespace EChamado.Application.Services;
 
 public class ApplicationUserService : IApplicationUserService
 {
@@ -16,18 +16,18 @@ public class ApplicationUserService : IApplicationUserService
         _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
     }
 
-    public async Task<IdentityResult> CreateUserAsync(ApplicationUser user, string password)
+    public async Task<IdentityResult> CreateAsync(ApplicationUser user, string password)
     {
         if (user == null) throw new ArgumentNullException(nameof(user));
         return await _userManager.CreateAsync(user, password);
     }
 
-    public async Task<ApplicationUser?> GetUserByIdAsync(Guid userId)
+    public async Task<ApplicationUser?> FindByIdAsync(Guid userId)
     {
         return await _userManager.FindByIdAsync(userId.ToString());
     }
 
-    public async Task<ApplicationUser?> GetUserByEmailAsync(string email)
+    public async Task<ApplicationUser?> FindByEmailAsync(string email)
     {
         if (string.IsNullOrEmpty(email)) throw new ArgumentException("Email cannot be null or empty", nameof(email));
         return await _userManager.FindByEmailAsync(email);
@@ -38,13 +38,13 @@ public class ApplicationUserService : IApplicationUserService
         return await _userManager.Users.ToListAsync();
     }
 
-    public async Task<IdentityResult> UpdateUserAsync(ApplicationUser user)
+    public async Task<IdentityResult> UpdateAsync(ApplicationUser user)
     {
         if (user == null) throw new ArgumentNullException(nameof(user));
         return await _userManager.UpdateAsync(user);
     }
 
-    public async Task<IdentityResult> DeleteUserAsync(Guid userId)
+    public async Task<IdentityResult> DeleteAsync(Guid userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
@@ -61,7 +61,7 @@ public class ApplicationUserService : IApplicationUserService
     }
 
     // Claims
-    public async Task<IList<ApplicationUserClaim>> GetUserClaimsAsync(ApplicationUser user)
+    public async Task<IList<ApplicationUserClaim>> GetClaimsAsync(ApplicationUser user)
     {
         var claims = await _userManager.GetClaimsAsync(user);
         return claims.Select(c => new ApplicationUserClaim { ClaimType = c.Type, ClaimValue = c.Value, UserId = user.Id }).ToList();
@@ -84,7 +84,7 @@ public class ApplicationUserService : IApplicationUserService
     }
 
     // Roles
-    public async Task<IList<string>> GetUserRolesAsync(ApplicationUser user)
+    public async Task<IList<string>> GetRolesAsync(ApplicationUser user)
     {
         return await _userManager.GetRolesAsync(user);
     }
@@ -130,6 +130,11 @@ public class ApplicationUserService : IApplicationUserService
     public async Task<SignInResult> PasswordSignInAsync(string userName, string password, bool isPersistent, bool lockoutOnFailure)
     {
         return await _signInManager.PasswordSignInAsync(userName, password, isPersistent, lockoutOnFailure);
+    }
+
+    public async Task TrySignInAsync(ApplicationUser user)
+    {
+       await _signInManager.SignInAsync(user, false);
     }
 
     public async Task<SignInResult> CheckPasswordSignInAsync(ApplicationUser user, string password, bool lockoutOnFailure)

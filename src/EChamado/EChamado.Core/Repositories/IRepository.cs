@@ -18,7 +18,7 @@ public interface IRepository<TEntity> : IDisposable where TEntity : IEntity
 
     Task RemoveAsync(Guid id);
 
-    Task<BaseResult<TEntity>> SearchAsync(
+    Task<BaseResultList<TEntity>> SearchAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         int pageSize = 10, int page = 1);

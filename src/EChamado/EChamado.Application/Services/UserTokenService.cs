@@ -1,13 +1,10 @@
 ﻿using EChamado.Core.Domains.Identities;
 using EChamado.Core.Services.Interface;
 using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using EChamado.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
-namespace EChamado.Core.Services;
+namespace EChamado.Application.Services;
 
 public class UserTokenService : IUserTokenService
 {
