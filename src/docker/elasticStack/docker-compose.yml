@@ -10,7 +10,7 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     networks:
-      - stack-network
+      - olek-network
     command:
       - bash
       - -c
@@ -27,9 +27,9 @@ services:
     volumes:
       - /dados/elasticsearch:/usr/share/elasticsearch/data
     networks:
-      - stack-network
+      - olek-network
     ports:
-      - 127.0.0.1:9200:9200
+      - 9200:9200
     restart: unless-stopped
     dns:
       - 8.8.8.8
@@ -46,9 +46,9 @@ services:
     image: docker.elastic.co/kibana/kibana:8.15.1
     container_name: kibana
     ports:
-      - 127.0.0.1:5601:5601
+      - 5601:5601
     networks:
-      - stack-network
+      - olek-network
     depends_on:
       - elasticsearch
     environment:
@@ -64,15 +64,16 @@ services:
         - /bin/bash
         - -c
         - |
-          cp /usr/share/logstash/pipeline/logstash.yml /usr/share/logstash/config/logstash.yml
           echo "Waiting for Elasticsearch availability";
           until curl -s http://elasticsearch:9200 | grep -q "missing authentication credentials"; do sleep 1; done;
           echo "Starting logstash";
           /usr/share/logstash/bin/logstash -f /usr/share/logstash/pipeline/logstash.conf
       networks:
-        - stack-network
+        - olek-network
       ports:
         - 5044:5044
+        - 5045:5045
+        - 5046:5046
       environment:
         - xpack.monitoring.enabled=false
         - ELASTIC_USER=elastic
@@ -84,73 +85,7 @@ services:
         - /dados/logstash/data:/usr/share/logstash/data
       depends_on:
         - elasticsearch
-
-  otel-collector:
-    image: otel/opentelemetry-collector
-    container_name: otel-collector
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    command: ["--config", "/etc/otel-collector-config.yaml"]
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-    networks:
-      - stack-network
-
-  postgres:
-    image: postgres
-    ports:
-      - '5432:5432'
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    networks:
-      - stack-network
-    volumes:
-      - /dados/postgres:/var/lib/postgresql/data
-
-  pgadmin:
-      image: dpage/pgadmin4
-      ports:
-        - '15432:80'
-      environment:
-        - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
-        - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
-      networks:
-        - stack-network
-      volumes:
-        - /dados/pgadmin:/var/lib/pgadmin
-
-  redis:
-    image: "redis:alpine"
-    command: redis-server --requirepass ${REDIS_PASSWORD}
-    ports:
-      - "6379:6379"
-    volumes:
-      - /dados/redis:/data
-      - /dados/redis/logs:/logs
-    networks:
-      - stack-network
-    restart: unless-stopped
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: "1GB"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
+        
 networks:
-  stack-network:
+  olek-network:
     external: true

@@ -1,9 +1,7 @@
 ﻿using EChamado.Application.Common.Behaviours;
 using EChamado.Application.Services;
 using EChamado.Application.ViewModels;
-using EChamado.Core.Repositories.Orders;
 using EChamado.Core.Services.Interface;
-using EChamado.Infrastructure.Persistence.Repositories.Orders;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;

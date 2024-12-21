@@ -5,10 +5,21 @@ using EChamado.Application.Configuration;
 using EChamado.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+
+    builder.Configuration
+       .SetBasePath(builder.Environment.ContentRootPath)
+       .AddJsonFile("appsettings.json", true, true)
+       .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
+       .AddEnvironmentVariables();
+
+    builder.Host.ConfigureSerilog(builder.Configuration);
+    builder.Logging.ClearProviders();
+    builder.Logging.AddSerilog();
 
     builder.Services.AddIdentityConfig(builder.Configuration);
     builder.Services.AddCorsConfig();
@@ -16,6 +27,8 @@ try
     builder.Services.ResolveDependenciesApplication();
 
     //builder.Services.AddMessageBus(builder.Configuration);
+    //builder.Services.AddOpenTelemetryConfig();
+    //builder.Logging.AddOpenTelemetryConfig();
     builder.Services.AddApplicationServices();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerConfig();

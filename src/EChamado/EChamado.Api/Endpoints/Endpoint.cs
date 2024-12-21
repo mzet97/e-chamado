@@ -1,5 +1,6 @@
 ﻿using EChamado.Api.Common.Api;
 using EChamado.Api.Endpoints.Auth;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Api.Endpoints;
 
@@ -11,8 +12,12 @@ public static class Endpoint
             .MapGroup("");
 
         endpoints.MapGroup("/")
-            .WithTags("Health Check")
-            .MapGet("/", () => new { message = "OK" });
+             .WithTags("Health Check")
+             .MapGet("/", async ([FromServices] ILogger<Program> logger) =>
+             {
+                 logger.LogInformation("Health Check executed.");
+                 return Results.Ok(new { message = "OK" });
+             });
 
 
         endpoints.MapGroup("v1/auth")

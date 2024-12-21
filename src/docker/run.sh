@@ -42,8 +42,8 @@ else
   echo "Network '$NETWORK_NAME' já existe."
 fi
 
-# Rodar docker-compose
-echo "Iniciando os contêineres com docker-compose..."
-docker-compose up -d
+# Rodar docker compose
+echo "Iniciando os contêineres com docker compose..."
+docker compose up -d
 
 echo "Configuração concluída com sucesso!"
