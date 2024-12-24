@@ -19,27 +19,19 @@ public class SearchDepartmentEndpoint : IEndpoint
 
     private static async Task<IResult> HandleAsync(
         IMediator mediator,
-        [FromQuery] string? Name,
-        [FromQuery] string? Description,
-        [FromQuery] Guid? Id,
-        [FromQuery] DateTime? CreatedAt,
-        [FromQuery] DateTime? UpdatedAt,
-        [FromQuery] DateTime? DeletedAt,
-        [FromQuery] string? Order,
-        [FromQuery] int PageIndex = 1,
-        [FromQuery] int PageSize = 10)
+        [AsParameters] SearchDepartment search)
     {
         var query = new SearchDepartmentQuery
         {
-            Name = Name ?? "",
-            Description = Description ?? "",
-            Id = Id ?? Guid.Empty,
-            CreatedAt = CreatedAt ?? default,
-            UpdatedAt = UpdatedAt ?? default,
-            DeletedAt = DeletedAt ?? default,
-            Order = Order ?? "",
-            PageIndex = PageIndex,
-            PageSize = PageSize,
+            Name = search.Name ?? "",
+            Description = search.Description ?? "",
+            Id = search.Id ?? Guid.Empty,
+            CreatedAt = search.CreatedAt ?? default,
+            UpdatedAt = search.UpdatedAt ?? default,
+            DeletedAt = search.DeletedAt ?? default,
+            Order = search.Order ?? "",
+            PageIndex = search.PageIndex ?? 1,
+            PageSize = search.PageSize ?? 10,
         };
 
         var result = await mediator.Send(query);
@@ -51,4 +43,17 @@ public class SearchDepartmentEndpoint : IEndpoint
 
         return TypedResults.BadRequest(result);
     }
+}
+
+public class SearchDepartment
+{
+    [FromQuery] public string? Name { get; set; }
+    [FromQuery] public string? Description { get; set; }
+    [FromQuery] public Guid? Id { get; set; }
+    [FromQuery] public DateTime? CreatedAt { get; set; }
+    [FromQuery] public DateTime? UpdatedAt { get; set; }
+    [FromQuery] public DateTime? DeletedAt { get; set; }
+    [FromQuery] public string? Order { get; set; }
+    [FromQuery] public int? PageIndex { get; set; } = 1;
+    [FromQuery] public int? PageSize { get; set; } = 10;
 }

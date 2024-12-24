@@ -16,6 +16,7 @@
     <Folder Include="Features\Orders\Notifications\Handlers\" />
     <Folder Include="Features\Orders\Queries\Handlers\" />
     <Folder Include="Features\Orders\ViewModels\" />
+    <Folder Include="Features\Roles\Notifications\Handlers\" />
     <Folder Include="Features\StatusType\Commands\Handlers\" />
     <Folder Include="Features\StatusType\Notifications\Handlers\" />
     <Folder Include="Features\StatusType\Queries\Handlers\" />
@@ -24,6 +25,8 @@
     <Folder Include="Features\SubCategories\Notifications\Handlers\" />
     <Folder Include="Features\SubCategories\Queries\Handlers\" />
     <Folder Include="Features\SubCategories\ViewModels\" />
+    <Folder Include="Features\Users\Commands\Handlers\" />
+    <Folder Include="Features\Users\Notifications\Handlers\" />
   </ItemGroup>
 
   <ItemGroup>

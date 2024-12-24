@@ -7,12 +7,12 @@ using Microsoft.Extensions.Logging;
 
 namespace EChamado.Application.Features.Departments.Commands.Handlers;
 
-public class DisableListDepartmentCommandHandler(IUnitOfWork unitOfWork,
+public class DeletesDepartmentCommandHandler(IUnitOfWork unitOfWork,
     IMediator mediator,
-    ILogger<DisableListDepartmentCommandHandler> logger) :
-    IRequestHandler<DisableListDepartmentCommand, BaseResult>
+    ILogger<DeletesDepartmentCommandHandler> logger) :
+    IRequestHandler<DeletesDepartmentCommand, BaseResult>
 {
-    public async Task<BaseResult> Handle(DisableListDepartmentCommand request, CancellationToken cancellationToken)
+    public async Task<BaseResult> Handle(DeletesDepartmentCommand request, CancellationToken cancellationToken)
     {
         if (request == null)
         {
@@ -35,12 +35,12 @@ public class DisableListDepartmentCommandHandler(IUnitOfWork unitOfWork,
             }
 
             await unitOfWork.Departments
-                .DisableAsync(id);
+                .RemoveAsync(id);
 
             await unitOfWork.CommitAsync();
 
             await mediator.Publish(
-                new DisabledDepartmentNotification(
+                new DeletedDepartmentNotification(
                     entity.Id,
                     entity.Name,
                     entity.Description));

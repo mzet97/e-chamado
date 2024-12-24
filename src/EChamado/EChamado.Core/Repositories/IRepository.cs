@@ -18,6 +18,8 @@ public interface IRepository<TEntity> : IDisposable where TEntity : IEntity
 
     Task RemoveAsync(Guid id);
     Task DisableAsync(Guid id);
+    Task ActiveAsync(Guid id);
+    Task ActiveOrDisableAsync(Guid id, bool active);
 
     Task<BaseResultList<TEntity>> SearchAsync(
         Expression<Func<TEntity, bool>>? predicate = null,

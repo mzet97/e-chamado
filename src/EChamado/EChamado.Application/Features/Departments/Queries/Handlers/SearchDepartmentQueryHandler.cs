@@ -43,7 +43,7 @@ public class SearchDepartmentQueryHandler(IUnitOfWork unitOfWork) :
             filter = filter.And(x => x.UpdatedAt == request.UpdatedAt);
         }
 
-        if (request.DeletedAt.HasValue || request.DeletedAt != default)
+        if (request.DeletedAt != new DateTime())
         {
             filter = filter.And(x => x.DeletedAt == request.DeletedAt);
         }

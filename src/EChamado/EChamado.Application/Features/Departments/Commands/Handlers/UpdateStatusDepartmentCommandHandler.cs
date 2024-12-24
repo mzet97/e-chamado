@@ -7,12 +7,12 @@ using Microsoft.Extensions.Logging;
 
 namespace EChamado.Application.Features.Departments.Commands.Handlers;
 
-public class DeleteListDepartmentCommandHandler(IUnitOfWork unitOfWork,
+public class UpdateStatusDepartmentCommandHandler(IUnitOfWork unitOfWork,
     IMediator mediator,
-    ILogger<DeleteListDepartmentCommandHandler> logger) :
-    IRequestHandler<DeleteListDepartmentCommand, BaseResult>
+    ILogger<UpdateStatusDepartmentCommandHandler> logger) :
+    IRequestHandler<UpdateStatusDepartmentCommand, BaseResult>
 {
-    public async Task<BaseResult> Handle(DeleteListDepartmentCommand request, CancellationToken cancellationToken)
+    public async Task<BaseResult> Handle(UpdateStatusDepartmentCommand request, CancellationToken cancellationToken)
     {
         if (request == null)
         {
@@ -22,11 +22,11 @@ public class DeleteListDepartmentCommandHandler(IUnitOfWork unitOfWork,
 
         await unitOfWork.BeginTransactionAsync();
 
-        foreach (var id in request.Ids)
+        foreach (var item in request.Items)
         {
             var entity = await unitOfWork
                 .Departments
-                .GetByIdAsync(id);
+                .GetByIdAsync(item.Id);
 
             if (entity == null)
             {
@@ -35,12 +35,12 @@ public class DeleteListDepartmentCommandHandler(IUnitOfWork unitOfWork,
             }
 
             await unitOfWork.Departments
-                .RemoveAsync(id);
+                .ActiveOrDisableAsync(item.Id, item.Active);
 
             await unitOfWork.CommitAsync();
 
             await mediator.Publish(
-                new DeletedDepartmentNotification(
+                new DisabledDepartmentNotification(
                     entity.Id,
                     entity.Name,
                     entity.Description));

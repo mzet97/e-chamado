@@ -107,9 +107,37 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
 
         if (entity != null)
         {
+            entity.IsDeleted = true;
             entity.DeletedAt = DateTime.UtcNow;
             DbSet.Update(entity);
             await Db.SaveChangesAsync();
+        }
+    }
+
+    public async Task ActiveAsync(Guid id)
+    {
+        if (id == Guid.Empty) throw new ArgumentException("ID não pode ser vazio", nameof(id));
+
+        var entity = await DbSet.FindAsync(id);
+
+        if (entity != null)
+        {
+            entity.IsDeleted = false;
+            entity.DeletedAt = null;
+            DbSet.Update(entity);
+            await Db.SaveChangesAsync();
+        }
+    }
+
+    public Task ActiveOrDisableAsync(Guid id, bool active)
+    {
+        if(active)
+        {
+            return ActiveAsync(id);
+        }
+        else
+        {
+            return DisableAsync(id);
         }
     }
 
@@ -138,6 +166,4 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
             Db?.Dispose();
         }
     }
-
-    
 }
