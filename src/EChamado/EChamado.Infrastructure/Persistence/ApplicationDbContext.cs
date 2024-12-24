@@ -3,11 +3,12 @@ using EChamado.Core.Domains.Orders;
 using EChamado.Core.Domains.Orders.ValueObjects;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace EChamado.Infrastructure.Persistence;
 
-public class ApplicationDbContext(DbContextOptions options) : IdentityDbContext<
+public class ApplicationDbContext(DbContextOptions options, ILoggerFactory loggerFactory) : IdentityDbContext<
     ApplicationUser,
     ApplicationRole,
     Guid,
@@ -17,6 +18,17 @@ public class ApplicationDbContext(DbContextOptions options) : IdentityDbContext<
     ApplicationRoleClaim,
     ApplicationUserToken>(options)
 {
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (loggerFactory != null)
+        {
+            optionsBuilder.UseLoggerFactory(loggerFactory);
+        }
+
+        base.OnConfiguring(optionsBuilder);
+    }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

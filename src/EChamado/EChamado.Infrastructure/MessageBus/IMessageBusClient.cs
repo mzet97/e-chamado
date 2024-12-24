@@ -2,14 +2,14 @@
 
 public interface IMessageBusClient
 {
-    void Publish(
+    Task Publish(
         object message,
         string routingKey,
         string exchange,
         string type,
         string queueName);
 
-    void Subscribe(
+    Task Subscribe(
         string queueName,
         string exchange,
         string type,

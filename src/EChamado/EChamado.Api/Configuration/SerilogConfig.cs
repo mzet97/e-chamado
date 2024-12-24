@@ -9,7 +9,6 @@ namespace EChamado.Api.Configuration;
 
 public static class SerilogConfig
 {
-
     public static void ConfigureSerilog(this IHostBuilder builder, IConfiguration configuration)
     {
         var elasticUri = configuration["ElasticSettings:Uri"]
@@ -24,6 +23,9 @@ public static class SerilogConfig
             loggerConfig
                 .ReadFrom.Configuration(ctx.Configuration)
                 .Enrich.FromLogContext()
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Information)
                 .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug)
                 .WriteTo.Elasticsearch(new[] { new Uri(elasticUri) }, opts =>
                 {

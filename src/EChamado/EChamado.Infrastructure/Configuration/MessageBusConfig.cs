@@ -29,18 +29,22 @@ public static class MessageBusConfig
         services.AddSingleton(async serviceProvider =>
         {
             var connection = await connectionFactory.CreateConnectionAsync(rabbitMq.ClientProviderName);
+            return connection;
+        });
+
+        services.AddSingleton<ProducerConnection>(serviceProvider =>
+        {
+            var connectionTask = serviceProvider.GetRequiredService<Task<IConnection>>();
+            var connection = connectionTask.GetAwaiter().GetResult();
             return new ProducerConnection(connection);
         });
 
         services.AddSingleton<IMessageBusClient>(serviceProvider =>
         {
-            var producerConnectionTask = serviceProvider.GetRequiredService<Func<Task<ProducerConnection>>>();
-            var producerConnection = producerConnectionTask().GetAwaiter().GetResult();
+            var producerConnection = serviceProvider.GetRequiredService<ProducerConnection>();
             return new RabbitMqClient(producerConnection);
         });
 
         return services;
     }
 }
-
-

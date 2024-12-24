@@ -1,5 +1,6 @@
 ﻿using EChamado.Api.Common.Api;
 using EChamado.Api.Endpoints.Auth;
+using EChamado.Api.Endpoints.Departments;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Api.Endpoints;
@@ -24,6 +25,18 @@ public static class Endpoint
             .WithTags("auth")
             .MapEndpoint<RegisterUserEndpoint>()
             .MapEndpoint<LoginUserEndpoint>();
+
+        endpoints.MapGroup("v1/department")
+            .WithTags("Department")
+            .RequireAuthorization()
+            .MapEndpoint<SearchDepartmentEndpoint>()
+            .MapEndpoint<GetByIdDepartmentEndpoint>()
+            .MapEndpoint<CreateDepartmentEndpoint>()
+            .MapEndpoint<UpdateDepartmentEndpoint>()
+            .MapEndpoint<DeleteDepartmentEndpoint>()
+            .MapEndpoint<DeleteListDepartmentEndpoint>()
+            .MapEndpoint<DisableDepartmentEndpoint>()
+            .MapEndpoint<DisableListDepartmentEndpoint>();
 
     }
 

@@ -8,11 +8,22 @@
 
   <ItemGroup>
     <Folder Include="Features\Auth\ViewModels\" />
-    <Folder Include="Features\Categories\" />
-    <Folder Include="Features\Departments\" />
-    <Folder Include="Features\SubCategories\" />
-    <Folder Include="Features\StatusType\" />
-    <Folder Include="Features\Orders\" />
+    <Folder Include="Features\Categories\Commands\Handlers\" />
+    <Folder Include="Features\Categories\Notifications\Handlers\" />
+    <Folder Include="Features\Categories\Queries\Handlers\" />
+    <Folder Include="Features\Categories\ViewModels\" />
+    <Folder Include="Features\Orders\Commands\Handlers\" />
+    <Folder Include="Features\Orders\Notifications\Handlers\" />
+    <Folder Include="Features\Orders\Queries\Handlers\" />
+    <Folder Include="Features\Orders\ViewModels\" />
+    <Folder Include="Features\StatusType\Commands\Handlers\" />
+    <Folder Include="Features\StatusType\Notifications\Handlers\" />
+    <Folder Include="Features\StatusType\Queries\Handlers\" />
+    <Folder Include="Features\StatusType\ViewModels\" />
+    <Folder Include="Features\SubCategories\Commands\Handlers\" />
+    <Folder Include="Features\SubCategories\Notifications\Handlers\" />
+    <Folder Include="Features\SubCategories\Queries\Handlers\" />
+    <Folder Include="Features\SubCategories\ViewModels\" />
   </ItemGroup>
 
   <ItemGroup>

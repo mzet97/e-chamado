@@ -15,7 +15,7 @@ public class RabbitMqClient : IMessageBusClient
         _connection = producerConnection.Connection;
     }
 
-    public async void Publish(
+    public async Task Publish(
         object message,
         string routingKey,
         string exchange,
@@ -51,7 +51,7 @@ public class RabbitMqClient : IMessageBusClient
              body: body);
     }
 
-    public async void Subscribe(
+    public async Task Subscribe(
         string queueName,
         string exchange,
         string type,

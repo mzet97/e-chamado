@@ -1,6 +1,7 @@
 using EChamado.Api.Configuration;
 using EChamado.Api.Endpoints;
 using EChamado.Api.Extensions;
+using EChamado.Api.Middlewares;
 using EChamado.Application.Configuration;
 using EChamado.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Diagnostics;
@@ -17,6 +18,8 @@ try
        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
        .AddEnvironmentVariables();
 
+    builder.Services.AddRedisCache(builder.Configuration);
+    builder.Services.AddRedisOutputCache(builder.Configuration);
     builder.Host.ConfigureSerilog(builder.Configuration);
     builder.Logging.ClearProviders();
     builder.Logging.AddSerilog();
@@ -26,9 +29,7 @@ try
     builder.Services.ResolveDependenciesInfrastructure();
     builder.Services.ResolveDependenciesApplication();
 
-    //builder.Services.AddMessageBus(builder.Configuration);
-    //builder.Services.AddOpenTelemetryConfig();
-    //builder.Logging.AddOpenTelemetryConfig();
+    builder.Services.AddMessageBus(builder.Configuration);
     builder.Services.AddApplicationServices();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerConfig();
@@ -75,12 +76,22 @@ try
         }
     });
 
+    app.UseMiddleware<RequestLoggingMiddleware>();
+    app.UseCustomSerilogRequestLogging();
+
     app.UseAuthorization();
     app.UseHealthChecks("/health");
     app.UseStaticFiles();
     app.MapEndpoints();
 
     app.UseSwaggerConfig();
+
+    app.MapGet("/cached-endpoint", async (HttpContext context) =>
+    {
+        context.Response.Headers["Cache-Control"] = "public, max-age=300";
+        return Results.Ok(new { Message = "Este é um exemplo de cache", Timestamp = DateTime.UtcNow });
+    }).CacheOutput("DefaultPolicy"); // Aplica a política de cache
+
 
     app.Run();
 }

@@ -1,8 +1,10 @@
 ﻿using EChamado.Core.Repositories;
 using EChamado.Core.Repositories.Orders;
+using EChamado.Core.Services.Interface;
 using EChamado.Infrastructure.Persistence;
 using EChamado.Infrastructure.Persistence.Repositories;
 using EChamado.Infrastructure.Persistence.Repositories.Orders;
+using EChamado.Infrastructure.Redis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,6 +24,8 @@ public static class DependencyInjectionConfig
         services.AddScoped<IOrderTypeRepository, OrderTypeRepository>();
         services.AddScoped<IStatusTypeRepository, StatusTypeRepository>();
         services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
+
+        services.AddScoped<IRedisService, RedisService>();
 
         return services;
     }

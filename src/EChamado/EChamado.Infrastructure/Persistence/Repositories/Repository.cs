@@ -89,6 +89,24 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
 
         if (entity != null)
         {
+            DbSet.Remove(entity);
+            await Db.SaveChangesAsync();
+        }
+        else
+        {
+            throw new InvalidOperationException("Entidade não encontrada para exclusão.");
+        }
+    }
+
+
+    public virtual async Task DisableAsync(Guid id)
+    {
+        if (id == Guid.Empty) throw new ArgumentException("ID não pode ser vazio", nameof(id));
+
+        var entity = await DbSet.FindAsync(id);
+
+        if (entity != null)
+        {
             entity.DeletedAt = DateTime.UtcNow;
             DbSet.Update(entity);
             await Db.SaveChangesAsync();
@@ -120,4 +138,6 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
             Db?.Dispose();
         }
     }
+
+    
 }

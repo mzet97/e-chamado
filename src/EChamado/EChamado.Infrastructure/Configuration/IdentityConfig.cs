@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Text;
 
 namespace EChamado.Infrastructure.Configuration;
@@ -16,17 +17,13 @@ public static class IdentityConfig
 {
     public static IServiceCollection AddIdentityConfig(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddLogging(loggingBuilder =>
+        services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
         {
-            loggingBuilder.AddConsole()
-                .AddFilter(DbLoggerCategory.Database.Command.Name, LogLevel.Information);
-            loggingBuilder.AddDebug();
-        });
-
-        services.AddDbContext<ApplicationDbContext>(options =>
-        {
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+            options.UseLoggerFactory(loggerFactory);
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
             options.EnableSensitiveDataLogging(true);
+            options.EnableDetailedErrors();
         });
 
         services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
@@ -52,7 +49,7 @@ public static class IdentityConfig
 
         var appSettings = appSettingsSection.Get<AppSettings>();
 
-        if(appSettings == null)
+        if (appSettings == null)
         {
             throw new ApplicationException("AppSettings not found");
         }
