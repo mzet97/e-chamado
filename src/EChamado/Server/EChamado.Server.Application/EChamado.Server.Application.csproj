@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="UseCases\Categories\Commands\Handlers\" />
+    <Folder Include="UseCases\Categories\Notifications\Handlers\" />
+    <Folder Include="UseCases\Categories\Queries\Handlers\" />
+    <Folder Include="UseCases\Categories\ViewModels\" />
+    <Folder Include="UseCases\Orders\Commands\Handlers\" />
+    <Folder Include="UseCases\Orders\Notifications\Handlers\" />
+    <Folder Include="UseCases\Orders\Queries\Handlers\" />
+    <Folder Include="UseCases\Orders\ViewModels\" />
+    <Folder Include="UseCases\Roles\Notifications\Handlers\" />
+    <Folder Include="UseCases\StatusType\Commands\Handlers\" />
+    <Folder Include="UseCases\StatusType\Notifications\Handlers\" />
+    <Folder Include="UseCases\StatusType\Queries\Handlers\" />
+    <Folder Include="UseCases\StatusType\ViewModels\" />
+    <Folder Include="UseCases\SubCategories\Commands\Handlers\" />
+    <Folder Include="UseCases\SubCategories\Notifications\Handlers\" />
+    <Folder Include="UseCases\SubCategories\Queries\Handlers\" />
+    <Folder Include="UseCases\SubCategories\ViewModels\" />
+    <Folder Include="UseCases\Users\Commands\Handlers\" />
+    <Folder Include="UseCases\Users\Notifications\Handlers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="LinqKit.Core" Version="1.2.8" />
+    <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\EChamado.Shared\EChamado.Shared.csproj" />
+    <ProjectReference Include="..\EChamado.Server.Domain\EChamado.Server.Domain.csproj" />
+    <ProjectReference Include="..\EChamado.Server.Infrastructure\EChamado.Server.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

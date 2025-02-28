@@ -56,6 +56,7 @@ services:
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - TELEMETRY_ENABLED=false
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=MinhaChaveDe32CaracteresNoMinimo!!!!
 
   logstash:
       image: docker.elastic.co/logstash/logstash:8.15.1
