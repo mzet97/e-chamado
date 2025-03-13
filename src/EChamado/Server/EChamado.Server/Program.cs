@@ -38,6 +38,7 @@ try
     app.UseAppConfig();
     app.MapControllers();
     app.MapEndpoints();
+    app.MapRazorPages();
 
     app.UseSwaggerConfig();
 

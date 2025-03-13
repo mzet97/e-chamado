@@ -15,6 +15,48 @@ public class AuthorizationController(
     IOpenIddictService openIddictService
     ) : Controller
 {
+    [HttpGet("~/connect/authorize")]
+    [HttpPost("~/connect/authorize")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> Authorize()
+    {
+        var request = HttpContext.GetOpenIddictServerRequest() ??
+            throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+
+        // Retrieve the user principal stored in the authentication cookie.
+        var result = await HttpContext.AuthenticateAsync();
+
+        // If the user principal can't be extracted, redirect the user to the login page.
+        if (!result.Succeeded)
+        {
+            return Challenge(
+                authenticationSchemes: new[] { "Identity.Application" },
+                properties: new AuthenticationProperties
+                {
+                    RedirectUri = Request.PathBase + Request.Path + QueryString.Create(
+                        Request.HasFormContentType ? Request.Form.ToList() : Request.Query.ToList())
+                });
+        }
+
+        // Create a new claims principal
+        var claims = new List<Claim>
+        {
+            // 'subject' claim which is required
+            new Claim(Claims.Subject, result.Principal.Identity.Name),
+            new Claim(Claims.Email, result.Principal.FindFirst(Claims.Email)?.Value ?? string.Empty),
+            new Claim(Claims.Name, result.Principal.Identity.Name ?? string.Empty)
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, TokenValidationParameters.DefaultAuthenticationType);
+        var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+        // Set requested scopes (this is not done automatically)
+        claimsPrincipal.SetScopes(request.GetScopes());
+
+        // Signing in with the OpenIddict authentication scheme
+        return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
+
 
     [HttpPost("~/connect/token"), Produces("application/json")]
     public async Task<IActionResult> Exchange()
@@ -74,6 +116,27 @@ public class AuthorizationController(
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
+        }
+
+        // Handle authorization code grant type
+        if (request.IsAuthorizationCodeGrantType())
+        {
+            // The authorization code is automatically validated by OpenIddict
+            // If the authorization code is invalid, this action won't be invoked
+
+            // The authorization code validation creates a principal from the authorization code
+            // This principal contains the claims from the original authorization request
+            var principal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
+
+            // Set the proper destinations for the claims
+            principal.SetDestinations(claim => claim.Type switch
+            {
+                Claims.Name or Claims.Email when principal.HasScope(Scopes.Profile) => [Destinations.AccessToken, Destinations.IdentityToken],
+                Claims.Role => [Destinations.AccessToken],
+                _ => [Destinations.AccessToken]
+            });
+
+            return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         throw new NotImplementedException("The specified grant is not implemented.");

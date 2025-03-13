@@ -20,7 +20,13 @@ builder.Services
 
 builder.Services.AddOidcAuthentication(options =>
 {
-    builder.Configuration.Bind("OidcConfiguration", options.ProviderOptions);
+    options.ProviderOptions.Authority = "https://localhost:7296";
+    options.ProviderOptions.ClientId = "bwa-client";
+    options.ProviderOptions.ResponseType = "code";
+    options.ProviderOptions.DefaultScopes.Clear();
+    options.ProviderOptions.DefaultScopes.Add("openid");
+    options.ProviderOptions.DefaultScopes.Add("profile");
+    options.ProviderOptions.DefaultScopes.Add("email");
 });
 
 builder.Services.ResolveDependenciesApplication();

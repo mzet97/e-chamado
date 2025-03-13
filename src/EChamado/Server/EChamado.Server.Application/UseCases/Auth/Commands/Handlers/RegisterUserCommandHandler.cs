@@ -32,6 +32,6 @@ public class RegisterUserCommandHandler(
 
         await mediator.Publish(new RegisterUserNotification { Email = request.Email, Message = sb.ToString() });
 
-        return await mediator.Send(new GetTokenCommand { Email = request.Email });
+        return new BaseResult<LoginResponseViewModel>(null, false, sb.ToString());
     }
 }

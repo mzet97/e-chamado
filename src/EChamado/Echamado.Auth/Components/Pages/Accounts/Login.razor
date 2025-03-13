@@ -1,0 +1,46 @@
+﻿@page "/Account/Login"
+@using Echamado.Auth.Models
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@inject SignInManager<ApplicationUser> SignInManager
+
+<PageTitle>Login</PageTitle>
+
+<MudPaper Class="pa-4 mx-auto" Style="max-width: 400px;">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Login</MudText>
+    <MudForm @ref="form" @bind-IsValid="isValid">
+        <MudTextField T="string" @bind-Value="Input.Email" Label="Email" Required="true" RequiredError="Email is required!" />
+        <MudTextField T="string" @bind-Value="Input.Password" Label="Password" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
+        <MudButton OnClick="LoginUser" Disabled="!isValid" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" FullWidth="true">
+            Log In
+        </MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private MudForm form;
+    private bool isValid;
+    private LoginModel Input { get; set; } = new();
+    private string error = "";
+
+    [Inject] HttpClient Http { get; set; } = default!;
+    [Inject] NavigationManager NavigationManager { get; set; } = default!;
+
+    private async Task LoginUser()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+            var response = await Http.PostAsJsonAsync("/api/login", Input);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/", true);
+            }
+            else
+            {
+                error = "Invalid login attempt.";
+            }
+        }
+    }
+
+}

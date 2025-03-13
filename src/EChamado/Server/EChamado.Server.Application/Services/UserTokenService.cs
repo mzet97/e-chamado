@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using EChamado.Server.Domain.Domains.Identities;
+﻿using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Domain.Services.Interface;
 using EChamado.Server.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace EChamado.Server.Application.Services;
 

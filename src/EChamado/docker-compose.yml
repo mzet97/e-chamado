@@ -1,0 +1,159 @@
+services:
+  setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+    container_name: setup
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - echamado-network
+    command:
+      - bash
+      - -c
+      - |
+        echo "Waiting for Elasticsearch availability";
+        until curl -s http://elasticsearch:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
+        echo "Setting kibana_system password";
+        until curl -s -X POST -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
+        echo "All done!";
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
+    container_name: elasticsearch
+    volumes:
+      - /dados/elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - echamado-network
+    ports:
+      - 9200:9200
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.http.ssl.enabled=false
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.1
+    container_name: kibana
+    ports:
+      - 5601:5601
+    networks:
+      - echamado-network
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - TELEMETRY_ENABLED=false
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=MinhaChaveDe32CaracteresNoMinimo!!!!
+
+  logstash:
+      image: docker.elastic.co/logstash/logstash:8.15.1
+      container_name: logstash
+      command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Waiting for Elasticsearch availability";
+          until curl -s http://elasticsearch:9200 | grep -q "missing authentication credentials"; do sleep 1; done;
+          echo "Starting logstash";
+          /usr/share/logstash/bin/logstash -f /usr/share/logstash/pipeline/logstash.conf
+      networks:
+        - echamado-network
+      ports:
+        - 5044:5044
+        - 5045:5045
+        - 5046:5046
+      environment:
+        - xpack.monitoring.enabled=false
+        - ELASTIC_USER=elastic
+        - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+        - ELASTIC_HOSTS=http://elasticsearch:9200
+      volumes:
+        - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+        - /dados/logstash/logs:/usr/share/logstash/logs
+        - /dados/logstash/data:/usr/share/logstash/data
+      depends_on:
+        - elasticsearch
+
+  postgres:
+    image: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - echamado-network
+    volumes:
+      - /dados/postgres:/var/lib/postgresql/data
+
+  pgadmin:
+      image: dpage/pgadmin4
+      ports:
+        - '15432:80'
+      environment:
+        - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+        - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      networks:
+        - echamado-network
+      volumes:
+        - /dados/pgadmin:/var/lib/pgadmin
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - /dados/rabbitmq:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    networks:
+      - echamado-network
+
+  redis:
+    image: "redis:alpine"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - /dados/redis:/data
+      - /dados/redis/logs:/logs
+    networks:
+      - echamado-network
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: "1GB"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+        
+networks:
+  echamado-network:
+    external: true
