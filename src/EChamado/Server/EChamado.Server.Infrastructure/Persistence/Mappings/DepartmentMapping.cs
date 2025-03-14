@@ -1,4 +1,4 @@
-﻿using EChamado.Server.Domain.Domains.Orders.ValueObjects;
+﻿using EChamado.Server.Domain.Domains.Orders.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

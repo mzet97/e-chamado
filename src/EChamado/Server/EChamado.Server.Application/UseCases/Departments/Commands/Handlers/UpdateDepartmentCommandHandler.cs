@@ -1,9 +1,6 @@
 ﻿using EChamado.Server.Application.UseCases.Departments.Notifications;
-using EChamado.Server.Domain.Domains.Orders.ValueObjects;
-using EChamado.Server.Domain.Domains.Orders.ValueObjects.Validations;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
-using EChamado.Server.Domain.Validations;
 using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -19,18 +16,6 @@ public class UpdateDepartmentCommandHandler(IUnitOfWork unitOfWork,
         UpdateDepartmentCommand request, 
         CancellationToken cancellationToken)
     {
-        var entity = new Department
-        {
-            Name = request.Name,
-            Description = request.Description
-        };
-
-        if (!Validator.Validate(new DepartmentValidation(), entity))
-        {
-            logger.LogError("Validate Department has error");
-            throw new ValidationException("Validate Department has error");
-        }
-
         var entityDb = await unitOfWork
             .Departments
             .GetByIdAsync(request.Id);
@@ -41,8 +26,15 @@ public class UpdateDepartmentCommandHandler(IUnitOfWork unitOfWork,
             throw new NotFoundException("Department not found");
         }
 
-        entityDb.Name = entity.Name;
-        entityDb.Description = entity.Description;
+        entityDb.Update(request.Name, request.Description);
+
+        if (!entityDb.IsValid())
+        {
+            logger.LogError("Validate Department has error");
+            throw new ValidationException(
+                "Validate Department has error", 
+                entityDb.GetErrors());
+        }
 
         await unitOfWork
             .Departments

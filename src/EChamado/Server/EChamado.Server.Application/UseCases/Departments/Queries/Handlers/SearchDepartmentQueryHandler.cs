@@ -1,5 +1,5 @@
 ﻿using EChamado.Server.Application.UseCases.Departments.ViewModels;
-using EChamado.Server.Domain.Domains.Orders.ValueObjects;
+using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
 using LinqKit;

@@ -1,4 +1,4 @@
-﻿using EChamado.Server.Domain.Domains.Orders.ValueObjects;
+﻿using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Repositories.Orders;
 
 namespace EChamado.Server.Infrastructure.Persistence.Repositories.Orders;

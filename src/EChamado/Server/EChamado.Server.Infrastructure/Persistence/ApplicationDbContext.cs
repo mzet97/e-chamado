@@ -1,6 +1,6 @@
 ﻿using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Domain.Domains.Orders;
-using EChamado.Server.Domain.Domains.Orders.ValueObjects;
+using EChamado.Server.Domain.Domains.Orders.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

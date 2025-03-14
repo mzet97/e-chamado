@@ -2,15 +2,15 @@
 
 public class AggregateRoot : Entity
 {
-
-    private List<IDomainEvent> _events = new List<IDomainEvent>();
-    public IEnumerable<IDomainEvent> Events => _events;
-
-    protected void AddEvent(IDomainEvent @event)
+    public AggregateRoot()
     {
-        if (_events == null)
-            _events = new List<IDomainEvent>();
-
-        _events.Add(@event);
+    }
+    public AggregateRoot(
+        Guid id,
+        DateTime createdAt,
+        DateTime? updatedAt,
+        DateTime? deletedAt,
+        bool isDeleted) : base(id, createdAt, updatedAt, deletedAt, isDeleted)
+    {
     }
 }

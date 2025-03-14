@@ -1,40 +1,41 @@
-﻿using EChamado.Server.Domain.Domains.Orders.Events;
-using EChamado.Server.Domain.Domains.Orders.ValueObjects;
+﻿using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Server.Domain.Domains.Orders.Events.Orders;
+using EChamado.Server.Domain.Domains.Orders.Validations;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders;
 
 public class Order : AggregateRoot
 {
-    public string Description { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
+    public string Description { get; private set; }
+    public string Title { get; private set; }
 
-    public string Evaluation { get; set; } = string.Empty;
+    public string Evaluation { get; private set; }
 
-    public DateTime? OpeningDate { get; set; }
-    public DateTime? ClosingDate { get; set; }
-    public DateTime? DueDate { get; set; }
+    public DateTime? OpeningDate { get; private set; }
+    public DateTime? ClosingDate { get; private set; }
+    public DateTime? DueDate { get; private set; }
 
-    public Guid StatusId { get; set; }
-    public StatusType Status { get; set; } = null!;
+    public Guid StatusId { get; private set; }
+    public StatusType Status { get; set; } = null!; // ef navigation property
 
-    public Guid TypeId { get; set; }
-    public OrderType Type { get; set; } = null!;
+    public Guid TypeId { get; private set; }
+    public OrderType Type { get; set; } = null!; // ef navigation property
 
-    public Guid RequestingUserId { get; set; }
-    public string RequestingUserEmail { get; set; } = string.Empty;
+    public Guid RequestingUserId { get; private set; }
+    public string RequestingUserEmail { get; private set; } 
 
-    public Guid ResponsibleUserId { get; set; }
-    public string ResponsibleUserEmail { get; set; } = string.Empty;
+    public Guid ResponsibleUserId { get; private set; }
+    public string ResponsibleUserEmail { get; private set; }
 
-    public Guid CategoryId { get; set; }
-    public Category Category { get; set; } = null!;
+    public Guid CategoryId { get; private set; }
+    public Category Category { get; set; } = null!; // ef navigation property
 
-    public Guid? SubCategoryId { get; set; }
-    public SubCategory? SubCategory { get; set; }
+    public Guid? SubCategoryId { get; private set; }
+    public SubCategory? SubCategory { get; set; } // ef navigation property
 
-    public Guid DepartmentId { get; set; }
-    public Department Department { get; set; } = null!;
+    public Guid DepartmentId { get; private set; }
+    public Department Department { get; set; } = null!; // ef navigation property
 
     public Order()
     {
@@ -42,9 +43,11 @@ public class Order : AggregateRoot
     }
 
     public Order(
+        Guid id,
         string title,
         string description,
         string requestingUserEmail,
+        string responsibleUserEmail,
         Guid requestingUserId,
         Guid responsibleUserId,
         Guid categoryId,
@@ -52,26 +55,32 @@ public class Order : AggregateRoot
         Guid orderTypeId,
         Guid statusTypeId,
         Guid? subCategoryId,
-        DateTime? dueDate)
+        DateTime? dueDate,
+        DateTime createdAt,
+        DateTime? updatedAt,
+        DateTime? deletedAt
+        ) : base(id, createdAt, updatedAt, deletedAt, false)
     {
-        Id = Guid.NewGuid();
         Title = title;
         Description = description;
-        RequestingUserEmail = requestingUserEmail;
         RequestingUserId = requestingUserId;
         ResponsibleUserId = responsibleUserId;
+        RequestingUserEmail = requestingUserEmail;
+        ResponsibleUserEmail = requestingUserEmail;
         CategoryId = categoryId;
         DepartmentId = departmentId;
-        Type = new OrderType { Id = orderTypeId };
-        Status = new StatusType { Id = statusTypeId };
+        TypeId = orderTypeId;
         SubCategoryId = subCategoryId;
+        StatusId = statusTypeId;
         DueDate = dueDate;
+        Validate();
     }
 
     public static Order Create(
         string title,
         string description,
         string requestingUserEmail,
+        string responsibleUserEmail,
         Guid requestingUserId,
         Guid responsibleUserId,
         Guid categoryId,
@@ -82,9 +91,11 @@ public class Order : AggregateRoot
         DateTime? dueDate)
     {
         var order = new Order(
+            Guid.NewGuid(),
             title,
             description,
             requestingUserEmail,
+            responsibleUserEmail,
             requestingUserId,
             responsibleUserId,
             categoryId,
@@ -92,9 +103,10 @@ public class Order : AggregateRoot
             orderTypeId,
             statusTypeId,
             subCategoryId,
-            dueDate);
-
-        order.CreatedAt = DateTime.UtcNow;
+            dueDate,
+            DateTime.Now,
+            null,
+            null);
 
         order.AddEvent(
             new OrderCreated(order));
@@ -127,9 +139,33 @@ public class Order : AggregateRoot
         SubCategoryId = subCategoryId;
         DueDate = dueDate;
 
-        UpdatedAt = DateTime.UtcNow;
+        Update();
 
         AddEvent(
             new OrderUpdated(this));
+    }
+
+    public void Close()
+    {
+        ClosingDate = DateTime.Now;
+        Update();
+        AddEvent(
+            new OrderClosed(this));
+    }
+
+    public override void Validate()
+    {
+        var validator = new OrderValidation();
+        var result = validator.Validate(this);
+        if (!result.IsValid)
+        {
+            _errors = result.Errors.Select(x => x.ErrorMessage);
+            _isValid = false;
+        }
+        else
+        {
+            _errors = Enumerable.Empty<string>();
+            _isValid = true;
+        }
     }
 }

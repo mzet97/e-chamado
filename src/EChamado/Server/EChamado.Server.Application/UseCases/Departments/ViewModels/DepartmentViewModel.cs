@@ -1,4 +1,4 @@
-﻿using EChamado.Server.Domain.Domains.Orders.ValueObjects;
+﻿using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Shared.ViewModels;
 
 namespace EChamado.Server.Application.UseCases.Departments.ViewModels;

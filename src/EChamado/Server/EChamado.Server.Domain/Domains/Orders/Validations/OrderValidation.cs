@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using EChamado.Shared.Shared;
+using FluentValidation;
 
 namespace EChamado.Server.Domain.Domains.Orders.Validations;
 
@@ -6,6 +7,8 @@ public class OrderValidation : AbstractValidator<Order>
 {
     public OrderValidation()
     {
+        Include(new EntityValidation());
+
         RuleFor(order => order.Description)
             .NotEmpty().WithMessage("Description is required.")
             .MaximumLength(500).WithMessage("Description cannot exceed 500 characters.");

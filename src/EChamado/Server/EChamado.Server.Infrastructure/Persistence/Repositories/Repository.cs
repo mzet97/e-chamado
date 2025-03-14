@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace EChamado.Server.Infrastructure.Persistence.Repositories;
 
-public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity, new()
+public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 {
     protected readonly ApplicationDbContext Db;
     protected readonly DbSet<TEntity> DbSet;
@@ -21,7 +21,6 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
     {
         if (entity == null) throw new ArgumentNullException(nameof(entity));
 
-        entity.CreatedAt = DateTime.UtcNow;
         await DbSet.AddAsync(entity);
         await Db.SaveChangesAsync();
     }
@@ -111,7 +110,8 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
     {
         if (entity == null) throw new ArgumentNullException(nameof(entity));
 
-        entity.UpdatedAt = DateTime.UtcNow;
+        entity.Update();
+
         DbSet.Update(entity);
         await Db.SaveChangesAsync();
     }
@@ -142,8 +142,7 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
 
         if (entity != null)
         {
-            entity.IsDeleted = true;
-            entity.DeletedAt = DateTime.UtcNow;
+            entity.Disabled();
             DbSet.Update(entity);
             await Db.SaveChangesAsync();
         }
@@ -157,8 +156,7 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
 
         if (entity != null)
         {
-            entity.IsDeleted = false;
-            entity.DeletedAt = null;
+            entity.Activate();
             DbSet.Update(entity);
             await Db.SaveChangesAsync();
         }
