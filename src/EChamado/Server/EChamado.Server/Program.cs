@@ -1,53 +1,25 @@
-using EChamado.Server.Configuration;
-using EChamado.Server.Endpoints;
 using EChamado.Server.Infrastructure.Configuration;
-using Serilog;
 
-try
-{
-    var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-    builder.Configuration
-       .SetBasePath(builder.Environment.ContentRootPath)
-       .AddJsonFile("appsettings.json", true, true)
-       .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
-       .AddEnvironmentVariables();
+builder.Configuration
+    .SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("appsettings.json", true, true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
+    .AddEnvironmentVariables();
 
-    builder.Services.AddRedisCache(builder.Configuration);
-    builder.Services.AddRedisOutputCache(builder.Configuration);
-    builder.Host.ConfigureSerilog(builder.Configuration);
-    builder.Logging.ClearProviders();
-    builder.Logging.AddSerilog();
+builder.Services.AddIdentityConfig(builder.Configuration);
+builder.Services.AddControllers();
 
-    builder.Services.AddApiConfig(builder.Configuration);
+var app = builder.Build();
 
-    var app = builder.Build();
+app.UseRouting();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseCors("Development");
-        app.UseDeveloperExceptionPage();
-    }
-    else
-    {
-        app.UseCors("Production");
-        app.UseHsts();
-    }
+app.UseAuthentication();
+app.UseAuthorization();
 
-    app.UseRouting();
-    app.UseAuthentication();
-    app.UseAuthorization();
-    app.UseAppConfig();
-    app.MapControllers();
-    app.MapEndpoints();
+app.MapControllers();
 
-    app.UseSwaggerConfig();
-
-    app.Run();
-}
-catch (Exception ex)
-{
-    Console.WriteLine(ex.Message);
-}
+app.Run();
 
 public partial class Program { }
