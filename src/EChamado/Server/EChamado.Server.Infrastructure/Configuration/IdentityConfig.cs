@@ -77,13 +77,8 @@ public static class IdentityConfig
         })
         .AddCookie("External", options =>
         {
-            // Configure o caminho de login para a aplicação Blazor Server de Identity.
-            // Por exemplo, se sua aplicação de Identity estiver rodando em https://localhost:5001:
-            options.LoginPath = "/Account/Login"; // Note: aqui o cookie redireciona internamente,
-                                                    // mas você precisa configurar um redirecionamento para a URL completa.
             options.Events.OnRedirectToLogin = context =>
             {
-                // Redireciona para a aplicação externa.
                 context.Response.Redirect("https://localhost:5001/Account/Login?returnUrl=" + Uri.EscapeDataString(context.RedirectUri));
                 return Task.CompletedTask;
             };
@@ -117,12 +112,8 @@ public static class IdentityConfig
                 // Usa a mesma chave simétrica definida em AppSettings.Secret
                 options.AddSigningKey(new SymmetricSecurityKey(key));
 
-                // Registra escopos adicionais (somente "openid" já está incluso automaticamente)
-                options.RegisterScopes("openid", "profile", "email", "address", "phone", "roles");
-
-                // Exemplos de certificados de desenvolvimento (opcional)
-                options.AddDevelopmentEncryptionCertificate()
-                       .AddDevelopmentSigningCertificate();
+                // Registra escopos que poderão ser usados pelos clientes
+                options.RegisterScopes("openid", "profile", "email", "address", "phone", "roles", "api", "chamados");
 
                 // Integra com o ASP.NET Core
                 options.UseAspNetCore()

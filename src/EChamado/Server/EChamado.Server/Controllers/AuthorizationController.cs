@@ -30,7 +30,7 @@ public class AuthorizationController(
         if (!result.Succeeded)
         {
             return Challenge(
-                authenticationSchemes: new[] { "Identity.Application" },
+                authenticationSchemes: new[] { "External" },
                 properties: new AuthenticationProperties
                 {
                     RedirectUri = Request.PathBase + Request.Path + QueryString.Create(
