@@ -35,10 +35,11 @@ try
     }
 
     app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.UseAppConfig();
     app.MapControllers();
     app.MapEndpoints();
-    app.MapRazorPages();
 
     app.UseSwaggerConfig();
 
