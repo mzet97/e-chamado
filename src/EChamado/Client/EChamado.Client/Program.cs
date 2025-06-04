@@ -1,34 +1,49 @@
-using EChamado.Client;
-using EChamado.Client.Application.Configuration;
-using EChamado.Client.Security;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using MudBlazor.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.AspNetCore.Components.Authorization;
+using EChamado.Client.Services;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-
-Configuration.BackendUrl = builder.Configuration.GetValue<string>("BackendUrl") ?? string.Empty;
-
-builder.RootComponents.Add<App>("#app");
-builder.RootComponents.Add<HeadOutlet>("head::after");
-
-builder.Services.AddMudServices();
-
-builder.Services
-    .AddHttpClient(Configuration.HttpClientName, opt => { opt.BaseAddress = new Uri(Configuration.BackendUrl); })
-    .AddHttpMessageHandler<CookieHandler>();
-
-builder.Services.AddOidcAuthentication(options =>
+namespace EChamado.Client
 {
-    options.ProviderOptions.Authority = "https://localhost:7296";
-    options.ProviderOptions.ClientId = "bwa-client";
-    options.ProviderOptions.ResponseType = "code";
-    options.ProviderOptions.DefaultScopes.Clear();
-    options.ProviderOptions.DefaultScopes.Add("openid");
-    options.ProviderOptions.DefaultScopes.Add("profile");
-    options.ProviderOptions.DefaultScopes.Add("email");
-});
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var builder = WebAssemblyHostBuilder.CreateDefault(args);
+            builder.RootComponents.Add<App>("#app");
 
-builder.Services.ResolveDependenciesApplication();
+            // Configura HttpClient normal
+            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-await builder.Build().RunAsync();
+            // Configuração OIDC (Authorization Code + PKCE)
+            builder.Services.AddOidcAuthentication(options =>
+            {
+                // Carrega as configurações de appsettings.json
+                builder.Configuration.Bind("oidc", options.ProviderOptions);
+
+                // Garante os escopos necessários
+                options.ProviderOptions.DefaultScopes.Clear();
+                foreach (var scope in builder.Configuration.GetSection("oidc:DefaultScopes").Get<string[]>())
+                {
+                    options.ProviderOptions.DefaultScopes.Add(scope);
+                }
+            });
+
+            // HttpClient que usa tokens para chamadas autenticadas
+            builder.Services.AddHttpClient<ChamadoService>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["BackendUrl"]);
+            })
+            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+
+            builder.Services.AddScoped<AuthenticationStateProvider,
+                RemoteAuthenticationService<RemoteAuthenticationState, RemoteUserAccount, OidcProviderOptions>>();
+
+            await builder.Build().RunAsync();
+        }
+    }
+}

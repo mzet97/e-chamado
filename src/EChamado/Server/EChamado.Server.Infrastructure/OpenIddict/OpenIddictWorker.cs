@@ -1,4 +1,4 @@
-﻿using EChamado.Server.Infrastructure.Persistence;
+using EChamado.Server.Infrastructure.Persistence;
 using EChamado.Shared.Shared.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -36,36 +36,49 @@ namespace EChamado.Server.Infrastructure.OpenIddict
 
         private async Task CreateOrUpdateBlazorClientAsync(IOpenIddictApplicationManager manager, CancellationToken cancellationToken)
         {
-            // A) Tenta encontrar o cliente "bwa-client"
+            // Tenta encontrar o cliente "bwa-client"
             var blazorClient = await manager.FindByClientIdAsync("bwa-client", cancellationToken);
             if (blazorClient is null)
             {
+                // Se não existir, cria com as permissões adequadas
                 var descriptor = new OpenIddictApplicationDescriptor
                 {
                     ClientId = "bwa-client",
                     DisplayName = "Cliente Web Blazor",
-                    ClientType = ClientTypes.Public,
-                    ConsentType = ConsentTypes.Explicit
+                    ClientType = OpenIddictConstants.ClientTypes.Public,
+                    ConsentType = OpenIddictConstants.ConsentTypes.Explicit,
+                    Permissions =
+                    {
+                        // Endpoints
+                        OpenIddictConstants.Permissions.Endpoints.Authorization,
+                        OpenIddictConstants.Permissions.Endpoints.Token,
+
+                        // Fluxos permitidos
+                        OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                        OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+
+                        // Response types
+                        OpenIddictConstants.Permissions.ResponseTypes.Code,
+
+                        // Escopos principais
+                        OpenIddictConstants.Scopes.OpenId,
+                        OpenIddictConstants.Permissions.Scopes.Profile,
+                        OpenIddictConstants.Permissions.Scopes.Email,
+                        OpenIddictConstants.Permissions.Scopes.Address,
+                        OpenIddictConstants.Permissions.Scopes.Phone,
+                        OpenIddictConstants.Permissions.Scopes.Roles,
+
+                        // Escopos personalizados
+                        OpenIddictConstants.Permissions.Prefixes.Scope + "api",
+                        OpenIddictConstants.Permissions.Prefixes.Scope + "chamados"
+                    },
+                    Requirements =
+                    {
+                        Requirements.Features.ProofKeyForCodeExchange
+                    }
                 };
 
-                descriptor.Permissions.UnionWith(new[]
-                {
-                    Permissions.Endpoints.Authorization,
-                    Permissions.Endpoints.Token,
-                    Permissions.GrantTypes.AuthorizationCode,
-                    Permissions.GrantTypes.RefreshToken,
-                    Permissions.ResponseTypes.Code,
-                    Scopes.OpenId,
-                    Permissions.Scopes.Profile,
-                    Permissions.Scopes.Email,
-                    Permissions.Scopes.Address,
-                    Permissions.Scopes.Phone,
-                    Permissions.Scopes.Roles,
-                    Permissions.Prefixes.Scope + "api",
-                    Permissions.Prefixes.Scope + "chamados"
-                });
-
-                descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
+                // URIs específicos para Blazor WASM
                 descriptor.RedirectUris.Add(new Uri("https://localhost:7274/authentication/login-callback"));
                 descriptor.PostLogoutRedirectUris.Add(new Uri("https://localhost:7274/"));
 
@@ -73,33 +86,31 @@ namespace EChamado.Server.Infrastructure.OpenIddict
             }
             else
             {
+                // Atualiza cliente existente
                 var descriptor = new OpenIddictApplicationDescriptor();
                 await manager.PopulateAsync(descriptor, blazorClient, cancellationToken);
 
-                descriptor.ClientType = ClientTypes.Public;
-                descriptor.ConsentType = ConsentTypes.Explicit;
+                descriptor.ClientType = OpenIddictConstants.ClientTypes.Public;
+                descriptor.ConsentType = OpenIddictConstants.ConsentTypes.Explicit;
 
-                descriptor.Permissions.Clear();
-                descriptor.Permissions.UnionWith(new[]
-                {
-                    Permissions.Endpoints.Authorization,
-                    Permissions.Endpoints.Token,
-                    Permissions.GrantTypes.AuthorizationCode,
-                    Permissions.GrantTypes.RefreshToken,
-                    Permissions.ResponseTypes.Code,
-                    Scopes.OpenId,
-                    Permissions.Scopes.Profile,
-                    Permissions.Scopes.Email,
-                    Permissions.Scopes.Address,
-                    Permissions.Scopes.Phone,
-                    Permissions.Scopes.Roles,
-                    Permissions.Prefixes.Scope + "api",
-                    Permissions.Prefixes.Scope + "chamados"
-                });
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Token);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.ResponseTypes.Code);
+                descriptor.Permissions.Add(OpenIddictConstants.Scopes.OpenId);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Profile);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Email);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Address);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Phone);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Roles);
 
-                descriptor.Requirements.Clear();
-                descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + "api");
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + "chamados");
 
+                descriptor.Requirements.Add(OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange);
+
+                // Corrige as URIs (limpa primeiro)
                 descriptor.RedirectUris.Clear();
                 descriptor.PostLogoutRedirectUris.Clear();
                 descriptor.RedirectUris.Add(new Uri("https://localhost:7274/authentication/login-callback"));
@@ -111,7 +122,7 @@ namespace EChamado.Server.Infrastructure.OpenIddict
 
         private async Task CreateOrUpdateMobileClientAsync(IOpenIddictApplicationManager manager, CancellationToken cancellationToken)
         {
-            // Exemplo para um cliente mobile com fluxo Password
+            // Cliente para Mobile com fluxos Password + Refresh Token
             var mobileClient = await manager.FindByClientIdAsync("mobile-client", cancellationToken);
             if (mobileClient is null)
             {
@@ -119,50 +130,49 @@ namespace EChamado.Server.Infrastructure.OpenIddict
                 {
                     ClientId = "mobile-client",
                     DisplayName = "Mobile Client",
-                    ClientType = ClientTypes.Public
-                };
+                    ClientType = OpenIddictConstants.ClientTypes.Public,
+                    Permissions =
+                    {
+                        OpenIddictConstants.Permissions.Endpoints.Token,
+                        OpenIddictConstants.Permissions.GrantTypes.Password,
+                        OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
 
-                descriptor.Permissions.UnionWith(new[]
-                {
-                    Permissions.Endpoints.Token,
-                    Permissions.GrantTypes.Password,
-                    Permissions.GrantTypes.RefreshToken,
-                    Scopes.OpenId,
-                    Permissions.Scopes.Profile,
-                    Permissions.Scopes.Email,
-                    Permissions.Scopes.Address,
-                    Permissions.Scopes.Phone,
-                    Permissions.Scopes.Roles,
-                    Permissions.Prefixes.Scope + "api",
-                    Permissions.Prefixes.Scope + "chamados"
-                });
+                        OpenIddictConstants.Scopes.OpenId,
+                        OpenIddictConstants.Permissions.Scopes.Profile,
+                        OpenIddictConstants.Permissions.Scopes.Email,
+                        OpenIddictConstants.Permissions.Scopes.Address,
+                        OpenIddictConstants.Permissions.Scopes.Phone,
+                        OpenIddictConstants.Permissions.Scopes.Roles,
+
+                        OpenIddictConstants.Permissions.Prefixes.Scope + "api",
+                        OpenIddictConstants.Permissions.Prefixes.Scope + "chamados"
+                    }
+                };
 
                 await manager.CreateAsync(descriptor, cancellationToken);
             }
             else
             {
+                // Atualiza configurações do mobile-client
                 var descriptor = new OpenIddictApplicationDescriptor();
                 await manager.PopulateAsync(descriptor, mobileClient, cancellationToken);
 
-                descriptor.ClientType = ClientTypes.Public;
+                descriptor.ClientType = OpenIddictConstants.ClientTypes.Public;
                 descriptor.RedirectUris.Clear();
                 descriptor.PostLogoutRedirectUris.Clear();
 
-                descriptor.Permissions.Clear();
-                descriptor.Permissions.UnionWith(new[]
-                {
-                    Permissions.Endpoints.Token,
-                    Permissions.GrantTypes.Password,
-                    Permissions.GrantTypes.RefreshToken,
-                    Scopes.OpenId,
-                    Permissions.Scopes.Profile,
-                    Permissions.Scopes.Email,
-                    Permissions.Scopes.Address,
-                    Permissions.Scopes.Phone,
-                    Permissions.Scopes.Roles,
-                    Permissions.Prefixes.Scope + "api",
-                    Permissions.Prefixes.Scope + "chamados"
-                });
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Token);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.Password);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
+                descriptor.Permissions.Add(OpenIddictConstants.Scopes.OpenId);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Profile);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Email);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Address);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Phone);
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Roles);
+
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + "api");
+                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + "chamados");
 
                 await manager.UpdateAsync(mobileClient, descriptor, cancellationToken);
             }
