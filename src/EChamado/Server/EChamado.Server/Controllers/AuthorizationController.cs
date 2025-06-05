@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
-using static OpenIddict.Abstractions.OpenIddictConstants;
 using System.Security.Claims;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 using EChamado.Server.Domain.Services.Interface;
-using Microsoft.AspNetCore.Authentication;
 
 namespace EChamado.Server.Controllers;
 

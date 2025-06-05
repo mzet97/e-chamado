@@ -2,6 +2,7 @@
 using EChamado.Server.Infrastructure.OpenIddict;
 using EChamado.Server.Infrastructure.Persistence;
 using EChamado.Shared.Shared.Settings;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -68,9 +69,7 @@ public static class IdentityConfig
             throw new ApplicationException("ClientSettings not found");
         }
 
-        var key = Encoding.ASCII.GetBytes(appSettings.Secret);
-
-        services.AddAuthentication(options =>
+        var key = Encoding.ASCII.GetBytes(appSettings.Secret);        services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = "External";
@@ -79,7 +78,10 @@ public static class IdentityConfig
         {
             options.Events.OnRedirectToLogin = context =>
             {
-                context.Response.Redirect("https://localhost:5001/Account/Login?returnUrl=" + Uri.EscapeDataString(context.RedirectUri));
+                // Redireciona para a aplicação Blazor Server de Identity (localhost:7132)
+                var loginUrl = "https://localhost:7132/Account/Login";
+                var returnUrl = Uri.EscapeDataString(context.RedirectUri);
+                context.Response.Redirect($"{loginUrl}?returnUrl={returnUrl}");
                 return Task.CompletedTask;
             };
         });
@@ -97,10 +99,7 @@ public static class IdentityConfig
                        .SetTokenEndpointUris("/connect/token");
 
                 // Define o issuer a partir do AppSettings
-                options.SetIssuer(new Uri(appSettings.ValidOn));
-
-                // Permite fluxos: Authorization Code, Refresh Token, Client Credentials e Password
-                // Ajuste conforme necessário.
+                options.SetIssuer(new Uri(appSettings.ValidOn));                // Permite fluxos: Authorization Code, Refresh Token, Client Credentials e Password
                 options.AllowAuthorizationCodeFlow()
                        .AllowRefreshTokenFlow()
                        .AllowClientCredentialsFlow()
@@ -114,6 +113,10 @@ public static class IdentityConfig
 
                 // Registra escopos que poderão ser usados pelos clientes
                 options.RegisterScopes("openid", "profile", "email", "address", "phone", "roles", "api", "chamados");
+
+                // Certificados de desenvolvimento (opcional)
+                options.AddDevelopmentEncryptionCertificate()
+                       .AddDevelopmentSigningCertificate();
 
                 // Integra com o ASP.NET Core
                 options.UseAspNetCore()
