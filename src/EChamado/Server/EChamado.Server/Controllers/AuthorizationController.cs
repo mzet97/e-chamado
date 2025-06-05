@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
@@ -6,138 +6,139 @@ using OpenIddict.Server.AspNetCore;
 using System.Security.Claims;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using EChamado.Server.Domain.Services.Interface;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 
-namespace EChamado.Server.Controllers;
-
-public class AuthorizationController(
-    IOpenIddictApplicationManager applicationManager,
-    IOpenIddictService openIddictService
-    ) : Controller
+namespace EChamado.Server.Controllers
 {
-    [HttpGet("~/connect/authorize")]
-    [HttpPost("~/connect/authorize")]
-    [IgnoreAntiforgeryToken]
-    public async Task<IActionResult> Authorize()
+    public class AuthorizationController(
+        IOpenIddictApplicationManager applicationManager,
+        IOpenIddictService openIddictService
+    ) : Controller
     {
-        var request = HttpContext.GetOpenIddictServerRequest() ??
-            throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
-
-        // Retrieve the user principal stored in the authentication cookie.
-        var result = await HttpContext.AuthenticateAsync();
-
-        // If the user principal can't be extracted, redirect the user to the login page.
-        if (!result.Succeeded)
+        [HttpGet("~/connect/authorize")]
+        [HttpPost("~/connect/authorize")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Authorize([FromQuery] string? client_id, [FromQuery] string? redirect_uri, [FromQuery] string? response_type, [FromQuery] string? scope, [FromQuery] string? state, [FromQuery] string? code_challenge, [FromQuery] string? code_challenge_method)
         {
-            return Challenge(
-                authenticationSchemes: new[] { "External" },
-                properties: new AuthenticationProperties
-                {
-                    RedirectUri = Request.PathBase + Request.Path + QueryString.Create(
-                        Request.HasFormContentType ? Request.Form.ToList() : Request.Query.ToList())
-                });
-        }
-
-        // Create a new claims principal
-        var claims = new List<Claim>
-        {
-            // 'subject' claim which is required
-            new Claim(Claims.Subject, result.Principal.Identity.Name),
-            new Claim(Claims.Email, result.Principal.FindFirst(Claims.Email)?.Value ?? string.Empty),
-            new Claim(Claims.Name, result.Principal.Identity.Name ?? string.Empty)
-        };
-
-        var claimsIdentity = new ClaimsIdentity(claims, TokenValidationParameters.DefaultAuthenticationType);
-        var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-
-        // Set requested scopes (this is not done automatically)
-        claimsPrincipal.SetScopes(request.GetScopes());
-
-        // Signing in with the OpenIddict authentication scheme
-        return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-    }
-
-
-    [HttpPost("~/connect/token"), Produces("application/json")]
-    public async Task<IActionResult> Exchange()
-    {
-        var request = HttpContext.GetOpenIddictServerRequest();
-        if (request.IsClientCredentialsGrantType())
-        {
-            // Note: the client credentials are automatically validated by OpenIddict:
-            // if client_id or client_secret are invalid, this action won't be invoked.
-
-            var application = await applicationManager.FindByClientIdAsync(request.ClientId) ??
-                throw new InvalidOperationException("The application cannot be found.");
-
-            // Create a new ClaimsIdentity containing the claims that
-            // will be used to create an id_token, a token or a code.
-            var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
-
-            // Use the client_id as the subject identifier.
-            identity.SetClaim(Claims.Subject, await applicationManager.GetClientIdAsync(application));
-            identity.SetClaim(Claims.Name, await applicationManager.GetDisplayNameAsync(application));
-
-            identity.SetDestinations(static claim => claim.Type switch
+            var request = new OpenIddictRequest
             {
-                // Allow the "name" claim to be stored in both the access and identity tokens
-                // when the "profile" scope was granted (by calling principal.SetScopes(...)).
-                Claims.Name when claim.Subject.HasScope(Scopes.Profile)
-                    => [Destinations.AccessToken, Destinations.IdentityToken],
+                ClientId = client_id,
+                RedirectUri = redirect_uri,
+                ResponseType = response_type,
+                Scope = scope,
+                State = state,
+                CodeChallenge = code_challenge,
+                CodeChallengeMethod = code_challenge_method
+            };
 
-                // Otherwise, only store the claim in the access tokens.
-                _ => [Destinations.AccessToken]
-            });
-
-            return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        }
-
-        if (request.IsPasswordGrantType())
-        {
-            var identity = await openIddictService.LoginOpenIddictAsync(request.Username, request.Password);
-
-            if (identity == null)
+            // Tenta obter o usuário autenticado via cookie
+            var result = await HttpContext.AuthenticateAsync();
+            if (!result.Succeeded)
             {
-                return Forbid(
-                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                    properties: new AuthenticationProperties(new Dictionary<string, string>
+                // Se não estiver autenticado, redireciona para a aplicação externa de login (esquema "External")
+                return Challenge(
+                    authenticationSchemes: new[] { "External" },
+                    properties: new AuthenticationProperties
                     {
-                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The username/password couple is invalid."
-                    }));
+                        RedirectUri = Request.PathBase + Request.Path +
+                                      QueryString.Create(Request.HasFormContentType
+                                          ? Request.Form.ToList()
+                                          : Request.Query.ToList())
+                    });
             }
 
-            identity.SetDestinations(claim => claim.Type switch
+            // Se autenticado, cria claims principal para gerar authorization code
+            var claims = new List<Claim>
             {
-                Claims.Name or Claims.Email when claim.Subject.HasScope(Scopes.Profile) => [Destinations.AccessToken, Destinations.IdentityToken],
-                Claims.Role => [Destinations.AccessToken],
-                _ => [Destinations.AccessToken]
-            });
+                new Claim(Claims.Subject, result.Principal.Identity.Name),
+                new Claim(Claims.Email, result.Principal.FindFirst(Claims.Email)?.Value ?? string.Empty),
+                new Claim(Claims.Name, result.Principal.Identity.Name ?? string.Empty)
+            };
 
-            return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            var claimsIdentity = new ClaimsIdentity(claims, TokenValidationParameters.DefaultAuthenticationType);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
+            // Seta os escopos solicitados
+            claimsPrincipal.SetScopes(request.GetScopes());
+
+            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
-        // Handle authorization code grant type
-        if (request.IsAuthorizationCodeGrantType())
+        [HttpPost("~/connect/token"), Produces("application/json")]
+        public async Task<IActionResult> Exchange([FromForm] string? grant_type, [FromForm] string? client_id, [FromForm] string? client_secret, [FromForm] string? username, [FromForm] string? password, [FromForm] string? code, [FromForm] string? redirect_uri, [FromForm] string? code_verifier)
         {
-            // The authorization code is automatically validated by OpenIddict
-            // If the authorization code is invalid, this action won't be invoked
-
-            // The authorization code validation creates a principal from the authorization code
-            // This principal contains the claims from the original authorization request
-            var principal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
-
-            // Set the proper destinations for the claims
-            principal.SetDestinations(claim => claim.Type switch
+            var request = new OpenIddictRequest
             {
-                Claims.Name or Claims.Email when principal.HasScope(Scopes.Profile) => [Destinations.AccessToken, Destinations.IdentityToken],
-                Claims.Role => [Destinations.AccessToken],
-                _ => [Destinations.AccessToken]
-            });
+                GrantType = grant_type,
+                ClientId = client_id,
+                ClientSecret = client_secret,
+                Username = username,
+                Password = password,
+                Code = code,
+                RedirectUri = redirect_uri,
+                CodeVerifier = code_verifier
+            };
 
-            return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            if (request.IsClientCredentialsGrantType())
+            {
+                var application = await applicationManager.FindByClientIdAsync(request.ClientId)
+                                  ?? throw new InvalidOperationException("The application cannot be found.");
+
+                var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
+                identity.SetClaim(Claims.Subject, await applicationManager.GetClientIdAsync(application));
+                identity.SetClaim(Claims.Name, await applicationManager.GetDisplayNameAsync(application));
+
+                identity.SetDestinations(claim => claim.Type switch
+                {
+                    Claims.Name when claim.Subject.HasScope(Scopes.Profile) =>
+                        new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    _ => new[] { Destinations.AccessToken }
+                });
+
+                return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            if (request.IsPasswordGrantType())
+            {
+                var identity = await openIddictService.LoginOpenIddictAsync(request.Username, request.Password);
+                if (identity == null)
+                {
+                    return Forbid(
+                        authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                        properties: new AuthenticationProperties(new Dictionary<string, string>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The username/password couple is invalid."
+                        }));
+                }
+
+                identity.SetDestinations(claim => claim.Type switch
+                {
+                    Claims.Name or Claims.Email when claim.Subject.HasScope(Scopes.Profile) =>
+                        new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    Claims.Role => new[] { Destinations.AccessToken },
+                    _ => new[] { Destinations.AccessToken }
+                });
+
+                return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            if (request.IsAuthorizationCodeGrantType())
+            {
+                var principal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
+                principal.SetDestinations(claim => claim.Type switch
+                {
+                    Claims.Name or Claims.Email when principal.HasScope(Scopes.Profile) =>
+                        new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    Claims.Role => new[] { Destinations.AccessToken },
+                    _ => new[] { Destinations.AccessToken }
+                });
+
+                return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            throw new NotImplementedException("The specified grant is not implemented.");
         }
-
-        throw new NotImplementedException("The specified grant is not implemented.");
     }
 }

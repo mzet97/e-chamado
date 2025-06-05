@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet --version)",
+      "Bash(find:*)",
+      "Bash(snap install:*)",
+      "Bash(wget:*)",
+      "Bash(sudo dpkg:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(export:*)",
+      "Bash(ls:*)",
+      "Bash(apt list:*)",
+      "Bash(pkill:*)",
+      "Bash(rm:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(timeout:*)",
+      "Bash(dotnet publish:*)"
+    ],
+    "deny": []
+  }
+}

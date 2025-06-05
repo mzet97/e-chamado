@@ -2,6 +2,7 @@ using EChamado.Server.Configuration;
 using EChamado.Server.Endpoints;
 using EChamado.Server.Infrastructure.Configuration;
 using Serilog;
+using OpenIddict.Server.AspNetCore;
 
 try
 {

@@ -1,4 +1,4 @@
-﻿using EChamado.Server.Domain.Domains.Identities;
+using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Domain.Services.Interface;
 using OpenIddict.Server.AspNetCore;
 using System.IdentityModel.Tokens.Jwt;
