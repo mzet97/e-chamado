@@ -30,10 +30,10 @@ public abstract class Entity : IEntity
     }
 
     protected Entity(
-        Guid id, 
-        DateTime createdAt, 
-        DateTime? updatedAt, 
-        DateTime? deletedAt, 
+        Guid id,
+        DateTime createdAt,
+        DateTime? updatedAt,
+        DateTime? deletedAt,
         bool isDeleted)
     {
         Id = id;

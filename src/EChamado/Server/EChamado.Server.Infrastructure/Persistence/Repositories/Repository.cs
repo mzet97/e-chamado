@@ -164,7 +164,7 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
 
     public Task ActiveOrDisableAsync(Guid id, bool active)
     {
-        if(active)
+        if (active)
         {
             return ActiveAsync(id);
         }

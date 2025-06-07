@@ -11,29 +11,29 @@ public class UpdateRoleCommandHandler(
     IRequestHandler<UpdateRoleCommand, BaseResult>
 {
     public async Task<BaseResult> Handle(UpdateRoleCommand request, CancellationToken cancellationToken)
-    {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
+{
+    if (request == null)
+        throw new ArgumentNullException(nameof(request));
 
-        if (string.IsNullOrWhiteSpace(request.Name))
-            throw new ArgumentNullException(nameof(request.Name));
+    if (string.IsNullOrWhiteSpace(request.Name))
+        throw new ArgumentNullException(nameof(request.Name));
 
-        var role = await roleService.GetRoleByIdAsync(request.Id);
+    var role = await roleService.GetRoleByIdAsync(request.Id);
 
-        var inRoleNameDb = await roleService.GetRoleByNameAsync(request.Name);
+    var inRoleNameDb = await roleService.GetRoleByNameAsync(request.Name);
 
-        if (role == null || inRoleNameDb != null)
-            throw new Exception("Erro ao atualizar");
+    if (role == null || inRoleNameDb != null)
+        throw new Exception("Erro ao atualizar");
 
-        role.Name = request.Name;
+    role.Name = request.Name;
 
-        var result = await roleService.UpdateRoleAsync(role);
+    var result = await roleService.UpdateRoleAsync(role);
 
-        if (!result.Succeeded || result == null)
-            throw new Exception("Erro ao atualizar");
+    if (!result.Succeeded || result == null)
+        throw new Exception("Erro ao atualizar");
 
-        logger.LogInformation("Role atualizar com sucesso: ", role);
+    logger.LogInformation("Role atualizar com sucesso: ", role);
 
-        return new BaseResult(true, "Atualizada com sucesso");
-    }
+    return new BaseResult(true, "Atualizada com sucesso");
+}
 }

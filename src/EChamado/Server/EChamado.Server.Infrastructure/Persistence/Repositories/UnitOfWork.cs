@@ -14,7 +14,7 @@ public class UnitOfWork : IUnitOfWork
     }
 
     private ICategoryRepository? _categoryRepository;
-    public ICategoryRepository Categories => 
+    public ICategoryRepository Categories =>
         _categoryRepository ??= new CategoryRepository(_context);
 
     private IDepartmentRepository? _departmentsRepository;

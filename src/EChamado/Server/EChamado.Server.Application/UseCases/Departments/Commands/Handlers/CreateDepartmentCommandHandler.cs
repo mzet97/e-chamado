@@ -9,29 +9,29 @@ using Microsoft.Extensions.Logging;
 namespace EChamado.Server.Application.UseCases.Departments.Commands.Handlers;
 
 public class CreateDepartmentCommandHandler(
-    IUnitOfWork unitOfWork, 
+    IUnitOfWork unitOfWork,
     IMediator mediator,
     ILogger<CreateDepartmentCommandHandler> logger) : 
     IRequestHandler<CreateDepartmentCommand, BaseResult<Guid>>
 {
     public async Task<BaseResult<Guid>> Handle(CreateDepartmentCommand request, CancellationToken cancellationToken)
+{
+    var entity = Department.Create(request.Name, request.Description);
+
+    if (!entity.IsValid())
     {
-        var entity = Department.Create(request.Name, request.Description);
-
-        if (!entity.IsValid())
-        {
-            logger.LogError("Validate Department has error");
-            throw new ValidationException("Validate Department has error", entity.GetErrors());
-        }
-
-        await unitOfWork.BeginTransactionAsync();
-
-        await unitOfWork.Departments.AddAsync(entity);
-
-        await unitOfWork.CommitAsync();
-
-        await mediator.Publish(new CreatedDepartmentNotification(entity.Id, entity.Name, entity.Description));
-
-        return new BaseResult<Guid>(entity.Id);
+        logger.LogError("Validate Department has error");
+        throw new ValidationException("Validate Department has error", entity.GetErrors());
     }
+
+    await unitOfWork.BeginTransactionAsync();
+
+    await unitOfWork.Departments.AddAsync(entity);
+
+    await unitOfWork.CommitAsync();
+
+    await mediator.Publish(new CreatedDepartmentNotification(entity.Id, entity.Name, entity.Description));
+
+    return new BaseResult<Guid>(entity.Id);
+}
 }

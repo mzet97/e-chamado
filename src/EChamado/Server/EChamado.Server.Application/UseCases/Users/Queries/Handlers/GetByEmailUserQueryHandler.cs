@@ -9,14 +9,14 @@ public class GetByEmailUserQueryHandler(IApplicationUserService applicationUserS
     IRequestHandler<GetByEmailUserQuery, BaseResult<ApplicationUserViewModel>>
 {
     public async Task<BaseResult<ApplicationUserViewModel>> Handle(
-        GetByEmailUserQuery request, 
+        GetByEmailUserQuery request,
         CancellationToken cancellationToken)
-    {
-        var users = await applicationUserService.FindByEmailAsync(request.Email);
+{
+    var users = await applicationUserService.FindByEmailAsync(request.Email);
 
-        return new BaseResult<ApplicationUserViewModel>(
-            new ApplicationUserViewModel(users),
-            true,
-            "Obtido com sucesso");
-    }
+    return new BaseResult<ApplicationUserViewModel>(
+        new ApplicationUserViewModel(users),
+        true,
+        "Obtido com sucesso");
+}
 }

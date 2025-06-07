@@ -13,40 +13,40 @@ public class DeletesDepartmentCommandHandler(IUnitOfWork unitOfWork,
     IRequestHandler<DeletesDepartmentCommand, BaseResult>
 {
     public async Task<BaseResult> Handle(DeletesDepartmentCommand request, CancellationToken cancellationToken)
+{
+    if (request == null)
     {
-        if (request == null)
-        {
-            logger.LogError("DeleteDepartmentCommand is null");
-            throw new ArgumentNullException(nameof(request));
-        }
-
-        await unitOfWork.BeginTransactionAsync();
-
-        foreach (var id in request.Ids)
-        {
-            var entity = await unitOfWork
-                .Departments
-                .GetByIdAsync(id);
-
-            if (entity == null)
-            {
-                logger.LogError("Department not found");
-                throw new NotFoundException("Department not found");
-            }
-
-            await unitOfWork.Departments
-                .RemoveAsync(id);
-
-            await unitOfWork.CommitAsync();
-
-            await mediator.Publish(
-                new DeletedDepartmentNotification(
-                    entity.Id,
-                    entity.Name,
-                    entity.Description));
-        }
-
-
-        return new BaseResult(true, "Deletado com sucesso");
+        logger.LogError("DeleteDepartmentCommand is null");
+        throw new ArgumentNullException(nameof(request));
     }
+
+    await unitOfWork.BeginTransactionAsync();
+
+    foreach (var id in request.Ids)
+    {
+        var entity = await unitOfWork
+            .Departments
+            .GetByIdAsync(id);
+
+        if (entity == null)
+        {
+            logger.LogError("Department not found");
+            throw new NotFoundException("Department not found");
+        }
+
+        await unitOfWork.Departments
+            .RemoveAsync(id);
+
+        await unitOfWork.CommitAsync();
+
+        await mediator.Publish(
+            new DeletedDepartmentNotification(
+                entity.Id,
+                entity.Name,
+                entity.Description));
+    }
+
+
+    return new BaseResult(true, "Deletado com sucesso");
+}
 }

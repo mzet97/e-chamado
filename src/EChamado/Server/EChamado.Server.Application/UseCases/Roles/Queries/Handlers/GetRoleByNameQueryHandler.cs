@@ -12,14 +12,14 @@ public class GetRoleByNameQueryHandler(IRoleService roleService) :
     public async Task<BaseResult<RolesViewModel>> Handle(
         GetRoleByNameQuery request,
         CancellationToken cancellationToken)
-    {
-        var role = await roleService.GetRoleByNameAsync(request.Name);
+{
+    var role = await roleService.GetRoleByNameAsync(request.Name);
 
-        if (role == null)
-            throw new NotFoundException("Role não encontrada");
+    if (role == null)
+        throw new NotFoundException("Role não encontrada");
 
-        var rolesViewModel = new RolesViewModel(role.Id, role.Name);
+    var rolesViewModel = new RolesViewModel(role.Id, role.Name);
 
-        return new BaseResult<RolesViewModel>(rolesViewModel, true, "Obtido com sucesso");
-    }
+    return new BaseResult<RolesViewModel>(rolesViewModel, true, "Obtido com sucesso");
+}
 }
