@@ -9,18 +9,18 @@ public class AuthNotificationHandler(ILogger<AuthNotificationHandler> logger) :
 {
 
     public Task Handle(LoginUserNotification notification, CancellationToken cancellationToken)
+{
+    return Task.Run(() =>
     {
-        return Task.Run(() =>
-        {
-            logger.LogInformation("LoginUserNotification: " + notification.Message);
-        });
-    }
+        logger.LogInformation("LoginUserNotification: " + notification.Message);
+    });
+}
 
-    public Task Handle(RegisterUserNotification notification, CancellationToken cancellationToken)
+public Task Handle(RegisterUserNotification notification, CancellationToken cancellationToken)
+{
+    return Task.Run(() =>
     {
-        return Task.Run(() =>
-        {
-            logger.LogInformation("RegisterUserNotification: " + notification.Message);
-        });
-    }
+        logger.LogInformation("RegisterUserNotification: " + notification.Message);
+    });
+}
 }

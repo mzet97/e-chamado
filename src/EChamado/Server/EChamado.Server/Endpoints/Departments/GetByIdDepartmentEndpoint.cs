@@ -17,7 +17,7 @@ public class GetByIdDepartmentEndpoint : IEndpoint
         .Produces<BaseResult<DepartmentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator, 
+        IMediator mediator,
         Guid id)
     {
         var result = await mediator.Send(new GetByIdDepartmentQuery(id));

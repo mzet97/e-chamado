@@ -11,23 +11,23 @@ public class DeleteRoleCommandHandler(
     IRequestHandler<DeleteRoleCommand, BaseResult>
 {
     public async Task<BaseResult> Handle(DeleteRoleCommand request, CancellationToken cancellationToken)
-    {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
+{
+    if (request == null)
+        throw new ArgumentNullException(nameof(request));
 
-      
-        var role = await roleService.GetRoleByIdAsync(request.Id);
 
-        if(role == null)
-            throw new Exception("Erro ao deletar");
+    var role = await roleService.GetRoleByIdAsync(request.Id);
 
-        var result = await roleService.DeleteRoleAsync(request.Id);
+    if (role == null)
+        throw new Exception("Erro ao deletar");
 
-        if (!result.Succeeded || result == null)
-            throw new Exception("Erro ao deletar");
+    var result = await roleService.DeleteRoleAsync(request.Id);
 
-        logger.LogInformation("Role deletada com sucesso: ", role);
+    if (!result.Succeeded || result == null)
+        throw new Exception("Erro ao deletar");
 
-        return new BaseResult(true, "Deletada com sucesso");
-    }
+    logger.LogInformation("Role deletada com sucesso: ", role);
+
+    return new BaseResult(true, "Deletada com sucesso");
+}
 }

@@ -22,7 +22,7 @@ public class UpdateDepartmentEndpoint : IEndpoint
         [FromBody] UpdateDepartmentCommand command)
     {
 
-        if(id != command.Id)
+        if (id != command.Id)
         {
             return TypedResults.BadRequest("Id da rota e Id do corpo da requisição não são iguais");
         }

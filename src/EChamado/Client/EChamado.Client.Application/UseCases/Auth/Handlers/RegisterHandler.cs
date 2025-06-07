@@ -12,21 +12,21 @@ public class RegisterHandler(IHttpClientFactory httpClientFactory)
     private readonly HttpClient _client = httpClientFactory
         .CreateClient("EChamado");
 
-    public async Task<BaseResult<LoginResponseViewModel>> ExecuteAsync(LoginInputModel inputModel)
+public async Task<BaseResult<LoginResponseViewModel>> ExecuteAsync(LoginInputModel inputModel)
+{
+    var result = await _client
+       .PostAsJsonAsync("v1/auth/register", inputModel);
+
+    if (result.IsSuccessStatusCode)
     {
-        var result = await _client
-           .PostAsJsonAsync("v1/auth/register", inputModel);
+        var data = await result
+            .Content
+            .ReadFromJsonAsync<BaseResult<LoginResponseViewModel>>();
 
-        if (result.IsSuccessStatusCode)
-        {
-            var data = await result
-                .Content
-                .ReadFromJsonAsync<BaseResult<LoginResponseViewModel>>();
-
-            if (data != null && data.Success)
-                return data;
-        }
-
-        return new BaseResult<LoginResponseViewModel>(null, success: false, message: "Erro durante o registro");
+        if (data != null && data.Success)
+            return data;
     }
+
+    return new BaseResult<LoginResponseViewModel>(null, success: false, message: "Erro durante o registro");
+}
 }

@@ -19,7 +19,7 @@ public class GetRoleByIdEndpoint : IEndpoint
 
     private static async Task<IResult> HandleAsync(
         IMediator mediator,
-        [FromRoute]  Guid id)
+        [FromRoute] Guid id)
     {
         var result = await mediator.Send(new GetRoleByIdQuery(id));
 

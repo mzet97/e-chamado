@@ -9,12 +9,12 @@ public class GetByIdUserQueryHandler(IApplicationUserService applicationUserServ
     IRequestHandler<GetByIdUserQuery, BaseResult<ApplicationUserViewModel>>
 {
     public async Task<BaseResult<ApplicationUserViewModel>> Handle(GetByIdUserQuery request, CancellationToken cancellationToken)
-    {
-        var users = await applicationUserService.FindByIdAsync(request.Id);
-        
-        return new BaseResult<ApplicationUserViewModel>(
-            new ApplicationUserViewModel(users), 
-            true, 
-            "Obtido com sucesso");
-    }
+{
+    var users = await applicationUserService.FindByIdAsync(request.Id);
+
+    return new BaseResult<ApplicationUserViewModel>(
+        new ApplicationUserViewModel(users),
+        true,
+        "Obtido com sucesso");
+}
 }

@@ -12,25 +12,25 @@ public class CreateRoleCommandHandler(
     IRequestHandler<CreateRoleCommand, BaseResult<Guid>>
 {
     public async Task<BaseResult<Guid>> Handle(CreateRoleCommand request, CancellationToken cancellationToken)
-    {
-        if(request == null)
-            throw new ArgumentNullException(nameof(request));
+{
+    if (request == null)
+        throw new ArgumentNullException(nameof(request));
 
-        if(string.IsNullOrWhiteSpace(request.Name))
-            throw new ArgumentNullException(nameof(request.Name));
+    if (string.IsNullOrWhiteSpace(request.Name))
+        throw new ArgumentNullException(nameof(request.Name));
 
-        var result = await roleService.CreateRoleAsync(ApplicationRole.Create(request.Name));
+    var result = await roleService.CreateRoleAsync(ApplicationRole.Create(request.Name));
 
-        if(!result.Succeeded || result == null)
-            throw new Exception("Erro ao criar");
+    if (!result.Succeeded || result == null)
+        throw new Exception("Erro ao criar");
 
-        var role = await roleService.GetRoleByNameAsync(request.Name);
+    var role = await roleService.GetRoleByNameAsync(request.Name);
 
-        if(role == null)
-            throw new Exception("Erro ao criar");
+    if (role == null)
+        throw new Exception("Erro ao criar");
 
-        logger.LogInformation("Role criada com sucesso: ", role);
+    logger.LogInformation("Role criada com sucesso: ", role);
 
-        return new BaseResult<Guid>(role.Id, true, "Criado com sucesso");
-    }
+    return new BaseResult<Guid>(role.Id, true, "Criado com sucesso");
+}
 }

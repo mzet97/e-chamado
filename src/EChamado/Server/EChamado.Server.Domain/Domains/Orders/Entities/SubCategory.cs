@@ -60,7 +60,7 @@ public class SubCategory : Entity
 
         subCategory.AddEvent(
             new SubCategoryCreated(subCategory));
-        
+
         return subCategory;
     }
 

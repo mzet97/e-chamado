@@ -6,13 +6,13 @@ namespace EChamado.Server.Domain.Domains.Orders.Entities;
 
 public class StatusType : Entity
 {
-    
+
     public string Name { get; private set; }
     public string Description { get; private set; }
 
     public StatusType(
         Guid id,
-        string name, 
+        string name,
         string description,
         DateTime createdAt,
         DateTime? updatedAt,
@@ -44,12 +44,12 @@ public class StatusType : Entity
         string name,
         string description)
     {
-        var statusType = 
+        var statusType =
             new StatusType(
-                Guid.NewGuid(), 
-                name, 
-                description, 
-                DateTime.Now, 
+                Guid.NewGuid(),
+                name,
+                description,
+                DateTime.Now,
                 null, null, false);
 
         statusType.Validate();

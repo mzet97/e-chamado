@@ -18,11 +18,11 @@ public static class Endpoint
 
         endpoints.MapGroup("/")
              .WithTags("Health Check")
-             .MapGet("/health-check", async ([FromServices] ILogger<Program> logger) =>
+             .MapGet("/health-check", async([FromServices] ILogger < Program > logger) =>
              {
-                 logger.LogInformation("Health Check executed.");
-                 return Results.Ok(new { message = "OK" });
-             });
+            logger.LogInformation("Health Check executed.");
+            return Results.Ok(new { message = "OK" });
+        });
 
         endpoints
             .MapGroup("/")
@@ -76,7 +76,7 @@ public static class Endpoint
             .MapEndpoint<GetByIdDepartmentEndpoint>()
             .MapEndpoint<CreateDepartmentEndpoint>()
             .MapEndpoint<UpdateDepartmentEndpoint>();
-            
+
 
     }
 

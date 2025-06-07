@@ -23,7 +23,7 @@ public class Order : AggregateRoot
     public OrderType Type { get; set; } = null!; // ef navigation property
 
     public Guid RequestingUserId { get; private set; }
-    public string RequestingUserEmail { get; private set; } 
+    public string RequestingUserEmail { get; private set; }
 
     public Guid ResponsibleUserId { get; private set; }
     public string ResponsibleUserEmail { get; private set; }
