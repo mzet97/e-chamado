@@ -12,6 +12,12 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.2" />
     <PackageReference Include="MudBlazor" Version="8.*" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="OpenIddict.Abstractions" Version="6.4.0" />
+    <PackageReference Include="OpenIddict.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.4.0" />
+    <PackageReference Include="OpenIddict.Server" Version="6.4.0" />
+    <PackageReference Include="OpenIddict.Server.AspNetCore" Version="6.4.0" />
+    <Content Remove="wwwroot\favicon.ico" />
   </ItemGroup>
 
 

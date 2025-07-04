@@ -1,8 +1,10 @@
 using EChamado.Server.Configuration;
 using EChamado.Server.Endpoints;
 using EChamado.Server.Infrastructure.Configuration;
+using EChamado.Server.Services;
 using Serilog;
 using OpenIddict.Server.AspNetCore;
+using EChamado.Server.Infrastructure.Persistence;
 
 try
 {
@@ -22,11 +24,40 @@ try
 
     builder.Services.AddApiConfig(builder.Configuration);
 
+    builder.Services.AddOpenIddict()
+        .AddCore(options =>
+        {
+            options.UseEntityFrameworkCore()
+                   .UseDbContext<ApplicationDbContext>();
+        })
+        .AddServer(options =>
+        {
+            options.SetAuthorizationEndpointUris("/connect/authorize")
+                   .SetTokenEndpointUris("/connect/token");
+
+            options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange();
+            options.AllowRefreshTokenFlow();
+
+            options.AddDevelopmentEncryptionCertificate();
+            options.AddDevelopmentSigningCertificate();
+
+            options.UseAspNetCore()
+                   .EnableAuthorizationEndpointPassthrough()
+                   .EnableTokenEndpointPassthrough();
+        });
+
+    // Registrar o seeder
+    builder.Services.AddScoped<OpenIddictClientSeeder>();
+
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
     {
-        app.UseCors("Development");
+        app.UseCors(builder => builder
+            .WithOrigins("https://localhost:7274", "https://localhost:7132")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
         app.UseDeveloperExceptionPage();
     }
     else
@@ -43,6 +74,13 @@ try
     app.MapEndpoints();
 
     app.UseSwaggerConfig();
+
+    // Seed OpenIddict clients
+    using (var scope = app.Services.CreateScope())
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<OpenIddictClientSeeder>();
+        await seeder.SeedAsync();
+    }
 
     app.Run();
 }

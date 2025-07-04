@@ -81,19 +81,19 @@ public class RequestLoggingMiddleware
 
 public record EntityLog
 {
-    public string Method { get; init; }
-    public string Path { get; init; }
-    public string QueryString { get; init; }
-    public string Body { get; init; }
-    public string Headers { get; init; }
-    public string ClientIp { get; init; }
-    public string UserAgent { get; init; }
-    public string UserName { get; init; }
-    public string UserClaims { get; init; }
+    public string Method { get; init; } = string.Empty;
+    public string Path { get; init; } = string.Empty;
+    public string QueryString { get; init; } = string.Empty;
+    public string Body { get; init; } = string.Empty;
+    public string Headers { get; init; } = string.Empty;
+    public string? ClientIp { get; init; }
+    public string? UserAgent { get; init; }
+    public string? UserName { get; init; }
+    public string? UserClaims { get; init; }
     public bool IsAuthenticated { get; init; }
 
     public override string? ToString()
     {
-        return @$"IsAuthenticated: {IsAuthenticated}, Method: {Method}, Path: {Path}, QueryString: {QueryString}, Body: {Body}, Headers: {Headers}, ClientIp: {ClientIp}, UserAgent: {UserAgent}, UserName: {UserName}, UserClaims: {UserClaims}";
+        return $"IsAuthenticated: {IsAuthenticated}, Method: {Method}, Path: {Path}, QueryString: {QueryString}, Body: {Body}, Headers: {Headers}, ClientIp: {ClientIp}, UserAgent: {UserAgent}, UserName: {UserName}, UserClaims: {UserClaims}";
     }
 }

@@ -1,0 +1,193 @@
+@page "/dashboard"
+@layout AuthenticatedLayout
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+<PageTitle>Dashboard - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    <div class="d-flex align-center mb-6">
+        <MudIcon Icon="@Icons.Material.Filled.Dashboard" Size="Size.Large" Class="mr-3" />
+        <MudText Typo="Typo.h3">Dashboard</MudText>
+    </div>
+
+    <AuthorizeView>
+        <Authorized>
+            <MudAlert Severity="Severity.Success" Class="mb-4">
+                Bem-vindo, @context.User.Identity?.Name! Você está autenticado no sistema.
+            </MudAlert>
+
+            <MudGrid>
+                <!-- Cards de estatísticas -->
+                <MudItem xs="12" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Assignment" Size="Size.Large" Color="Color.Primary" Class="mr-3" />
+                                <div>
+                                    <MudText Typo="Typo.h4">24</MudText>
+                                    <MudText Typo="Typo.body2">Chamados Abertos</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" Color="Color.Success" Class="mr-3" />
+                                <div>
+                                    <MudText Typo="Typo.h4">156</MudText>
+                                    <MudText Typo="Typo.body2">Chamados Resolvidos</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Large" Color="Color.Warning" Class="mr-3" />
+                                <div>
+                                    <MudText Typo="Typo.h4">8</MudText>
+                                    <MudText Typo="Typo.body2">Aguardando</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Speed" Size="Size.Large" Color="Color.Info" Class="mr-3" />
+                                <div>
+                                    <MudText Typo="Typo.h4">2.5h</MudText>
+                                    <MudText Typo="Typo.body2">Tempo Médio</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Chamados Recentes -->
+                <MudItem xs="12" md="8">
+                    <MudCard Elevation="4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">Chamados Recentes</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudTable Items="@recentTickets" Hover="true" Dense="true">
+                                <HeaderContent>
+                                    <MudTh>ID</MudTh>
+                                    <MudTh>Título</MudTh>
+                                    <MudTh>Status</MudTh>
+                                    <MudTh>Criado em</MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ticket">
+                                    <MudTd DataLabel="ID">#@ticket.Id</MudTd>
+                                    <MudTd DataLabel="Título">@ticket.Title</MudTd>
+                                    <MudTd DataLabel="Status">
+                                        <MudChip T="string" Color="@GetStatusColor(ticket.Status)" Size="Size.Small">
+                                            @ticket.Status
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="Criado em">@ticket.CreatedAt.ToString("dd/MM/yyyy")</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton StartIcon="@Icons.Material.Filled.List" Color="Color.Primary">
+                                Ver Todos os Chamados
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Ações Rápidas -->
+                <MudItem xs="12" md="4">
+                    <MudCard Elevation="4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">Ações Rápidas</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <div class="d-flex flex-column gap-3">
+                                <MudButton 
+                                    Variant="Variant.Filled" 
+                                    Color="Color.Primary" 
+                                    FullWidth="true"
+                                    StartIcon="@Icons.Material.Filled.Add">
+                                    Novo Chamado
+                                </MudButton>
+                                
+                                <MudButton 
+                                    Variant="Variant.Outlined" 
+                                    Color="Color.Secondary" 
+                                    FullWidth="true"
+                                    StartIcon="@Icons.Material.Filled.Search">
+                                    Buscar Chamados
+                                </MudButton>
+                                
+                                <MudButton 
+                                    Variant="Variant.Text" 
+                                    Color="Color.Info" 
+                                    FullWidth="true"
+                                    StartIcon="@Icons.Material.Filled.Analytics">
+                                    Relatórios
+                                </MudButton>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </Authorized>
+        <NotAuthorized>
+            <MudAlert Severity="Severity.Warning">
+                Você precisa estar autenticado para acessar o dashboard.
+                <MudButton Color="Color.Primary" Href="/login" Class="ml-2">
+                    Fazer Login
+                </MudButton>
+            </MudAlert>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudContainer>
+
+@code {
+    private List<TicketItem> recentTickets = new()
+    {
+        new TicketItem { Id = 1001, Title = "Problema com impressora", Status = "Aberto", CreatedAt = DateTime.Now.AddDays(-1) },
+        new TicketItem { Id = 1002, Title = "Solicitação de acesso", Status = "Em Andamento", CreatedAt = DateTime.Now.AddDays(-2) },
+        new TicketItem { Id = 1003, Title = "Erro no sistema", Status = "Resolvido", CreatedAt = DateTime.Now.AddDays(-3) },
+        new TicketItem { Id = 1004, Title = "Configuração de email", Status = "Aguardando", CreatedAt = DateTime.Now.AddDays(-4) },
+        new TicketItem { Id = 1005, Title = "Instalação de software", Status = "Resolvido", CreatedAt = DateTime.Now.AddDays(-5) }
+    };
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Aberto" => Color.Error,
+            "Em Andamento" => Color.Warning,
+            "Resolvido" => Color.Success,
+            "Aguardando" => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    public class TicketItem
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
+}

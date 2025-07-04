@@ -39,7 +39,11 @@ public class Order : AggregateRoot
 
     public Order()
     {
-
+        Description = string.Empty;
+        Title = string.Empty;
+        Evaluation = string.Empty;
+        RequestingUserEmail = string.Empty;
+        ResponsibleUserEmail = string.Empty;
     }
 
     public Order(
@@ -63,6 +67,7 @@ public class Order : AggregateRoot
     {
         Title = title;
         Description = description;
+        Evaluation = string.Empty;
         RequestingUserId = requestingUserId;
         ResponsibleUserId = responsibleUserId;
         RequestingUserEmail = requestingUserEmail;

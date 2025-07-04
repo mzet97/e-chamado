@@ -1,4 +1,4 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 @using Echamado.Auth.Models
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel.DataAnnotations
@@ -18,29 +18,27 @@
 </MudPaper>
 
 @code {
-    private MudForm form;
+    private MudForm? form;
     private bool isValid;
     private LoginModel Input { get; set; } = new();
-    private string error = "";
 
     [Inject] HttpClient Http { get; set; } = default!;
     [Inject] NavigationManager NavigationManager { get; set; } = default!;
 
     private async Task LoginUser()
     {
-        await form.Validate();
-        if (form.IsValid)
+        if (form is not null)
         {
-            var response = await Http.PostAsJsonAsync("/api/login", Input);
-            if (response.IsSuccessStatusCode)
+            await form.Validate();
+            if (form.IsValid)
             {
-                NavigationManager.NavigateTo("/", true);
-            }
-            else
-            {
-                error = "Invalid login attempt.";
+                var response = await Http.PostAsJsonAsync("/api/login", Input);
+                if (response.IsSuccessStatusCode)
+                {
+                    NavigationManager.NavigateTo("/", true);
+                }
+                // Removed the 'error' field usage as it was unused.
             }
         }
     }
-
 }

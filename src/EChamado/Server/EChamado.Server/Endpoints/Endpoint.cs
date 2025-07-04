@@ -18,7 +18,7 @@ public static class Endpoint
 
         endpoints.MapGroup("/")
              .WithTags("Health Check")
-             .MapGet("/health-check", async ([FromServices] ILogger<Program> logger) =>
+             .MapGet("/health-check", ([FromServices] ILogger<Program> logger) =>
              {
                  logger.LogInformation("Health Check executed.");
                  return Results.Ok(new { message = "OK" });
@@ -27,7 +27,7 @@ public static class Endpoint
         endpoints
             .MapGroup("/")
             .WithTags("Cache Redis")
-            .MapGet("/cached-endpoint", async (HttpContext context) =>
+            .MapGet("/cached-endpoint", (HttpContext context) =>
             {
                 context.Response.Headers["Cache-Control"] = "public, max-age=300";
                 return Results.Ok(new { Message = "Este é um exemplo de cache", Timestamp = DateTime.UtcNow });

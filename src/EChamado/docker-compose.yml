@@ -124,6 +124,13 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
     networks:
       - echamado-network
+    user: rabbitmq
+    command: >
+      bash -c "
+        chmod 600 /var/lib/rabbitmq/.erlang.cookie 2>/dev/null || true;
+        chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie 2>/dev/null || true;
+        docker-entrypoint.sh rabbitmq-server
+      "
 
   redis:
     image: "redis:alpine"

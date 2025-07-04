@@ -1,0 +1,42 @@
+<div class="nav-menu">
+    <MudNavMenu>
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+            Início
+        </MudNavLink>
+        
+        <AuthorizeView>
+            <Authorized>
+                <MudNavGroup Title="Chamados" Icon="@Icons.Material.Filled.Support" Expanded="true">
+                    <MudNavLink Href="/chamados" Icon="@Icons.Material.Filled.List">
+                        Meus Chamados
+                    </MudNavLink>
+                    <MudNavLink Href="/chamados/novo" Icon="@Icons.Material.Filled.Add">
+                        Novo Chamado
+                    </MudNavLink>
+                </MudNavGroup>
+
+                <MudNavGroup Title="Administração" Icon="@Icons.Material.Filled.Settings" Expanded="true">
+                    <MudNavLink Href="/admin/departamentos" Icon="@Icons.Material.Filled.Business">
+                        Departamentos
+                    </MudNavLink>
+                    <MudNavLink Href="/admin/usuarios" Icon="@Icons.Material.Filled.People">
+                        Usuários
+                    </MudNavLink>
+                    <MudNavLink Href="/admin/relatorios" Icon="@Icons.Material.Filled.Analytics">
+                        Relatórios
+                    </MudNavLink>
+                </MudNavGroup>
+
+                <MudNavLink Href="/perfil" Icon="@Icons.Material.Filled.Person">
+                    Meu Perfil
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
+    </MudNavMenu>
+</div>
+
+<style>
+    .nav-menu {
+        width: 100%;
+    }
+</style>

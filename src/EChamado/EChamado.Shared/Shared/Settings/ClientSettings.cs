@@ -2,11 +2,11 @@
 
 public class ClientSettings
 {
-    public IEnumerable<ClientData> Clients { get; set; }
+    public IEnumerable<ClientData> Clients { get; set; } = Enumerable.Empty<ClientData>();
 }
 
 public class ClientData
 {
-    public string RedirectUris { get; set; }
-    public string PostLogoutRedirectUris { get; set; }
+    public string RedirectUris { get; set; } = string.Empty;
+    public string PostLogoutRedirectUris { get; set; } = string.Empty;
 }

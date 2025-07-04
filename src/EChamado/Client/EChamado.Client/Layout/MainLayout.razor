@@ -9,7 +9,10 @@
 
 <MudLayout>
     <MudAppBar>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@( (e) => _drawerOpen = !_drawerOpen )" />
         EChamado
+        <MudSpacer />
+        <LoginDisplay />
         <MudSwitch Color="Color.Inherit"
         @bind-Value="@_isDarkMode"
         T="bool"
@@ -26,6 +29,7 @@
 @code {
     private bool _isDarkMode = true;
     private MudThemeProvider _mudThemeProvider = null!;
+    private bool _drawerOpen = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

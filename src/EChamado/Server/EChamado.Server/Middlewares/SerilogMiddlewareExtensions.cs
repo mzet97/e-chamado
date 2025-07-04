@@ -11,11 +11,11 @@ public static class SerilogMiddlewareExtensions
         {
             options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
             {
-                diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
-                diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
-                diagnosticContext.Set("RequestPath", httpContext.Request.Path);
-                diagnosticContext.Set("RequestQuery", httpContext.Request.QueryString.Value);
-                diagnosticContext.Set("UserAgent", httpContext.Request.Headers["User-Agent"].ToString());
+                diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value ?? string.Empty);
+                diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme ?? string.Empty);
+                diagnosticContext.Set("RequestPath", httpContext.Request.Path.Value ?? string.Empty);
+                diagnosticContext.Set("RequestQuery", httpContext.Request.QueryString.Value ?? string.Empty);
+                diagnosticContext.Set("UserAgent", httpContext.Request.Headers["User-Agent"].ToString() ?? string.Empty);
             };
 
             options.GetLevel = (httpContext, elapsed, ex) =>

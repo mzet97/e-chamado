@@ -88,9 +88,12 @@ public class SwaggerDefaultValues : IOperationFilter
                 continue;
             }
 
-            if (parameter.In != ParameterLocation.Path && parameter.Schema.Default == null)
+            if (parameter.In != ParameterLocation.Path && parameter.Schema != null && parameter.Schema.Default == null)
             {
-                parameter.Schema.Default = new OpenApiString(routeInfo.DefaultValue.ToString());
+                if (routeInfo.DefaultValue != null)
+                {
+                    parameter.Schema.Default = new OpenApiString(routeInfo.DefaultValue.ToString());
+                }
             }
 
             parameter.Required |= !routeInfo.IsOptional;

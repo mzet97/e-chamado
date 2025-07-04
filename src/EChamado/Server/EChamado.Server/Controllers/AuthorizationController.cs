@@ -36,24 +36,18 @@ namespace EChamado.Server.Controllers
             var result = await HttpContext.AuthenticateAsync();
             if (!result.Succeeded)
             {
-                // Se não estiver autenticado, redireciona para a aplicação externa de login (esquema "External")
-                return Challenge(
-                    authenticationSchemes: new[] { "External" },
-                    properties: new AuthenticationProperties
-                    {
-                        RedirectUri = Request.PathBase + Request.Path +
-                                      QueryString.Create(Request.HasFormContentType
-                                          ? Request.Form.ToList()
-                                          : Request.Query.ToList())
-                    });
+                // Se não estiver autenticado, redireciona para EChamado.Auth
+                var authUrl = "https://localhost:7132/signin";
+                var returnUrl = Request.PathBase + Request.Path + Request.QueryString;
+                return Redirect($"{authUrl}?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
 
             // Se autenticado, cria claims principal para gerar authorization code
             var claims = new List<Claim>
             {
-                new Claim(Claims.Subject, result.Principal.Identity.Name),
-                new Claim(Claims.Email, result.Principal.FindFirst(Claims.Email)?.Value ?? string.Empty),
-                new Claim(Claims.Name, result.Principal.Identity.Name ?? string.Empty)
+                new Claim(Claims.Subject, result.Principal?.Identity?.Name ?? string.Empty),
+                new Claim(Claims.Email, result.Principal?.FindFirst(Claims.Email)?.Value ?? string.Empty),
+                new Claim(Claims.Name, result.Principal?.Identity?.Name ?? string.Empty)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, TokenValidationParameters.DefaultAuthenticationType);
@@ -82,16 +76,16 @@ namespace EChamado.Server.Controllers
 
             if (request.IsClientCredentialsGrantType())
             {
-                var application = await applicationManager.FindByClientIdAsync(request.ClientId)
+                var application = await applicationManager.FindByClientIdAsync(request.ClientId ?? string.Empty)
                                   ?? throw new InvalidOperationException("The application cannot be found.");
 
                 var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
-                identity.SetClaim(Claims.Subject, await applicationManager.GetClientIdAsync(application));
-                identity.SetClaim(Claims.Name, await applicationManager.GetDisplayNameAsync(application));
+                identity.SetClaim(Claims.Subject, await applicationManager.GetClientIdAsync(application) ?? string.Empty);
+                identity.SetClaim(Claims.Name, await applicationManager.GetDisplayNameAsync(application) ?? string.Empty);
 
                 identity.SetDestinations(claim => claim.Type switch
                 {
-                    Claims.Name when claim.Subject.HasScope(Scopes.Profile) =>
+                    Claims.Name when claim.Subject?.HasScope(Scopes.Profile) == true =>
                         new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     _ => new[] { Destinations.AccessToken }
                 });
@@ -101,12 +95,12 @@ namespace EChamado.Server.Controllers
 
             if (request.IsPasswordGrantType())
             {
-                var identity = await openIddictService.LoginOpenIddictAsync(request.Username, request.Password);
+                var identity = await openIddictService.LoginOpenIddictAsync(request.Username ?? string.Empty, request.Password ?? string.Empty);
                 if (identity == null)
                 {
                     return Forbid(
                         authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                        properties: new AuthenticationProperties(new Dictionary<string, string>
+                        properties: new AuthenticationProperties(new Dictionary<string, string?>
                         {
                             [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
                             [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The username/password couple is invalid."
@@ -115,7 +109,7 @@ namespace EChamado.Server.Controllers
 
                 identity.SetDestinations(claim => claim.Type switch
                 {
-                    Claims.Name or Claims.Email when claim.Subject.HasScope(Scopes.Profile) =>
+                    Claims.Name or Claims.Email when claim.Subject?.HasScope(Scopes.Profile) == true =>
                         new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     Claims.Role => new[] { Destinations.AccessToken },
                     _ => new[] { Destinations.AccessToken }
@@ -127,6 +121,10 @@ namespace EChamado.Server.Controllers
             if (request.IsAuthorizationCodeGrantType())
             {
                 var principal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
+                if (principal == null)
+                {
+                    throw new InvalidOperationException("Principal cannot be null for authorization code grant type.");
+                }
                 principal.SetDestinations(claim => claim.Type switch
                 {
                     Claims.Name or Claims.Email when principal.HasScope(Scopes.Profile) =>
@@ -139,6 +137,35 @@ namespace EChamado.Server.Controllers
             }
 
             throw new NotImplementedException("The specified grant is not implemented.");
+        }
+
+        [HttpGet("~/connect/userinfo")]
+        [HttpPost("~/connect/userinfo")]
+        public async Task<IActionResult> Userinfo()
+        {
+            var user = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
+            if (user == null)
+            {
+                return Challenge(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            var claims = new Dictionary<string, object>(StringComparer.Ordinal)
+            {
+                [Claims.Subject] = user.GetClaim(Claims.Subject) ?? string.Empty
+            };
+
+            if (user.HasScope(Scopes.Profile))
+            {
+                claims[Claims.Name] = user.GetClaim(Claims.Name) ?? string.Empty;
+                claims[Claims.Email] = user.GetClaim(Claims.Email) ?? string.Empty;
+            }
+
+            if (user.HasScope(Scopes.Roles))
+            {
+                claims[Claims.Role] = user.GetClaim(Claims.Role) ?? string.Empty;
+            }
+
+            return Ok(claims);
         }
     }
 }

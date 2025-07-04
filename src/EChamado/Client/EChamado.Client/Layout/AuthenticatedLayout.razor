@@ -1,0 +1,98 @@
+@using EChamado.Client
+@inherits LayoutComponentBase
+
+<MudThemeProvider 
+    @ref="_mudThemeProvider"
+    @bind-IsDarkMode="_isDarkMode" 
+    Theme="Configuration.Theme" />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar>
+        <div class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.Support" Class="mr-3" />
+            <MudText Typo="Typo.h6">EChamado</MudText>
+        </div>
+        
+        <MudSpacer />
+        
+        <div class="d-flex align-center gap-2">
+            <MudSwitch Color="Color.Inherit"
+                @bind-Value="@_isDarkMode"
+                T="bool"
+                ThumbIcon="@Icons.Material.TwoTone.DarkMode" />
+            
+            <AuthorizeView>
+                <Authorized>
+                    <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit">
+                        <MudMenuItem>
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" />
+                                @context.User.Identity?.Name
+                            </div>
+                        </MudMenuItem>
+                        <MudDivider />
+                        <MudMenuItem OnClick="@(() => Navigation.NavigateToLogout("authentication/logout"))">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Logout" Class="mr-2" />
+                                Sair
+                            </div>
+                        </MudMenuItem>
+                    </MudMenu>
+                </Authorized>
+                <NotAuthorized>
+                    <MudButton 
+                        Variant="Variant.Text" 
+                        Color="Color.Inherit"
+                        StartIcon="@Icons.Material.Filled.Login"
+                        Href="/login">
+                        Login
+                    </MudButton>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </MudAppBar>
+    
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Menu</MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+    
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _isDarkMode = true;
+    private bool _drawerOpen = true;
+    private MudThemeProvider _mudThemeProvider = null!;
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
+            await _mudThemeProvider.WatchSystemPreference(OnSystemPreferenceChanged);
+            StateHasChanged();
+        }
+    }
+
+    private Task OnSystemPreferenceChanged(bool newValue)
+    {
+        _isDarkMode = newValue;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

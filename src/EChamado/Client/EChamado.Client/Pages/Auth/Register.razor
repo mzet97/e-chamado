@@ -1,0 +1,163 @@
+@page "/register"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<PageTitle>Registro - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Class="pa-8" Elevation="4">
+        <div class="d-flex flex-column align-center mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Size="Size.Large" Class="mb-4" />
+            <MudText Typo="Typo.h4" Align="Align.Center">Criar Conta</MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">
+                Crie sua conta para acessar o EChamado
+            </MudText>
+        </div>
+
+        <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
+            
+            <div class="d-flex flex-column gap-4">
+                <MudTextField 
+                    @bind-Value="registerModel.FullName"
+                    Label="Nome Completo"
+                    Variant="Variant.Outlined"
+                    Required="true"
+                    For="@(() => registerModel.FullName)" />
+
+                <MudTextField 
+                    @bind-Value="registerModel.Email"
+                    Label="E-mail"
+                    Variant="Variant.Outlined"
+                    InputType="InputType.Email"
+                    Required="true"
+                    For="@(() => registerModel.Email)" />
+
+                <MudTextField 
+                    @bind-Value="registerModel.Password"
+                    Label="Senha"
+                    Variant="Variant.Outlined"
+                    InputType="InputType.Password"
+                    Required="true"
+                    For="@(() => registerModel.Password)" />
+
+                <MudTextField 
+                    @bind-Value="registerModel.ConfirmPassword"
+                    Label="Confirmar Senha"
+                    Variant="Variant.Outlined"
+                    InputType="InputType.Password"
+                    Required="true"
+                    For="@(() => registerModel.ConfirmPassword)" />
+
+                <MudButton 
+                    ButtonType="ButtonType.Submit"
+                    Variant="Variant.Filled" 
+                    Color="Color.Primary" 
+                    Size="Size.Large" 
+                    FullWidth="true"
+                    StartIcon="@Icons.Material.Filled.PersonAdd"
+                    Disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                        <MudText Class="ms-2">Criando conta...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Criar Conta</MudText>
+                    }
+                </MudButton>
+
+                <MudDivider />
+
+                <MudButton 
+                    Variant="Variant.Text" 
+                    Color="Color.Primary" 
+                    FullWidth="true"
+                    OnClick="GoToLogin">
+                    Já possui uma conta? Fazer login
+                </MudButton>
+            </div>
+
+            <ValidationSummary />
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">
+                @errorMessage
+            </MudAlert>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <MudAlert Severity="Severity.Success" Class="mt-4">
+                @successMessage
+            </MudAlert>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private RegisterModel registerModel = new();
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    public class RegisterModel
+    {
+        [Required(ErrorMessage = "Nome completo é obrigatório")]
+        [Display(Name = "Nome Completo")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "E-mail é obrigatório")]
+        [EmailAddress(ErrorMessage = "E-mail deve ter um formato válido")]
+        [Display(Name = "E-mail")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Senha é obrigatória")]
+        [StringLength(100, ErrorMessage = "A senha deve ter pelo menos {2} caracteres", MinimumLength = 6)]
+        [Display(Name = "Senha")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirmação de senha é obrigatória")]
+        [Compare("Password", ErrorMessage = "A confirmação da senha não confere")]
+        [Display(Name = "Confirmar Senha")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    private async Task HandleRegister()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = string.Empty;
+            successMessage = string.Empty;
+
+            var response = await Http.PostAsJsonAsync("/api/account/register", registerModel);
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Conta criada com sucesso! Redirecionando para o login...";
+                await Task.Delay(2000);
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                errorMessage = "Erro ao criar conta. Por favor, tente novamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao criar conta: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+}

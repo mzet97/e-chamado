@@ -1,6 +1,30 @@
 @page "/authentication/login-callback"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @inject NavigationManager Navigation
 
 <PageTitle>Login Callback</PageTitle>
 
-<RemoteAuthenticatorView Action="login-callback" />
+<RemoteAuthenticatorView Action="@RemoteAuthenticationActions.LogInCallback">
+    <LoggingIn>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 text-center">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Class="mt-4">Processando login...</MudText>
+        </MudContainer>
+    </LoggingIn>
+    <CompletingLoggingIn>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 text-center">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Class="mt-4">Finalizando autenticação...</MudText>
+        </MudContainer>
+    </CompletingLoggingIn>
+    <LogInFailed>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 text-center">
+            <MudAlert Severity="Severity.Error">
+                Falha no login. Tente novamente.
+            </MudAlert>
+            <MudButton Href="/login" Color="Color.Primary" Class="mt-4">
+                Tentar Novamente
+            </MudButton>
+        </MudContainer>
+    </LogInFailed>
+</RemoteAuthenticatorView>
