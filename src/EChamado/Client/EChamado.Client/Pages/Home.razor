@@ -1,7 +1,307 @@
-﻿@page "/"
+@page "/"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject OrderService OrderService
+@inject LookupService LookupService
+@inject NavigationManager NavigationManager
+@attribute [Authorize]
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard - EChamado</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
 
-Welcome to your new app.
+    @if (isLoading)
+    {
+        <MudGrid>
+            @for (int i = 0; i < 4; i++)
+            {
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" />
+                </MudItem>
+            }
+        </MudGrid>
+    }
+    else if (errorMessage != null)
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else
+    {
+        <!-- Cards de Estatísticas -->
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <div class="d-flex justify-space-between">
+                            <div>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Total de Chamados</MudText>
+                                <MudText Typo="Typo.h4">@stats.TotalTickets</MudText>
+                            </div>
+                            <MudIcon Icon="@Icons.Material.Filled.ConfirmationNumber" Size="Size.Large" Color="Color.Primary" />
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <div class="d-flex justify-space-between">
+                            <div>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Meus Chamados</MudText>
+                                <MudText Typo="Typo.h4">@stats.MyTickets</MudText>
+                            </div>
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large" Color="Color.Info" />
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <div class="d-flex justify-space-between">
+                            <div>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Atribuídos a Mim</MudText>
+                                <MudText Typo="Typo.h4">@stats.AssignedToMe</MudText>
+                            </div>
+                            <MudIcon Icon="@Icons.Material.Filled.Assignment" Size="Size.Large" Color="Color.Success" />
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <div class="d-flex justify-space-between">
+                            <div>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Vencidos</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Error">@stats.OverdueTickets</MudText>
+                            </div>
+                            <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Large" Color="Color.Error" />
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Gráficos -->
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.h6" Class="mb-4">Chamados por Status</MudText>
+                    @if (chartDataByStatus.Any())
+                    {
+                        <MudChart ChartType="ChartType.Donut"
+                                  InputData="@chartDataByStatus"
+                                  InputLabels="@chartLabelsByStatus"
+                                  Width="100%"
+                                  Height="300px" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum dado disponível</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.h6" Class="mb-4">Chamados por Departamento</MudText>
+                    @if (chartDataByDepartment.Any())
+                    {
+                        <MudChart ChartType="ChartType.Bar"
+                                  ChartSeries="@chartSeriesByDepartment"
+                                  XAxisLabels="@chartLabelsByDepartment"
+                                  Width="100%"
+                                  Height="300px" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum dado disponível</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Últimos Chamados -->
+        <MudPaper Class="pa-4" Elevation="2">
+            <div class="d-flex justify-space-between align-center mb-4">
+                <MudText Typo="Typo.h6">Últimos Chamados</MudText>
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Primary"
+                           EndIcon="@Icons.Material.Filled.ArrowForward"
+                           Href="/orders">
+                    Ver Todos
+                </MudButton>
+            </div>
+
+            @if (recentTickets.Any())
+            {
+                <MudTable Items="@recentTickets" Hover="true" Dense="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Título</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Departamento</MudTh>
+                        <MudTh>Data</MudTh>
+                        <MudTh>Ações</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Título">@context.Title</MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip Size="Size.Small" Color="GetStatusColor(context.StatusName)">
+                                @context.StatusName
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Departamento">@context.DepartmentName</MudTd>
+                        <MudTd DataLabel="Data">@context.OpeningDate.ToString("dd/MM/yyyy")</MudText>
+                        <MudTd DataLabel="Ações">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           Href="@($"/orders/{context.Id}")" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum chamado encontrado</MudText>
+            }
+        </MudPaper>
+
+        <!-- Atalhos Rápidos -->
+        <MudGrid Class="mt-4">
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           Href="/orders/create">
+                    Criar Novo Chamado
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.List"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           Href="/orders">
+                    Ver Todos os Chamados
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.Assignment"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           Href="/orders?assigned=true">
+                    Meus Atribuídos
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private DashboardStats stats = new();
+    private List<OrderListViewModel> recentTickets = new();
+
+    // Dados para gráficos
+    private double[] chartDataByStatus = Array.Empty<double>();
+    private string[] chartLabelsByStatus = Array.Empty<string>();
+    private double[] chartDataByDepartment = Array.Empty<double>();
+    private string[] chartLabelsByDepartment = Array.Empty<string>();
+    private List<ChartSeries> chartSeriesByDepartment = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+
+            // Carrega estatísticas em paralelo
+            var allTicketsTask = OrderService.SearchAsync(new SearchOrdersParameters { PageSize = 100 });
+            var myTicketsTask = OrderService.GetMyTicketsAsync(pageSize: 100);
+            var assignedTask = OrderService.GetAssignedToMeAsync(pageSize: 100);
+            var overdueTask = OrderService.SearchAsync(new SearchOrdersParameters { IsOverdue = true, PageSize = 100 });
+            var statusesTask = LookupService.GetStatusTypesAsync();
+
+            await Task.WhenAll(allTicketsTask, myTicketsTask, assignedTask, overdueTask, statusesTask);
+
+            var allTickets = await allTicketsTask;
+            var myTickets = await myTicketsTask;
+            var assigned = await assignedTask;
+            var overdue = await overdueTask;
+            var statuses = await statusesTask;
+
+            // Calcula estatísticas
+            stats = new DashboardStats
+            {
+                TotalTickets = allTickets.TotalCount,
+                MyTickets = myTickets.TotalCount,
+                AssignedToMe = assigned.TotalCount,
+                OverdueTickets = overdue.TotalCount
+            };
+
+            // Últimos chamados
+            recentTickets = allTickets.Items.Take(5).ToList();
+
+            // Dados para gráfico de status
+            var groupedByStatus = allTickets.Items
+                .GroupBy(t => t.StatusName)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToList();
+
+            chartLabelsByStatus = groupedByStatus.Select(g => g.Status).ToArray();
+            chartDataByStatus = groupedByStatus.Select(g => (double)g.Count).ToArray();
+
+            // Dados para gráfico de departamento
+            var groupedByDepartment = allTickets.Items
+                .Where(t => !string.IsNullOrEmpty(t.DepartmentName))
+                .GroupBy(t => t.DepartmentName!)
+                .Select(g => new { Department = g.Key, Count = g.Count() })
+                .ToList();
+
+            chartLabelsByDepartment = groupedByDepartment.Select(g => g.Department).ToArray();
+            chartDataByDepartment = groupedByDepartment.Select(g => (double)g.Count).ToArray();
+
+            chartSeriesByDepartment = new List<ChartSeries>
+            {
+                new ChartSeries { Name = "Chamados", Data = chartDataByDepartment }
+            };
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar dashboard: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private Color GetStatusColor(string status) => status.ToLower() switch
+    {
+        var s when s.Contains("aberto") || s.Contains("open") => Color.Info,
+        var s when s.Contains("andamento") || s.Contains("progress") => Color.Warning,
+        var s when s.Contains("fechado") || s.Contains("closed") || s.Contains("resolvido") => Color.Success,
+        _ => Color.Default
+    };
+
+    private class DashboardStats
+    {
+        public int TotalTickets { get; set; }
+        public int MyTickets { get; set; }
+        public int AssignedToMe { get; set; }
+        public int OverdueTickets { get; set; }
+    }
+}
