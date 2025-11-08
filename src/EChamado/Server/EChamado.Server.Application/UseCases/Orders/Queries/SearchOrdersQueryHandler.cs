@@ -1,32 +1,20 @@
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Server.Domain.Repositories;
+using EChamado.Shared.Responses;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries;
 
-public class SearchOrdersQueryHandler : IRequestHandler<SearchOrdersQuery, PagedResult<OrderListViewModel>>
+public class SearchOrdersQueryHandler(
+    IUnitOfWork unitOfWork,
+    ILogger<SearchOrdersQueryHandler> logger) :
+    IRequestHandler<SearchOrdersQuery, BaseResultList<OrderListViewModel>>
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly IStatusTypeRepository _statusTypeRepository;
-    private readonly IOrderTypeRepository _orderTypeRepository;
-    private readonly IDepartmentRepository _departmentRepository;
-
-    public SearchOrdersQueryHandler(
-        IOrderRepository orderRepository,
-        IStatusTypeRepository statusTypeRepository,
-        IOrderTypeRepository orderTypeRepository,
-        IDepartmentRepository departmentRepository)
+    public async Task<BaseResultList<OrderListViewModel>> Handle(SearchOrdersQuery request, CancellationToken cancellationToken)
     {
-        _orderRepository = orderRepository;
-        _statusTypeRepository = statusTypeRepository;
-        _orderTypeRepository = orderTypeRepository;
-        _departmentRepository = departmentRepository;
-    }
-
-    public async Task<PagedResult<OrderListViewModel>> Handle(SearchOrdersQuery request, CancellationToken cancellationToken)
-    {
-        // Busca todos os orders com filtros
-        var query = await _orderRepository.GetAllAsync(cancellationToken);
+        // Busca todos os orders
+        var query = await unitOfWork.Orders.GetAllAsync(cancellationToken);
 
         // Aplica filtros
         var filtered = query.AsEnumerable();
@@ -54,8 +42,8 @@ public class SearchOrdersQueryHandler : IRequestHandler<SearchOrdersQuery, Paged
         if (request.RequestingUserId.HasValue)
             filtered = filtered.Where(o => o.RequestingUserId == request.RequestingUserId.Value);
 
-        if (request.ResponsibleUserId.HasValue)
-            filtered = filtered.Where(o => o.ResponsibleUserId == request.ResponsibleUserId.Value);
+        if (request.AssignedToUserId.HasValue)
+            filtered = filtered.Where(o => o.ResponsibleUserId == request.AssignedToUserId.Value);
 
         if (request.StartDate.HasValue)
             filtered = filtered.Where(o => o.OpeningDate >= request.StartDate.Value);
@@ -67,7 +55,6 @@ public class SearchOrdersQueryHandler : IRequestHandler<SearchOrdersQuery, Paged
             filtered = filtered.Where(o => o.DueDate.HasValue && o.DueDate.Value < DateTime.UtcNow && !o.ClosingDate.HasValue);
 
         var totalCount = filtered.Count();
-        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
 
         // Paginação
         var orders = filtered
@@ -77,13 +64,9 @@ public class SearchOrdersQueryHandler : IRequestHandler<SearchOrdersQuery, Paged
             .ToList();
 
         // Busca dados relacionados
-        var statusIds = orders.Select(o => o.StatusId).Distinct();
-        var typeIds = orders.Select(o => o.TypeId).Distinct();
-        var departmentIds = orders.Where(o => o.DepartmentId.HasValue).Select(o => o.DepartmentId!.Value).Distinct();
-
-        var statuses = await _statusTypeRepository.GetAllAsync(cancellationToken);
-        var types = await _orderTypeRepository.GetAllAsync(cancellationToken);
-        var departments = await _departmentRepository.GetAllAsync(cancellationToken);
+        var statuses = await unitOfWork.StatusTypes.GetAllAsync(cancellationToken);
+        var types = await unitOfWork.OrderTypes.GetAllAsync(cancellationToken);
+        var departments = await unitOfWork.Departments.GetAllAsync(cancellationToken);
 
         var statusDict = statuses.ToDictionary(s => s.Id, s => s.Name);
         var typeDict = types.ToDictionary(t => t.Id, t => t.Name);
@@ -104,12 +87,8 @@ public class SearchOrdersQueryHandler : IRequestHandler<SearchOrdersQuery, Paged
             o.DueDate.HasValue && o.DueDate.Value < DateTime.UtcNow && !o.ClosingDate.HasValue
         )).ToList();
 
-        return new PagedResult<OrderListViewModel>(
-            items,
-            totalCount,
-            request.PageNumber,
-            request.PageSize,
-            totalPages
-        );
+        logger.LogInformation("Search orders returned {Count} results", items.Count);
+
+        return new BaseResultList<OrderListViewModel>(items, totalCount, request.PageNumber, request.PageSize);
     }
 }

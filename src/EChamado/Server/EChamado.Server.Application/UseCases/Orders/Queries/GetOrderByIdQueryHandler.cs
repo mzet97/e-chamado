@@ -1,54 +1,43 @@
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
+using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
+using EChamado.Shared.Responses;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries;
 
-public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderViewModel?>
+public class GetOrderByIdQueryHandler(
+    IUnitOfWork unitOfWork,
+    ILogger<GetOrderByIdQueryHandler> logger) :
+    IRequestHandler<GetOrderByIdQuery, BaseResult<OrderViewModel>>
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly IStatusTypeRepository _statusTypeRepository;
-    private readonly IOrderTypeRepository _orderTypeRepository;
-    private readonly ICategoryRepository _categoryRepository;
-    private readonly ISubCategoryRepository _subCategoryRepository;
-    private readonly IDepartmentRepository _departmentRepository;
-
-    public GetOrderByIdQueryHandler(
-        IOrderRepository orderRepository,
-        IStatusTypeRepository statusTypeRepository,
-        IOrderTypeRepository orderTypeRepository,
-        ICategoryRepository categoryRepository,
-        ISubCategoryRepository subCategoryRepository,
-        IDepartmentRepository departmentRepository)
+    public async Task<BaseResult<OrderViewModel>> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
     {
-        _orderRepository = orderRepository;
-        _statusTypeRepository = statusTypeRepository;
-        _orderTypeRepository = orderTypeRepository;
-        _categoryRepository = categoryRepository;
-        _subCategoryRepository = subCategoryRepository;
-        _departmentRepository = departmentRepository;
-    }
-
-    public async Task<OrderViewModel?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
-    {
-        var order = await _orderRepository.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
 
         if (order == null)
-            return null;
+        {
+            logger.LogError("Order {OrderId} not found", request.OrderId);
+            throw new NotFoundException($"Order {request.OrderId} not found");
+        }
 
-        var status = await _statusTypeRepository.GetByIdAsync(order.StatusId, cancellationToken);
-        var type = await _orderTypeRepository.GetByIdAsync(order.TypeId, cancellationToken);
+        var status = await unitOfWork.StatusTypes.GetByIdAsync(order.StatusId, cancellationToken);
+        var type = await unitOfWork.OrderTypes.GetByIdAsync(order.TypeId, cancellationToken);
+
         var category = order.CategoryId.HasValue
-            ? await _categoryRepository.GetByIdAsync(order.CategoryId.Value, cancellationToken)
-            : null;
-        var subCategory = order.SubCategoryId.HasValue
-            ? await _subCategoryRepository.GetByIdAsync(order.SubCategoryId.Value, cancellationToken)
-            : null;
-        var department = order.DepartmentId.HasValue
-            ? await _departmentRepository.GetByIdAsync(order.DepartmentId.Value, cancellationToken)
+            ? await unitOfWork.Categories.GetByIdAsync(order.CategoryId.Value, cancellationToken)
             : null;
 
-        return new OrderViewModel(
+        var subCategory = order.SubCategoryId.HasValue
+            ? await unitOfWork.SubCategories.GetByIdAsync(order.SubCategoryId.Value, cancellationToken)
+            : null;
+
+        var department = order.DepartmentId.HasValue
+            ? await unitOfWork.Departments.GetByIdAsync(order.DepartmentId.Value, cancellationToken)
+            : null;
+
+        var viewModel = new OrderViewModel(
             order.Id,
             order.Title,
             order.Description,
@@ -73,5 +62,9 @@ public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, Order
             order.CreatedAt,
             order.UpdatedAt
         );
+
+        logger.LogInformation("Order {OrderId} retrieved successfully", request.OrderId);
+
+        return new BaseResult<OrderViewModel>(viewModel);
     }
 }
