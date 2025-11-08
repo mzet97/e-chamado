@@ -150,6 +150,51 @@ namespace EChamado.Server.Controllers
                 return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
+            if (request.IsRefreshTokenGrantType())
+            {
+                // Recupera o principal do refresh token
+                var principal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
+
+                if (principal == null)
+                {
+                    return Forbid(
+                        authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                        properties: new AuthenticationProperties(new Dictionary<string, string>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The refresh token is no longer valid."
+                        }));
+                }
+
+                // Busca o usuário para garantir que ainda existe e está ativo
+                var userId = principal.FindFirst(Claims.Subject)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var user = await userManager.FindByIdAsync(userId);
+                    if (user == null)
+                    {
+                        return Forbid(
+                            authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                            properties: new AuthenticationProperties(new Dictionary<string, string>
+                            {
+                                [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                                [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user no longer exists."
+                            }));
+                    }
+                }
+
+                // Define os destinos dos claims
+                principal.SetDestinations(claim => claim.Type switch
+                {
+                    Claims.Name or Claims.Email when principal.HasScope(Scopes.Profile) =>
+                        new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    Claims.Role => new[] { Destinations.AccessToken },
+                    _ => new[] { Destinations.AccessToken }
+                });
+
+                return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
             throw new NotImplementedException("The specified grant is not implemented.");
         }
     }

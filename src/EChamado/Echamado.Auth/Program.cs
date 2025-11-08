@@ -22,8 +22,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configuração Data Protection (compartilhada com EChamado.Server)
+var keysPath = Path.Combine(Path.GetTempPath(), "EChamado-DataProtection-Keys");
+Directory.CreateDirectory(keysPath);
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "..", "Server", "EChamado.Server", "shared-keys")))
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
     .SetApplicationName("EChamado");
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
@@ -48,8 +51,10 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "EChamado.External";
-    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SameSite = SameSiteMode.None; // Permitir compartilhamento entre diferentes portas
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
     options.LoginPath = "/Account/Login";
     options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
     options.SlidingExpiration = true;
