@@ -7,12 +7,15 @@ using OpenIddict.Server.AspNetCore;
 using System.Security.Claims;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using EChamado.Server.Domain.Services.Interface;
+using Microsoft.AspNetCore.Identity;
+using EChamado.Server.Domain.Domains.Identities;
 
 namespace EChamado.Server.Controllers
 {
     public class AuthorizationController(
         IOpenIddictApplicationManager applicationManager,
-        IOpenIddictService openIddictService
+        IOpenIddictService openIddictService,
+        UserManager<ApplicationUser> userManager
     ) : Controller
     {
         [HttpGet("~/connect/authorize")]
@@ -23,11 +26,11 @@ namespace EChamado.Server.Controllers
             var request = HttpContext.GetOpenIddictServerRequest()
                           ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-            // Tenta obter o usuário autenticado via cookie
-            var result = await HttpContext.AuthenticateAsync();
+            // Tenta obter o usuário autenticado via cookie "External"
+            var result = await HttpContext.AuthenticateAsync("External");
             if (!result.Succeeded)
             {
-                // Se não estiver autenticado, redireciona para a aplicação externa de login (esquema "External")
+                // Se não estiver autenticado, redireciona para a aplicação externa de login
                 return Challenge(
                     authenticationSchemes: new[] { "External" },
                     properties: new AuthenticationProperties
@@ -39,15 +42,43 @@ namespace EChamado.Server.Controllers
                     });
             }
 
-            // Se autenticado, cria claims principal para gerar authorization code
+            // Busca o usuário completo do Identity
+            var userId = result.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Challenge(authenticationSchemes: new[] { "External" });
+            }
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return Challenge(authenticationSchemes: new[] { "External" });
+            }
+
+            // Busca roles do usuário
+            var roles = await userManager.GetRolesAsync(user);
+
+            // Cria claims principal para gerar authorization code
             var claims = new List<Claim>
             {
-                new Claim(Claims.Subject, result.Principal.Identity.Name),
-                new Claim(Claims.Email, result.Principal.FindFirst(Claims.Email)?.Value ?? string.Empty),
-                new Claim(Claims.Name, result.Principal.Identity.Name ?? string.Empty)
+                new Claim(Claims.Subject, user.Id),
+                new Claim(Claims.Email, user.Email ?? string.Empty),
+                new Claim(Claims.Name, user.UserName ?? string.Empty),
+                new Claim(Claims.PreferredUsername, user.UserName ?? string.Empty)
             };
 
-            var claimsIdentity = new ClaimsIdentity(claims, TokenValidationParameters.DefaultAuthenticationType);
+            // Adiciona roles como claims
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(Claims.Role, role));
+            }
+
+            var claimsIdentity = new ClaimsIdentity(
+                claims,
+                TokenValidationParameters.DefaultAuthenticationType,
+                Claims.Name,
+                Claims.Role);
+
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
             // Seta os escopos solicitados

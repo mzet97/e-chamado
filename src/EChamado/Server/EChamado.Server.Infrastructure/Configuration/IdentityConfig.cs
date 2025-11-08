@@ -80,7 +80,14 @@ namespace EChamado.Server.Infrastructure.Configuration
             var key = Encoding.ASCII.GetBytes(appSettings.Secret);
 
             // -------------------------
-            // 4) CONFIGURAÇÃO DO AUTH
+            // 4) CONFIGURAÇÃO DATA PROTECTION (para compartilhar cookies entre apps)
+            // -------------------------
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "shared-keys")))
+                .SetApplicationName("EChamado");
+
+            // -------------------------
+            // 5) CONFIGURAÇÃO DO AUTH
             // -------------------------
             // Usamos OpenIddictValidation como esquema de autenticação padrão,
             // e "External" para redirecionar para aplicação de login Blazor Server.
@@ -91,6 +98,13 @@ namespace EChamado.Server.Infrastructure.Configuration
             })
             .AddCookie("External", options =>
             {
+                options.Cookie.Name = "EChamado.External";
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.LoginPath = "/Account/Login";
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                options.SlidingExpiration = true;
+
                 options.Events.OnRedirectToLogin = context =>
                 {
                     // Redireciona para a aplicação Blazor Server de Identity (localhost:7132)
@@ -102,7 +116,7 @@ namespace EChamado.Server.Infrastructure.Configuration
             });
 
             // -------------------------
-            // 5) CONFIGURAÇÃO OPENIDDICT
+            // 6) CONFIGURAÇÃO OPENIDDICT
             // -------------------------
             services.AddOpenIddict()
                 // -------- CORE --------
@@ -155,7 +169,7 @@ namespace EChamado.Server.Infrastructure.Configuration
                 });
 
             // -------------------------
-            // 6) SERVIÇO QUE CONFIGURA OS CLIENTES
+            // 7) SERVIÇO QUE CONFIGURA OS CLIENTES
             // -------------------------
             services.AddHostedService<OpenIddictWorker>();
 
