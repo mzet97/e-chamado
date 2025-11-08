@@ -1,0 +1,44 @@
+using EChamado.Server.Domain.Entities;
+using EChamado.Server.Domain.Exceptions;
+using EChamado.Server.Domain.Repositories;
+using EChamado.Shared.Responses;
+using MediatR;
+using Microsoft.Extensions.Logging;
+
+namespace EChamado.Server.Application.UseCases.Categories.Commands;
+
+public class CreateSubCategoryCommandHandler(
+    IUnitOfWork unitOfWork,
+    ILogger<CreateSubCategoryCommandHandler> logger) :
+    IRequestHandler<CreateSubCategoryCommand, BaseResult<Guid>>
+{
+    public async Task<BaseResult<Guid>> Handle(CreateSubCategoryCommand request, CancellationToken cancellationToken)
+    {
+        var category = await unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken);
+
+        if (category == null)
+        {
+            logger.LogError("Category {CategoryId} not found", request.CategoryId);
+            throw new NotFoundException($"Category {request.CategoryId} not found");
+        }
+
+        var entity = SubCategory.Create(request.Name, request.Description, request.CategoryId);
+
+        if (!entity.IsValid())
+        {
+            logger.LogError("Validate SubCategory has error");
+            throw new ValidationException("Validate SubCategory has error", entity.GetErrors());
+        }
+
+        await unitOfWork.BeginTransactionAsync();
+
+        await unitOfWork.SubCategories.AddAsync(entity);
+
+        await unitOfWork.CommitAsync();
+
+        logger.LogInformation("SubCategory {SubCategoryId} created successfully for Category {CategoryId}",
+            entity.Id, request.CategoryId);
+
+        return new BaseResult<Guid>(entity.Id);
+    }
+}

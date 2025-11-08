@@ -1,8 +1,11 @@
 ﻿using EChamado.Server.Common.Api;
 using EChamado.Server.Endpoints.Auth;
+using EChamado.Server.Endpoints.Categories;
 using EChamado.Server.Endpoints.Departments;
 using EChamado.Server.Endpoints.Orders;
+using EChamado.Server.Endpoints.OrderTypes;
 using EChamado.Server.Endpoints.Roles;
+using EChamado.Server.Endpoints.StatusTypes;
 using EChamado.Server.Endpoints.Users;
 using Microsoft.AspNetCore.Mvc;
 
@@ -77,6 +80,48 @@ public static class Endpoint
             .MapEndpoint<GetByIdDepartmentEndpoint>()
             .MapEndpoint<CreateDepartmentEndpoint>()
             .MapEndpoint<UpdateDepartmentEndpoint>();
+
+        endpoints.MapGroup("v1/categories")
+            .WithTags("Category")
+            .RequireAuthorization()
+            .MapEndpoint<GetAllCategoriesEndpoint>();
+
+        endpoints.MapGroup("v1/category")
+            .WithTags("Category")
+            .RequireAuthorization()
+            .MapEndpoint<GetCategoryByIdEndpoint>()
+            .MapEndpoint<CreateCategoryEndpoint>()
+            .MapEndpoint<UpdateCategoryEndpoint>()
+            .MapEndpoint<DeleteCategoryEndpoint>()
+            .MapEndpoint<CreateSubCategoryEndpoint>()
+            .MapEndpoint<UpdateSubCategoryEndpoint>()
+            .MapEndpoint<DeleteSubCategoryEndpoint>();
+
+        endpoints.MapGroup("v1/ordertypes")
+            .WithTags("OrderType")
+            .RequireAuthorization()
+            .MapEndpoint<GetAllOrderTypesEndpoint>();
+
+        endpoints.MapGroup("v1/ordertype")
+            .WithTags("OrderType")
+            .RequireAuthorization()
+            .MapEndpoint<GetOrderTypeByIdEndpoint>()
+            .MapEndpoint<CreateOrderTypeEndpoint>()
+            .MapEndpoint<UpdateOrderTypeEndpoint>()
+            .MapEndpoint<DeleteOrderTypeEndpoint>();
+
+        endpoints.MapGroup("v1/statustypes")
+            .WithTags("StatusType")
+            .RequireAuthorization()
+            .MapEndpoint<GetAllStatusTypesEndpoint>();
+
+        endpoints.MapGroup("v1/statustype")
+            .WithTags("StatusType")
+            .RequireAuthorization()
+            .MapEndpoint<GetStatusTypeByIdEndpoint>()
+            .MapEndpoint<CreateStatusTypeEndpoint>()
+            .MapEndpoint<UpdateStatusTypeEndpoint>()
+            .MapEndpoint<DeleteStatusTypeEndpoint>();
 
         endpoints.MapGroup("v1/orders")
             .WithTags("Order")
