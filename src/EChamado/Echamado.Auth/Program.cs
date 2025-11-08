@@ -21,7 +21,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+// Configuração Data Protection (compartilhada com EChamado.Server)
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "..", "Server", "EChamado.Server", "shared-keys")))
+    .SetApplicationName("EChamado");
+
+builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
@@ -30,13 +35,25 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     options.Password.RequiredLength = 6;
     options.Password.RequiredUniqueChars = 1;
 
-    options.SignIn.RequireConfirmedAccount = true;
+    options.SignIn.RequireConfirmedAccount = false; // Alterado para false para facilitar testes
 
     options.User.AllowedUserNameCharacters =
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*()_=?. ";
     options.User.RequireUniqueEmail = true;
 })
-.AddEntityFrameworkStores<ApplicationDbContext>();
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// Configuração de autenticação com cookie "External" (compartilhado com EChamado.Server)
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "EChamado.External";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.LoginPath = "/Account/Login";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.SlidingExpiration = true;
+});
 
 // Importante para Blazor acessar HttpContext
 builder.Services.AddHttpContextAccessor();
@@ -65,15 +82,6 @@ app.UseAntiforgery();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-
-app.MapPost("/api/login", async (LoginModel input, SignInManager<ApplicationUser> signInManager) =>
-{
-    var result = await signInManager.PasswordSignInAsync(input.Email, input.Password, false, false);
-
-    return result.Succeeded ? Results.Ok() : Results.Unauthorized();
-});
-
 
 app.MapStaticAssets();
 
