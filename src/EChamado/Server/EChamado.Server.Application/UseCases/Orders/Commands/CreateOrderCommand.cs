@@ -1,3 +1,4 @@
+using EChamado.Shared.Responses;
 using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
@@ -12,4 +13,4 @@ public record CreateOrderCommand(
     DateTime? DueDate,
     Guid RequestingUserId,
     string RequestingUserEmail
-) : IRequest<Guid>;
+) : IRequest<BaseResult<Guid>>;

@@ -1,6 +1,7 @@
 ﻿using EChamado.Server.Common.Api;
 using EChamado.Server.Endpoints.Auth;
 using EChamado.Server.Endpoints.Departments;
+using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.Roles;
 using EChamado.Server.Endpoints.Users;
 using Microsoft.AspNetCore.Mvc;
@@ -76,7 +77,22 @@ public static class Endpoint
             .MapEndpoint<GetByIdDepartmentEndpoint>()
             .MapEndpoint<CreateDepartmentEndpoint>()
             .MapEndpoint<UpdateDepartmentEndpoint>();
-            
+
+        endpoints.MapGroup("v1/orders")
+            .WithTags("Order")
+            .RequireAuthorization()
+            .MapEndpoint<SearchOrdersEndpoint>();
+
+        endpoints.MapGroup("v1/order")
+            .WithTags("Order")
+            .RequireAuthorization()
+            .MapEndpoint<GetOrderByIdEndpoint>()
+            .MapEndpoint<CreateOrderEndpoint>()
+            .MapEndpoint<UpdateOrderEndpoint>()
+            .MapEndpoint<AssignOrderEndpoint>()
+            .MapEndpoint<CloseOrderEndpoint>()
+            .MapEndpoint<ChangeStatusOrderEndpoint>();
+
 
     }
 
