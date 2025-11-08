@@ -24,6 +24,13 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddIdentityConfig(builder.Configuration);
+
+// Configuração MediatR
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(EChamado.Server.Application.UseCases.Orders.Commands.CreateOrderCommand).Assembly);
+});
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
