@@ -1,4 +1,5 @@
 using EChamado.Client.Models;
+using EChamado.Shared.Responses;
 using System.Net.Http.Json;
 
 namespace EChamado.Client.Services;
@@ -13,12 +14,12 @@ public class CategoryService
     }
 
     /// <summary>
-    /// Busca todas as categorias com suas subcategorias
+    /// Busca todas as categorias com suas subcategorias usando Search
     /// </summary>
-    public async Task<List<CategoryResponse>> GetAllAsync()
+    public async Task<List<CategoryResponse>> GetAllAsync(int pageSize = 100)
     {
-        var result = await _httpClient.GetFromJsonAsync<List<CategoryResponse>>("api/categories");
-        return result ?? new List<CategoryResponse>();
+        var result = await _httpClient.GetFromJsonAsync<BaseResultList<CategoryResponse>>($"v1/categories?PageSize={pageSize}");
+        return result?.Data?.ToList() ?? new List<CategoryResponse>();
     }
 
     /// <summary>
@@ -28,7 +29,8 @@ public class CategoryService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<CategoryResponse>($"api/categories/{id}");
+            var result = await _httpClient.GetFromJsonAsync<BaseResult<CategoryResponse>>($"v1/category/{id}");
+            return result?.Data;
         }
         catch (HttpRequestException)
         {
@@ -41,9 +43,10 @@ public class CategoryService
     /// </summary>
     public async Task<Guid> CreateAsync(CreateCategoryRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/categories", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/category", request);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<Guid>();
+        var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
+        return result?.Data ?? Guid.Empty;
     }
 
     /// <summary>
@@ -51,7 +54,7 @@ public class CategoryService
     /// </summary>
     public async Task UpdateAsync(Guid id, UpdateCategoryRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"api/categories/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/category/{id}", request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -60,18 +63,19 @@ public class CategoryService
     /// </summary>
     public async Task DeleteAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"api/categories/{id}");
+        var response = await _httpClient.DeleteAsync($"v1/category/{id}");
         response.EnsureSuccessStatusCode();
     }
 
     /// <summary>
     /// Cria uma nova subcategoria
     /// </summary>
-    public async Task<Guid> CreateSubCategoryAsync(Guid categoryId, CreateSubCategoryRequest request)
+    public async Task<Guid> CreateSubCategoryAsync(CreateSubCategoryRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync($"api/categories/{categoryId}/subcategories", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/subcategory", request);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<Guid>();
+        var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
+        return result?.Data ?? Guid.Empty;
     }
 
     /// <summary>
@@ -79,7 +83,7 @@ public class CategoryService
     /// </summary>
     public async Task UpdateSubCategoryAsync(Guid id, UpdateSubCategoryRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"api/categories/subcategories/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/subcategory/{id}", request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -88,7 +92,36 @@ public class CategoryService
     /// </summary>
     public async Task DeleteSubCategoryAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"api/categories/subcategories/{id}");
+        var response = await _httpClient.DeleteAsync($"v1/subcategory/{id}");
         response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
+    /// Busca todas as subcategorias usando Search
+    /// </summary>
+    public async Task<List<SubCategoryResponse>> GetAllSubCategoriesAsync(Guid? categoryId = null, int pageSize = 100)
+    {
+        var url = $"v1/subcategories?PageSize={pageSize}";
+        if (categoryId.HasValue)
+            url += $"&CategoryId={categoryId}";
+
+        var result = await _httpClient.GetFromJsonAsync<BaseResultList<SubCategoryResponse>>(url);
+        return result?.Data?.ToList() ?? new List<SubCategoryResponse>();
+    }
+
+    /// <summary>
+    /// Busca uma subcategoria por ID
+    /// </summary>
+    public async Task<SubCategoryResponse?> GetSubCategoryByIdAsync(Guid id)
+    {
+        try
+        {
+            var result = await _httpClient.GetFromJsonAsync<BaseResult<SubCategoryResponse>>($"v1/subcategory/{id}");
+            return result?.Data;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
     }
 }
