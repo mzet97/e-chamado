@@ -1,0 +1,527 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RabbitMQ Configuration for EChamado",
+  "description": "Definições de exchanges, filas e bindings para o sistema EChamado",
+  
+  "exchanges": [
+    {
+      "name": "orders.exchange",
+      "type": "topic",
+      "durable": true,
+      "autoDelete": false,
+      "internal": false,
+      "arguments": {},
+      "description": "Exchange principal para eventos de chamados"
+    },
+    {
+      "name": "notifications.exchange",
+      "type": "direct",
+      "durable": true,
+      "autoDelete": false,
+      "internal": false,
+      "arguments": {},
+      "description": "Exchange para notificações do sistema"
+    },
+    {
+      "name": "audit.exchange",
+      "type": "fanout",
+      "durable": true,
+      "autoDelete": false,
+      "internal": false,
+      "arguments": {},
+      "description": "Exchange para eventos de auditoria"
+    },
+    {
+      "name": "dlx.exchange",
+      "type": "direct",
+      "durable": true,
+      "autoDelete": false,
+      "internal": false,
+      "arguments": {},
+      "description": "Dead Letter Exchange para mensagens com falha"
+    }
+  ],
+  
+  "queues": [
+    {
+      "name": "orders.created",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 3600000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "orders.created.dlq",
+        "x-max-retries": 3
+      },
+      "description": "Fila para processar chamados criados"
+    },
+    {
+      "name": "orders.updated",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 3600000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "orders.updated.dlq",
+        "x-max-retries": 3
+      },
+      "description": "Fila para processar atualizações de chamados"
+    },
+    {
+      "name": "orders.closed",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 3600000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "orders.closed.dlq",
+        "x-max-retries": 3
+      },
+      "description": "Fila para processar fechamento de chamados"
+    },
+    {
+      "name": "notifications.email",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 1800000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "notifications.email.dlq",
+        "x-max-retries": 5
+      },
+      "description": "Fila para envio de notificações por email"
+    },
+    {
+      "name": "notifications.sms",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 900000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "notifications.sms.dlq",
+        "x-max-retries": 3
+      },
+      "description": "Fila para envio de notificações por SMS"
+    },
+    {
+      "name": "notifications.push",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 600000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "notifications.push.dlq",
+        "x-max-retries": 2
+      },
+      "description": "Fila para envio de push notifications"
+    },
+    {
+      "name": "audit.events",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 86400000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "audit.events.dlq"
+      },
+      "description": "Fila para eventos de auditoria"
+    },
+    {
+      "name": "reports.generation",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 7200000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "reports.generation.dlq",
+        "x-max-retries": 2
+      },
+      "description": "Fila para geração de relatórios"
+    },
+    {
+      "name": "integration.external",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 1800000,
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "integration.external.dlq",
+        "x-max-retries": 5
+      },
+      "description": "Fila para integrações com sistemas externos"
+    }
+  ],
+  
+  "bindings": [
+    {
+      "source": "orders.exchange",
+      "destination": "orders.created",
+      "destinationType": "queue",
+      "routingKey": "orders.created",
+      "arguments": {}
+    },
+    {
+      "source": "orders.exchange",
+      "destination": "orders.updated",
+      "destinationType": "queue",
+      "routingKey": "orders.updated",
+      "arguments": {}
+    },
+    {
+      "source": "orders.exchange",
+      "destination": "orders.closed",
+      "destinationType": "queue",
+      "routingKey": "orders.closed",
+      "arguments": {}
+    },
+    {
+      "source": "orders.exchange",
+      "destination": "notifications.email",
+      "destinationType": "queue",
+      "routingKey": "orders.*",
+      "arguments": {}
+    },
+    {
+      "source": "orders.exchange",
+      "destination": "audit.events",
+      "destinationType": "queue",
+      "routingKey": "orders.*",
+      "arguments": {}
+    },
+    {
+      "source": "notifications.exchange",
+      "destination": "notifications.email",
+      "destinationType": "queue",
+      "routingKey": "email",
+      "arguments": {}
+    },
+    {
+      "source": "notifications.exchange",
+      "destination": "notifications.sms",
+      "destinationType": "queue",
+      "routingKey": "sms",
+      "arguments": {}
+    },
+    {
+      "source": "notifications.exchange",
+      "destination": "notifications.push",
+      "destinationType": "queue",
+      "routingKey": "push",
+      "arguments": {}
+    },
+    {
+      "source": "audit.exchange",
+      "destination": "audit.events",
+      "destinationType": "queue",
+      "routingKey": "",
+      "arguments": {}
+    }
+  ],
+  
+  "deadLetterQueues": [
+    {
+      "name": "orders.created.dlq",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "orders.updated.dlq",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "orders.closed.dlq",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "notifications.email.dlq",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "notifications.sms.dlq",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "notifications.push.dlq",
+      "durable": true,
+      "exclusive": false,
+      "autoDelete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    }
+  ],
+  
+  "policies": [
+    {
+      "name": "ha-orders",
+      "pattern": "orders\\.*",
+      "definition": {
+        "ha-mode": "exactly",
+        "ha-params": 2,
+        "ha-sync-mode": "automatic"
+      },
+      "priority": 1,
+      "applyTo": "queues"
+    },
+    {
+      "name": "ttl-notifications",
+      "pattern": "notifications\\.*",
+      "definition": {
+        "message-ttl": 1800000,
+        "expires": 3600000
+      },
+      "priority": 1,
+      "applyTo": "queues"
+    }
+  ],
+  
+  "messageSchemas": {
+    "OrderCreatedEvent": {
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "requestingUserId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "categoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["Low", "Medium", "High", "Critical"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "required": ["orderId", "title", "requestingUserId", "departmentId", "createdAt"]
+    },
+    
+    "OrderUpdatedEvent": {
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "changes": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "object",
+              "properties": {
+                "from": {"type": "string"},
+                "to": {"type": "string"}
+              }
+            },
+            "assignedTo": {
+              "type": "object",
+              "properties": {
+                "from": {"type": "string"},
+                "to": {"type": "string"}
+              }
+            },
+            "priority": {
+              "type": "object",
+              "properties": {
+                "from": {"type": "string"},
+                "to": {"type": "string"}
+              }
+            }
+          }
+        },
+        "updatedBy": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "source": {"type": "string"},
+            "version": {"type": "string"},
+            "correlationId": {"type": "string", "format": "uuid"}
+          }
+        }
+      },
+      "required": ["orderId", "changes", "updatedBy", "updatedAt"]
+    },
+    
+    "NotificationEvent": {
+      "type": "object",
+      "properties": {
+        "notificationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["email", "sms", "push"]
+        },
+        "recipient": {
+          "type": "object",
+          "properties": {
+            "userId": {"type": "string", "format": "uuid"},
+            "email": {"type": "string", "format": "email"},
+            "phone": {"type": "string"},
+            "deviceToken": {"type": "string"}
+          }
+        },
+        "template": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "normal", "high"]
+        },
+        "scheduledFor": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "source": {"type": "string"},
+            "correlationId": {"type": "string", "format": "uuid"}
+          }
+        }
+      },
+      "required": ["notificationId", "type", "recipient", "template"]
+    }
+  },
+  
+  "consumerConfiguration": {
+    "prefetchCount": 10,
+    "concurrency": 5,
+    "retryPolicy": {
+      "maxRetries": 3,
+      "initialDelay": "PT1S",
+      "maxDelay": "PT30S",
+      "backoffMultiplier": 2.0
+    },
+    "circuitBreaker": {
+      "failureThreshold": 5,
+      "recoveryTimeout": "PT30S",
+      "monitoringPeriod": "PT10S"
+    }
+  },
+  
+  "monitoring": {
+    "healthChecks": {
+      "connectionCheck": true,
+      "queueLengthThreshold": 1000,
+      "consumerLagThreshold": "PT5M"
+    },
+    "metrics": {
+      "publishedMessages": true,
+      "consumedMessages": true,
+      "failedMessages": true,
+      "queueLength": true,
+      "consumerCount": true,
+      "processingTime": true
+    },
+    "alerts": {
+      "queueLengthAlert": {
+        "threshold": 500,
+        "severity": "warning"
+      },
+      "deadLetterAlert": {
+        "threshold": 10,
+        "severity": "error"
+      },
+      "consumerDownAlert": {
+        "threshold": 0,
+        "severity": "critical"
+      }
+    }
+  },
+  
+  "setupCommands": {
+    "description": "Comandos para configurar o RabbitMQ",
+    "docker": [
+      "docker exec rabbitmq rabbitmqctl add_vhost echamado",
+      "docker exec rabbitmq rabbitmqctl add_user echamado_user password123",
+      "docker exec rabbitmq rabbitmqctl set_permissions -p echamado echamado_user \".*\" \".*\" \".*\"",
+      "docker exec rabbitmq rabbitmq-plugins enable rabbitmq_management",
+      "docker exec rabbitmq rabbitmq-plugins enable rabbitmq_shovel",
+      "docker exec rabbitmq rabbitmq-plugins enable rabbitmq_federation"
+    ],
+    "management": {
+      "url": "http://localhost:15672",
+      "username": "admin",
+      "password": "dsv@123"
+    }
+  }
+}

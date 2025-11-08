@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpenIddict Configuration Examples",
+  "description": "Exemplos de configuração do OpenIddict para diferentes ambientes",
+  
+  "development": {
+    "issuer": "https://localhost:7296",
+    "clients": [
+      {
+        "clientId": "bwa-client",
+        "displayName": "EChamado Blazor WebAssembly Client",
+        "clientType": "public",
+        "consentType": "explicit",
+        "redirectUris": [
+          "https://localhost:7274/authentication/login-callback"
+        ],
+        "postLogoutRedirectUris": [
+          "https://localhost:7274/authentication/logout-callback"
+        ],
+        "permissions": [
+          "ept:authorization",
+          "ept:token",
+          "ept:logout",
+          "gt:authorization_code",
+          "gt:refresh_token",
+          "rt:code",
+          "scp:openid",
+          "scp:profile",
+          "scp:email",
+          "scp:roles",
+          "scp:api",
+          "scp:chamados"
+        ],
+        "requirements": [
+          "ft:pkce"
+        ]
+      },
+      {
+        "clientId": "mobile-client",
+        "displayName": "EChamado Mobile Client",
+        "clientType": "public",
+        "permissions": [
+          "ept:token",
+          "gt:password",
+          "gt:refresh_token",
+          "scp:openid",
+          "scp:profile",
+          "scp:email",
+          "scp:roles",
+          "scp:api",
+          "scp:chamados"
+        ]
+      },
+      {
+        "clientId": "postman-client",
+        "displayName": "Postman Testing Client",
+        "clientType": "confidential",
+        "clientSecret": "postman-secret-dev-only",
+        "permissions": [
+          "ept:token",
+          "gt:client_credentials",
+          "scp:api",
+          "scp:chamados"
+        ]
+      }
+    ],
+    "scopes": [
+      {
+        "name": "api",
+        "displayName": "EChamado API Access",
+        "description": "Acesso completo à API do EChamado",
+        "resources": ["EChamado.Server"]
+      },
+      {
+        "name": "chamados",
+        "displayName": "Chamados Management",
+        "description": "Gerenciamento de chamados",
+        "resources": ["EChamado.Server"]
+      }
+    ],
+    "certificates": {
+      "signing": {
+        "type": "development",
+        "algorithm": "RS256"
+      },
+      "encryption": {
+        "type": "development",
+        "algorithm": "RSA-OAEP"
+      }
+    }
+  },
+  
+  "staging": {
+    "issuer": "https://staging-api.echamado.com",
+    "clients": [
+      {
+        "clientId": "bwa-client-staging",
+        "displayName": "EChamado Blazor WebAssembly Client (Staging)",
+        "clientType": "public",
+        "consentType": "explicit",
+        "redirectUris": [
+          "https://staging.echamado.com/authentication/login-callback"
+        ],
+        "postLogoutRedirectUris": [
+          "https://staging.echamado.com/authentication/logout-callback"
+        ],
+        "permissions": [
+          "ept:authorization",
+          "ept:token",
+          "ept:logout",
+          "gt:authorization_code",
+          "gt:refresh_token",
+          "rt:code",
+          "scp:openid",
+          "scp:profile",
+          "scp:email",
+          "scp:roles",
+          "scp:api",
+          "scp:chamados"
+        ],
+        "requirements": [
+          "ft:pkce"
+        ]
+      }
+    ],
+    "certificates": {
+      "signing": {
+        "type": "file",
+        "path": "/app/certs/signing.pfx",
+        "password": "${SIGNING_CERT_PASSWORD}",
+        "algorithm": "RS256"
+      },
+      "encryption": {
+        "type": "file",
+        "path": "/app/certs/encryption.pfx",
+        "password": "${ENCRYPTION_CERT_PASSWORD}",
+        "algorithm": "RSA-OAEP"
+      }
+    }
+  },
+  
+  "production": {
+    "issuer": "https://api.echamado.com",
+    "clients": [
+      {
+        "clientId": "bwa-client-prod",
+        "displayName": "EChamado Blazor WebAssembly Client",
+        "clientType": "public",
+        "consentType": "explicit",
+        "redirectUris": [
+          "https://echamado.com/authentication/login-callback"
+        ],
+        "postLogoutRedirectUris": [
+          "https://echamado.com/authentication/logout-callback"
+        ],
+        "permissions": [
+          "ept:authorization",
+          "ept:token",
+          "ept:logout",
+          "gt:authorization_code",
+          "gt:refresh_token",
+          "rt:code",
+          "scp:openid",
+          "scp:profile",
+          "scp:email",
+          "scp:roles",
+          "scp:api",
+          "scp:chamados"
+        ],
+        "requirements": [
+          "ft:pkce"
+        ]
+      }
+    ],
+    "certificates": {
+      "signing": {
+        "type": "azure_keyvault",
+        "keyVaultUrl": "https://echamado-kv.vault.azure.net/",
+        "certificateName": "signing-cert",
+        "algorithm": "RS256"
+      },
+      "encryption": {
+        "type": "azure_keyvault",
+        "keyVaultUrl": "https://echamado-kv.vault.azure.net/",
+        "certificateName": "encryption-cert",
+        "algorithm": "RSA-OAEP"
+      }
+    },
+    "security": {
+      "tokenLifetime": {
+        "accessToken": "PT15M",
+        "refreshToken": "P30D",
+        "authorizationCode": "PT10M"
+      },
+      "rateLimiting": {
+        "enabled": true,
+        "requestsPerMinute": 60,
+        "burstLimit": 10
+      },
+      "cors": {
+        "allowedOrigins": [
+          "https://echamado.com"
+        ],
+        "allowCredentials": true
+      }
+    }
+  },
+  
+  "validation": {
+    "description": "Configurações para validação de tokens",
+    "localValidation": {
+      "enabled": true,
+      "clockSkew": "PT5M",
+      "validateIssuer": true,
+      "validateAudience": true,
+      "validateLifetime": true,
+      "validateSigningKey": true
+    },
+    "introspection": {
+      "enabled": false,
+      "clientId": "resource-server",
+      "clientSecret": "${INTROSPECTION_CLIENT_SECRET}",
+      "endpoint": "/connect/introspect"
+    }
+  },
+  
+  "logging": {
+    "logLevel": {
+      "OpenIddict": "Information",
+      "Microsoft.AspNetCore.Authentication": "Information"
+    },
+    "sensitiveDataLogging": false,
+    "auditEvents": [
+      "TokenIssued",
+      "TokenRevoked",
+      "ClientAuthenticated",
+      "AuthorizationGranted",
+      "AuthorizationDenied"
+    ]
+  },
+  
+  "examples": {
+    "description": "Exemplos de uso e configuração",
+    "authorizationUrl": "https://localhost:7296/connect/authorize?client_id=bwa-client&response_type=code&scope=openid%20profile%20email%20api&redirect_uri=https://localhost:7274/authentication/login-callback&code_challenge=CHALLENGE&code_challenge_method=S256&state=STATE",
+    "tokenRequest": {
+      "url": "https://localhost:7296/connect/token",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      "body": "grant_type=authorization_code&client_id=bwa-client&code=AUTHORIZATION_CODE&redirect_uri=https://localhost:7274/authentication/login-callback&code_verifier=CODE_VERIFIER"
+    },
+    "refreshTokenRequest": {
+      "url": "https://localhost:7296/connect/token",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      "body": "grant_type=refresh_token&client_id=bwa-client&refresh_token=REFRESH_TOKEN"
+    }
+  }
+}

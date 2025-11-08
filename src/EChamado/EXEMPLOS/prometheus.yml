@@ -1,0 +1,240 @@
+# Configuração do Prometheus para EChamado
+# Este arquivo define as configurações de coleta de métricas
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'echamado-production'
+    environment: 'production'
+
+# Configuração de alertas
+rule_files:
+  - "rules/*.yml"
+
+# Configuração do Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Configuração de scraping
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # EChamado Server API
+  - job_name: 'echamado-server'
+    static_configs:
+      - targets: 
+          - 'echamado-server-1:80'
+          - 'echamado-server-2:80'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scheme: http
+    basic_auth:
+      username: 'prometheus'
+      password: 'prometheus_password'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'echamado-server:80'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'aspnetcore_.*'
+        target_label: service
+        replacement: 'echamado-server'
+
+  # EChamado Auth Service
+  - job_name: 'echamado-auth'
+    static_configs:
+      - targets: ['echamado-auth:80']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scheme: http
+
+  # PostgreSQL Database
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '(.*)'
+        replacement: 'echamado-postgres'
+
+  # Redis Cache
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '(.*)'
+        replacement: 'echamado-redis'
+
+  # RabbitMQ Message Broker
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    basic_auth:
+      username: 'admin'
+      password: 'rabbitmq_password'
+
+  # Elasticsearch
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch-exporter:9114']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Node Exporter (System metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: 
+          - 'node-exporter-1:9100'
+          - 'node-exporter-2:9100'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):(\\d+)'
+        target_label: instance
+        replacement: '${1}'
+
+  # cAdvisor (Container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets:
+          - 'cadvisor-1:8080'
+          - 'cadvisor-2:8080'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):(\\d+)'
+        target_label: instance
+        replacement: '${1}'
+
+  # Nginx Load Balancer
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Blackbox Exporter (External monitoring)
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://echamado.com
+          - https://api.echamado.com/health
+          - https://auth.echamado.com/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Blackbox Exporter (TCP monitoring)
+  - job_name: 'blackbox-tcp'
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+          - postgres:5432
+          - redis:6379
+          - rabbitmq:5672
+          - elasticsearch:9200
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Custom Application Metrics
+  - job_name: 'echamado-business-metrics'
+    static_configs:
+      - targets: ['echamado-server-1:80', 'echamado-server-2:80']
+    scrape_interval: 60s
+    metrics_path: /metrics/business
+    scheme: http
+    metric_relabel_configs:
+      # Rename business metrics
+      - source_labels: [__name__]
+        regex: 'echamado_orders_(.*)'
+        target_label: __name__
+        replacement: 'business_orders_${1}'
+      - source_labels: [__name__]
+        regex: 'echamado_users_(.*)'
+        target_label: __name__
+        replacement: 'business_users_${1}'
+
+  # Background Workers
+  - job_name: 'echamado-workers'
+    static_configs:
+      - targets:
+          - 'echamado-worker-notifications:80'
+          - 'echamado-worker-reports:80'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: 'echamado-worker-(.*):(\\d+)'
+        target_label: worker_type
+        replacement: '${1}'
+
+# Configuração de armazenamento remoto (opcional)
+# remote_write:
+#   - url: "https://prometheus-remote-write.example.com/api/v1/write"
+#     basic_auth:
+#       username: "username"
+#       password: "password"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# remote_read:
+#   - url: "https://prometheus-remote-read.example.com/api/v1/read"
+#     basic_auth:
+#       username: "username"
+#       password: "password"
+
+# Configuração de retenção
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 50GB
+    wal-compression: true
+
+# Configuração de logging
+log_level: info
+log_format: json
+
+# Configuração de features experimentais
+# feature_flags:
+#   - promql-at-modifier
+#   - remote-write-receiver
