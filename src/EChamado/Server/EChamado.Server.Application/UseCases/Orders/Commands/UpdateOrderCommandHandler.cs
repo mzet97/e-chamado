@@ -1,24 +1,24 @@
+using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
+using EChamado.Shared.Responses;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
-public class UpdateOrderCommandHandler : IRequestHandler<UpdateOrderCommand, Unit>
+public class UpdateOrderCommandHandler(
+    IUnitOfWork unitOfWork,
+    ILogger<UpdateOrderCommandHandler> logger) :
+    IRequestHandler<UpdateOrderCommand, BaseResult>
 {
-    private readonly IOrderRepository _orderRepository;
-
-    public UpdateOrderCommandHandler(IOrderRepository orderRepository)
+    public async Task<BaseResult> Handle(UpdateOrderCommand request, CancellationToken cancellationToken)
     {
-        _orderRepository = orderRepository;
-    }
-
-    public async Task<Unit> Handle(UpdateOrderCommand request, CancellationToken cancellationToken)
-    {
-        var order = await _orderRepository.GetByIdAsync(request.Id, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(request.Id, cancellationToken);
 
         if (order == null)
         {
-            throw new InvalidOperationException($"Order with ID {request.Id} not found.");
+            logger.LogError("Order {OrderId} not found", request.Id);
+            throw new NotFoundException($"Order {request.Id} not found");
         }
 
         order.Update(
@@ -30,8 +30,20 @@ public class UpdateOrderCommandHandler : IRequestHandler<UpdateOrderCommand, Uni
             request.DueDate
         );
 
-        await _orderRepository.UpdateAsync(order, cancellationToken);
+        if (!order.IsValid())
+        {
+            logger.LogError("Validate Order has error");
+            throw new ValidationException("Validate Order has error", order.GetErrors());
+        }
 
-        return Unit.Value;
+        await unitOfWork.BeginTransactionAsync();
+
+        await unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+
+        await unitOfWork.CommitAsync();
+
+        logger.LogInformation("Order {OrderId} updated successfully", request.Id);
+
+        return new BaseResult();
     }
 }
