@@ -33,10 +33,30 @@ namespace EChamado.Client
                 }
             });
 
-            // HttpClient que usa tokens para chamadas autenticadas
-            builder.Services.AddHttpClient<ChamadoService>(client =>
+            // HttpClients autenticados para consumir a API
+            var backendUrl = builder.Configuration["BackendUrl"];
+
+            builder.Services.AddHttpClient<OrderService>(client =>
             {
-                client.BaseAddress = new Uri(builder.Configuration["BackendUrl"]);
+                client.BaseAddress = new Uri(backendUrl!);
+            })
+            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+
+            builder.Services.AddHttpClient<CategoryService>(client =>
+            {
+                client.BaseAddress = new Uri(backendUrl!);
+            })
+            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+
+            builder.Services.AddHttpClient<DepartmentService>(client =>
+            {
+                client.BaseAddress = new Uri(backendUrl!);
+            })
+            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+
+            builder.Services.AddHttpClient<LookupService>(client =>
+            {
+                client.BaseAddress = new Uri(backendUrl!);
             })
             .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
 

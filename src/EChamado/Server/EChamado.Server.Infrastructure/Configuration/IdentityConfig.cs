@@ -46,12 +46,13 @@ namespace EChamado.Server.Infrastructure.Configuration
                 options.Password.RequiredLength = 6;
                 options.Password.RequiredUniqueChars = 1;
 
-                options.SignIn.RequireConfirmedAccount = true;
+                options.SignIn.RequireConfirmedAccount = false; // Alterado para false para facilitar testes
 
                 options.User.AllowedUserNameCharacters =
                     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*()_=?. ";
                 options.User.RequireUniqueEmail = true;
             })
+            .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
@@ -82,8 +83,11 @@ namespace EChamado.Server.Infrastructure.Configuration
             // -------------------------
             // 4) CONFIGURAÇÃO DATA PROTECTION (para compartilhar cookies entre apps)
             // -------------------------
+            var keysPath = Path.Combine(Path.GetTempPath(), "EChamado-DataProtection-Keys");
+            Directory.CreateDirectory(keysPath);
+
             services.AddDataProtection()
-                .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "shared-keys")))
+                .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
                 .SetApplicationName("EChamado");
 
             // -------------------------
@@ -99,8 +103,10 @@ namespace EChamado.Server.Infrastructure.Configuration
             .AddCookie("External", options =>
             {
                 options.Cookie.Name = "EChamado.External";
-                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SameSite = SameSiteMode.None; // Permitir compartilhamento entre diferentes portas
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
                 options.LoginPath = "/Account/Login";
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
                 options.SlidingExpiration = true;

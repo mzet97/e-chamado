@@ -1,0 +1,263 @@
+@page "/orders"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject OrderService OrderService
+@inject LookupService LookupService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Chamados - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Chamados</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/orders/create">
+            Novo Chamado
+        </MudButton>
+    </div>
+
+    <!-- Filtros -->
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">Filtros</MudText>
+        <MudGrid>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="searchText"
+                              Label="Buscar"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Immediate="false"
+                              OnKeyUp="@(args => { if (args.Key == "Enter") ApplyFilters(); })" />
+            </MudItem>
+
+            <MudItem xs="12" md="3">
+                <MudSelect @bind-Value="selectedStatus"
+                           Label="Status"
+                           Variant="Variant.Outlined"
+                           Clearable="true">
+                    @foreach (var status in statuses)
+                    {
+                        <MudSelectItem Value="@status.Id">@status.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="3">
+                <MudSelect @bind-Value="selectedDepartment"
+                           Label="Departamento"
+                           Variant="Variant.Outlined"
+                           Clearable="true">
+                    @foreach (var dept in departments)
+                    {
+                        <MudSelectItem Value="@dept.Id">@dept.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="3">
+                <MudSelect @bind-Value="selectedType"
+                           Label="Tipo"
+                           Variant="Variant.Outlined"
+                           Clearable="true">
+                    @foreach (var type in types)
+                    {
+                        <MudSelectItem Value="@type.Id">@type.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudDateRangePicker @bind-DateRange="dateRange"
+                                    Label="Período"
+                                    Variant="Variant.Outlined"
+                                    Clearable="true" />
+            </MudItem>
+
+            <MudItem xs="12" md="3">
+                <MudSwitch @bind-Checked="showOnlyOverdue"
+                           Color="Color.Error"
+                           Label="Somente Vencidos" />
+            </MudItem>
+
+            <MudItem xs="12" md="3" Class="d-flex align-center">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           OnClick="ApplyFilters">
+                    Filtrar
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <!-- Tabela -->
+    <MudTable ServerData="@(new Func<TableState, Task<TableData<OrderListViewModel>>>(ServerReload))"
+              Dense="false"
+              Hover="true"
+              @ref="table"
+              Loading="@isLoading"
+              LoadingProgressColor="Color.Primary">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Lista de Chamados</MudText>
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary"
+                           OnClick="@(() => table.ReloadServerData())" />
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>Título</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Tipo</MudTh>
+            <MudTh>Departamento</MudTh>
+            <MudTh>Solicitante</MudTh>
+            <MudTh>Data Abertura</MudTh>
+            <MudTh>Prazo</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Título">
+                <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Title</MudText>
+            </MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip Size="Size.Small" Color="GetStatusColor(context.StatusName)">
+                    @context.StatusName
+                </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Tipo">@context.TypeName</MudTd>
+            <MudTd DataLabel="Departamento">@(context.DepartmentName ?? "-")</MudTd>
+            <MudTd DataLabel="Solicitante">@context.RequestingUserEmail</MudTd>
+            <MudTd DataLabel="Data">@context.OpeningDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Prazo">
+                @if (context.IsOverdue)
+                {
+                    <MudChip Size="Size.Small" Color="Color.Error">Vencido</MudChip>
+                }
+                else if (context.DueDate.HasValue)
+                {
+                    <MudText>@context.DueDate.Value.ToString("dd/MM/yyyy")</MudText>
+                }
+                else
+                {
+                    <MudText>-</MudText>
+                }
+            </MudTd>
+            <MudTd DataLabel="Ações">
+                <MudTooltip Text="Ver Detalhes">
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   Href="@($"/orders/{context.Id}")" />
+                </MudTooltip>
+                <MudTooltip Text="Editar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small"
+                                   Color="Color.Info"
+                                   Href="@($"/orders/{context.Id}/edit")" />
+                </MudTooltip>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>Nenhum chamado encontrado</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Carregando...</MudText>
+        </LoadingContent>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private MudTable<OrderListViewModel> table = null!;
+    private bool isLoading;
+
+    // Filtros
+    private string searchText = string.Empty;
+    private Guid? selectedStatus;
+    private Guid? selectedDepartment;
+    private Guid? selectedType;
+    private DateRange? dateRange;
+    private bool showOnlyOverdue;
+
+    // Lookups
+    private List<StatusTypeResponse> statuses = new();
+    private List<DepartmentResponse> departments = new();
+    private List<OrderTypeResponse> types = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Carrega lookups em paralelo
+            var statusTask = LookupService.GetStatusTypesAsync();
+            var deptTask = LookupService.GetDepartmentsAsync();
+            var typeTask = LookupService.GetOrderTypesAsync();
+
+            await Task.WhenAll(statusTask, deptTask, typeTask);
+
+            statuses = await statusTask;
+            departments = await deptTask;
+            types = await typeTask;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar filtros: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task<TableData<OrderListViewModel>> ServerReload(TableState state)
+    {
+        isLoading = true;
+
+        try
+        {
+            var parameters = new SearchOrdersParameters
+            {
+                PageNumber = state.Page + 1,
+                PageSize = state.PageSize,
+                SearchText = string.IsNullOrWhiteSpace(searchText) ? null : searchText,
+                StatusId = selectedStatus,
+                DepartmentId = selectedDepartment,
+                TypeId = selectedType,
+                StartDate = dateRange?.Start,
+                EndDate = dateRange?.End,
+                IsOverdue = showOnlyOverdue ? true : null
+            };
+
+            var result = await OrderService.SearchAsync(parameters);
+
+            return new TableData<OrderListViewModel>
+            {
+                TotalItems = result.TotalCount,
+                Items = result.Items
+            };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar chamados: {ex.Message}", Severity.Error);
+            return new TableData<OrderListViewModel> { TotalItems = 0, Items = new List<OrderListViewModel>() };
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        table.ReloadServerData();
+    }
+
+    private Color GetStatusColor(string status) => status.ToLower() switch
+    {
+        var s when s.Contains("aberto") || s.Contains("open") => Color.Info,
+        var s when s.Contains("andamento") || s.Contains("progress") => Color.Warning,
+        var s when s.Contains("fechado") || s.Contains("closed") || s.Contains("resolvido") => Color.Success,
+        _ => Color.Default
+    };
+}

@@ -1,31 +1,87 @@
 ﻿@using EChamado.Client
 @inherits LayoutComponentBase
 
-<MudThemeProvider 
+<MudThemeProvider
     @ref="_mudThemeProvider"
-    @bind-IsDarkMode="_isDarkMode" 
+    @bind-IsDarkMode="_isDarkMode"
     Theme="Configuration.Theme" />
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar>
-        EChamado
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h5" Class="ml-3">EChamado</MudText>
+        <MudSpacer />
         <MudSwitch Color="Color.Inherit"
-        @bind-Value="@_isDarkMode"
-        T="bool"
-        Class="ma-4"
-        ThumbIcon="@Icons.Material.TwoTone.DarkMode" />
+                   @bind-Value="@_isDarkMode"
+                   T="bool"
+                   Class="ma-4"
+                   ThumbIcon="@Icons.Material.TwoTone.DarkMode" />
         <LoginDisplay />
     </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen"
+               Elevation="2"
+               ClipMode="DrawerClipMode.Always">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Menu</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            <MudNavLink Href="/"
+                        Match="NavLinkMatch.All"
+                        Icon="@Icons.Material.Filled.Home">
+                Dashboard
+            </MudNavLink>
+
+            <MudNavGroup Title="Chamados"
+                         Icon="@Icons.Material.Filled.ConfirmationNumber"
+                         Expanded="true">
+                <MudNavLink Href="/orders"
+                            Match="NavLinkMatch.Prefix"
+                            Icon="@Icons.Material.Filled.List">
+                    Lista de Chamados
+                </MudNavLink>
+                <MudNavLink Href="/orders/create"
+                            Icon="@Icons.Material.Filled.Add">
+                    Novo Chamado
+                </MudNavLink>
+            </MudNavGroup>
+
+            <MudDivider Class="my-2" />
+
+            <MudNavGroup Title="Administração"
+                         Icon="@Icons.Material.Filled.Settings">
+                <MudNavLink Href="/admin/categories"
+                            Icon="@Icons.Material.Filled.Category">
+                    Categorias
+                </MudNavLink>
+                <MudNavLink Href="/admin/departments"
+                            Icon="@Icons.Material.Filled.Business">
+                    Departamentos
+                </MudNavLink>
+                <MudNavLink Href="/admin/types"
+                            Icon="@Icons.Material.Filled.Label">
+                    Tipos de Chamado
+                </MudNavLink>
+                <MudNavLink Href="/admin/status"
+                            Icon="@Icons.Material.Filled.RadioButtonChecked">
+                    Status
+                </MudNavLink>
+            </MudNavGroup>
+        </MudNavMenu>
+    </MudDrawer>
+
     <MudMainContent>
-        <MudContainer>
-            @Body
-        </MudContainer>
+        @Body
     </MudMainContent>
 </MudLayout>
 
 @code {
     private bool _isDarkMode = true;
+    private bool _drawerOpen = true;
     private MudThemeProvider _mudThemeProvider = null!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -43,5 +99,10 @@
         _isDarkMode = newValue;
         StateHasChanged();
         return Task.CompletedTask;
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
     }
 }

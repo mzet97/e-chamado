@@ -1,0 +1,333 @@
+@page "/orders/create"
+@page "/orders/{Id:guid}/edit"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject OrderService OrderService
+@inject LookupService LookupService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>@(IsEditMode ? "Editar Chamado" : "Novo Chamado") - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-6" Elevation="2">
+        <MudText Typo="Typo.h4" Class="mb-6">
+            @(IsEditMode ? "Editar Chamado" : "Novo Chamado")
+        </MudText>
+
+        @if (isLoading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+            <MudText>Carregando...</MudText>
+        }
+        else
+        {
+            <MudForm @ref="form" @bind-IsValid="@isFormValid">
+                <MudGrid>
+                    <!-- Título -->
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="model.Title"
+                                      Label="Título *"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      RequiredError="Título é obrigatório"
+                                      MaxLength="200"
+                                      Counter="200" />
+                    </MudItem>
+
+                    <!-- Descrição -->
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="model.Description"
+                                      Label="Descrição *"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      RequiredError="Descrição é obrigatória"
+                                      Lines="5"
+                                      MaxLength="2000"
+                                      Counter="2000" />
+                    </MudItem>
+
+                    <!-- Tipo -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect @bind-Value="model.TypeId"
+                                   Label="Tipo *"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   RequiredError="Tipo é obrigatório">
+                            @foreach (var type in types)
+                            {
+                                <MudSelectItem Value="@type.Id">@type.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Departamento -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect @bind-Value="model.DepartmentId"
+                                   Label="Departamento"
+                                   Variant="Variant.Outlined"
+                                   Clearable="true">
+                            @foreach (var dept in departments)
+                            {
+                                <MudSelectItem Value="@dept.Id">@dept.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Categoria -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect @bind-Value="selectedCategoryId"
+                                   Label="Categoria"
+                                   Variant="Variant.Outlined"
+                                   Clearable="true"
+                                   ValueChanged="OnCategoryChanged">
+                            @foreach (var cat in categories)
+                            {
+                                <MudSelectItem Value="@cat.Id">@cat.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Subcategoria -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect @bind-Value="model.SubCategoryId"
+                                   Label="Subcategoria"
+                                   Variant="Variant.Outlined"
+                                   Clearable="true"
+                                   Disabled="@(availableSubCategories.Count == 0)">
+                            @foreach (var subCat in availableSubCategories)
+                            {
+                                <MudSelectItem Value="@subCat.Id">@subCat.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Prazo -->
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker @bind-Date="dueDate"
+                                       Label="Prazo"
+                                       Variant="Variant.Outlined"
+                                       Clearable="true"
+                                       MinDate="DateTime.Today"
+                                       DateFormat="dd/MM/yyyy" />
+                    </MudItem>
+
+                    <!-- Botões -->
+                    <MudItem xs="12" Class="d-flex justify-space-between mt-4">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Default"
+                                   OnClick="Cancel">
+                            Cancelar
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Disabled="@(!isFormValid || isSaving)"
+                                   OnClick="Submit">
+                            @if (isSaving)
+                            {
+                                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                                <span>Salvando...</span>
+                            }
+                            else
+                            {
+                                <span>@(IsEditMode ? "Atualizar" : "Criar")</span>
+                            }
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsEditMode => Id.HasValue;
+
+    private MudForm form = null!;
+    private bool isFormValid;
+    private bool isLoading = true;
+    private bool isSaving;
+
+    // Model
+    private OrderFormModel model = new();
+    private Guid? selectedCategoryId;
+    private DateTime? dueDate;
+
+    // Lookups
+    private List<OrderTypeResponse> types = new();
+    private List<DepartmentResponse> departments = new();
+    private List<CategoryResponse> categories = new();
+    private List<SubCategoryResponse> availableSubCategories = new();
+
+    private class OrderFormModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public Guid TypeId { get; set; }
+        public Guid? DepartmentId { get; set; }
+        public Guid? SubCategoryId { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Carrega lookups em paralelo
+            var typesTask = LookupService.GetOrderTypesAsync();
+            var deptsTask = LookupService.GetDepartmentsAsync();
+            var catsTask = LookupService.GetCategoriesAsync();
+
+            await Task.WhenAll(typesTask, deptsTask, catsTask);
+
+            types = await typesTask;
+            departments = await deptsTask;
+            categories = await catsTask;
+
+            // Se está editando, carrega os dados do chamado
+            if (IsEditMode)
+            {
+                await LoadOrder();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar dados: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadOrder()
+    {
+        try
+        {
+            var order = await OrderService.GetByIdAsync(Id!.Value);
+            if (order == null)
+            {
+                Snackbar.Add("Chamado não encontrado", Severity.Error);
+                NavigationManager.NavigateTo("/orders");
+                return;
+            }
+
+            model.Title = order.Title;
+            model.Description = order.Description;
+            model.TypeId = order.TypeId;
+            model.DepartmentId = order.DepartmentId;
+            model.SubCategoryId = order.SubCategoryId;
+            dueDate = order.DueDate;
+
+            // Se tem categoria, carrega as subcategorias
+            if (order.CategoryId.HasValue)
+            {
+                selectedCategoryId = order.CategoryId.Value;
+                await LoadSubCategories(order.CategoryId.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar chamado: {ex.Message}", Severity.Error);
+            NavigationManager.NavigateTo("/orders");
+        }
+    }
+
+    private async Task OnCategoryChanged(Guid? categoryId)
+    {
+        selectedCategoryId = categoryId;
+        model.SubCategoryId = null;
+        availableSubCategories.Clear();
+
+        if (categoryId.HasValue)
+        {
+            await LoadSubCategories(categoryId.Value);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadSubCategories(Guid categoryId)
+    {
+        try
+        {
+            availableSubCategories = await LookupService.GetSubCategoriesAsync(categoryId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar subcategorias: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+
+        if (!isFormValid)
+        {
+            Snackbar.Add("Por favor, preencha todos os campos obrigatórios", Severity.Warning);
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            if (IsEditMode)
+            {
+                var request = new UpdateOrderRequest(
+                    model.Title,
+                    model.Description,
+                    model.TypeId,
+                    selectedCategoryId,
+                    model.SubCategoryId,
+                    model.DepartmentId,
+                    dueDate
+                );
+
+                await OrderService.UpdateAsync(Id!.Value, request);
+                Snackbar.Add("Chamado atualizado com sucesso!", Severity.Success);
+                NavigationManager.NavigateTo($"/orders/{Id.Value}");
+            }
+            else
+            {
+                var request = new CreateOrderRequest(
+                    model.Title,
+                    model.Description,
+                    model.TypeId,
+                    selectedCategoryId,
+                    model.SubCategoryId,
+                    model.DepartmentId,
+                    dueDate
+                );
+
+                var orderId = await OrderService.CreateAsync(request);
+                Snackbar.Add("Chamado criado com sucesso!", Severity.Success);
+                NavigationManager.NavigateTo($"/orders/{orderId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar chamado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        if (IsEditMode)
+        {
+            NavigationManager.NavigateTo($"/orders/{Id.Value}");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/orders");
+        }
+    }
+}
