@@ -5,10 +5,13 @@ using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+using EChamado.Server.Application.UseCases.StatusTypes.Notifications;
+
 namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 
 public class CreateStatusTypeCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<CreateStatusTypeCommandHandler> logger) :
     IRequestHandler<CreateStatusTypeCommand, BaseResult<Guid>>
 {
@@ -27,6 +30,8 @@ public class CreateStatusTypeCommandHandler(
         await unitOfWork.StatusTypes.AddAsync(entity);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new CreatedStatusTypeNotification(entity.Id, entity.Name, entity.Description));
 
         logger.LogInformation("StatusType {StatusTypeId} created successfully", entity.Id);
 

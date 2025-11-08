@@ -4,10 +4,13 @@ using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+using EChamado.Server.Application.UseCases.Categories.Notifications;
+
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class UpdateSubCategoryCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<UpdateSubCategoryCommandHandler> logger) :
     IRequestHandler<UpdateSubCategoryCommand, BaseResult>
 {
@@ -34,6 +37,8 @@ public class UpdateSubCategoryCommandHandler(
         await unitOfWork.SubCategories.UpdateAsync(subCategory, cancellationToken);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new UpdatedSubCategoryNotification(subCategory.Id, subCategory.Name, subCategory.Description));
 
         logger.LogInformation("SubCategory {SubCategoryId} updated successfully", request.Id);
 

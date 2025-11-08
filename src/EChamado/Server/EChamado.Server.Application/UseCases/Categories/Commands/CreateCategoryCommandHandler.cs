@@ -1,3 +1,4 @@
+using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Domains.Categories;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
@@ -9,6 +10,7 @@ namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class CreateCategoryCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<CreateCategoryCommandHandler> logger) :
     IRequestHandler<CreateCategoryCommand, BaseResult<Guid>>
 {
@@ -27,6 +29,8 @@ public class CreateCategoryCommandHandler(
         await unitOfWork.Categories.AddAsync(entity);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new CreatedCategoryNotification(entity.Id, entity.Name, entity.Description));
 
         logger.LogInformation("Category {CategoryId} created successfully", entity.Id);
 

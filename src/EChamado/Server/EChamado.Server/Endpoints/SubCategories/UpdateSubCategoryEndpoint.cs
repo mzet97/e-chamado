@@ -2,12 +2,12 @@ using EChamado.Server.Application.UseCases.Categories.Commands;
 using EChamado.Shared.Responses;
 using MediatR;
 
-namespace EChamado.Server.Endpoints.Categories;
+namespace EChamado.Server.Endpoints.SubCategories;
 
 public class UpdateSubCategoryEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapPut("/subcategories/{id:guid}", HandleAsync)
+        => app.MapPut("/{id:guid}", HandleAsync)
             .WithName("Atualizar uma subcategoria")
             .Produces<BaseResult>();
 

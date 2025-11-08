@@ -2,24 +2,23 @@ using EChamado.Server.Application.UseCases.Categories.Commands;
 using EChamado.Shared.Responses;
 using MediatR;
 
-namespace EChamado.Server.Endpoints.Categories;
+namespace EChamado.Server.Endpoints.SubCategories;
 
 public class CreateSubCategoryEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapPost("/{categoryId:guid}/subcategories", HandleAsync)
+        => app.MapPost("/", HandleAsync)
             .WithName("Criar uma nova subcategoria")
             .Produces<BaseResult<Guid>>();
 
     private static async Task<IResult> HandleAsync(
         IMediator mediator,
-        Guid categoryId,
         CreateSubCategoryRequest request)
     {
         var command = new CreateSubCategoryCommand(
             request.Name,
             request.Description,
-            categoryId
+            request.CategoryId
         );
 
         var result = await mediator.Send(command);
@@ -33,5 +32,6 @@ public class CreateSubCategoryEndpoint : IEndpoint
 
 public record CreateSubCategoryRequest(
     string Name,
-    string Description
+    string Description,
+    Guid CategoryId
 );

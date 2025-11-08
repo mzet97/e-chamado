@@ -5,10 +5,13 @@ using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
+
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
 public class CreateOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<CreateOrderTypeCommandHandler> logger) :
     IRequestHandler<CreateOrderTypeCommand, BaseResult<Guid>>
 {
@@ -27,6 +30,8 @@ public class CreateOrderTypeCommandHandler(
         await unitOfWork.OrderTypes.AddAsync(entity);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new CreatedOrderTypeNotification(entity.Id, entity.Name, entity.Description));
 
         logger.LogInformation("OrderType {OrderTypeId} created successfully", entity.Id);
 

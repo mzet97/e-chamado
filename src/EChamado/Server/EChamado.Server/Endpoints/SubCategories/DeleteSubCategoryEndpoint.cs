@@ -2,12 +2,12 @@ using EChamado.Server.Application.UseCases.Categories.Commands;
 using EChamado.Shared.Responses;
 using MediatR;
 
-namespace EChamado.Server.Endpoints.Categories;
+namespace EChamado.Server.Endpoints.SubCategories;
 
 public class DeleteSubCategoryEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapDelete("/subcategories/{id:guid}", HandleAsync)
+        => app.MapDelete("/{id:guid}", HandleAsync)
             .WithName("Deletar uma subcategoria")
             .Produces<BaseResult>();
 

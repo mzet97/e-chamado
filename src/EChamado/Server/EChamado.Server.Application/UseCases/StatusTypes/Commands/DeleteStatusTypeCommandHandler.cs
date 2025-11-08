@@ -4,10 +4,13 @@ using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+using EChamado.Server.Application.UseCases.StatusTypes.Notifications;
+
 namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 
 public class DeleteStatusTypeCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<DeleteStatusTypeCommandHandler> logger) :
     IRequestHandler<DeleteStatusTypeCommand, BaseResult>
 {
@@ -26,6 +29,8 @@ public class DeleteStatusTypeCommandHandler(
         await unitOfWork.StatusTypes.DeleteAsync(statusType, cancellationToken);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new DeletedStatusTypeNotification(statusType.Id, statusType.Name, statusType.Description));
 
         logger.LogInformation("StatusType {StatusTypeId} deleted successfully", request.StatusTypeId);
 
