@@ -4,10 +4,13 @@ using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+using EChamado.Server.Application.UseCases.Categories.Notifications;
+
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class DeleteSubCategoryCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<DeleteSubCategoryCommandHandler> logger) :
     IRequestHandler<DeleteSubCategoryCommand, BaseResult>
 {
@@ -26,6 +29,8 @@ public class DeleteSubCategoryCommandHandler(
         await unitOfWork.SubCategories.DeleteAsync(subCategory, cancellationToken);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new DeletedSubCategoryNotification(subCategory.Id, subCategory.Name, subCategory.Description));
 
         logger.LogInformation("SubCategory {SubCategoryId} deleted successfully", request.SubCategoryId);
 

@@ -1,3 +1,4 @@
+using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
@@ -8,6 +9,7 @@ namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class DeleteCategoryCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<DeleteCategoryCommandHandler> logger) :
     IRequestHandler<DeleteCategoryCommand, BaseResult>
 {
@@ -26,6 +28,8 @@ public class DeleteCategoryCommandHandler(
         await unitOfWork.Categories.DeleteAsync(category, cancellationToken);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new DeletedCategoryNotification(category.Id, category.Name, category.Description));
 
         logger.LogInformation("Category {CategoryId} deleted successfully", request.CategoryId);
 

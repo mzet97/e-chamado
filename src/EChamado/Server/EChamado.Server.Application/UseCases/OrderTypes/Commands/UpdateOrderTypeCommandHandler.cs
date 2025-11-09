@@ -4,10 +4,13 @@ using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
+
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
 public class UpdateOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<UpdateOrderTypeCommandHandler> logger) :
     IRequestHandler<UpdateOrderTypeCommand, BaseResult>
 {
@@ -34,6 +37,8 @@ public class UpdateOrderTypeCommandHandler(
         await unitOfWork.OrderTypes.UpdateAsync(orderType, cancellationToken);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new UpdatedOrderTypeNotification(orderType.Id, orderType.Name, orderType.Description));
 
         logger.LogInformation("OrderType {OrderTypeId} updated successfully", request.Id);
 

@@ -4,10 +4,13 @@ using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
+
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
 public class DeleteOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<DeleteOrderTypeCommandHandler> logger) :
     IRequestHandler<DeleteOrderTypeCommand, BaseResult>
 {
@@ -26,6 +29,8 @@ public class DeleteOrderTypeCommandHandler(
         await unitOfWork.OrderTypes.DeleteAsync(orderType, cancellationToken);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new DeletedOrderTypeNotification(orderType.Id, orderType.Name, orderType.Description));
 
         logger.LogInformation("OrderType {OrderTypeId} deleted successfully", request.OrderTypeId);
 

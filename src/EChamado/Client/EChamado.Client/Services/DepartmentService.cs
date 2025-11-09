@@ -1,4 +1,5 @@
 using EChamado.Client.Models;
+using EChamado.Shared.Responses;
 using System.Net.Http.Json;
 
 namespace EChamado.Client.Services;
@@ -13,12 +14,12 @@ public class DepartmentService
     }
 
     /// <summary>
-    /// Busca todos os departamentos
+    /// Busca todos os departamentos usando Search
     /// </summary>
-    public async Task<List<DepartmentResponse>> GetAllAsync()
+    public async Task<List<DepartmentResponse>> GetAllAsync(int pageSize = 100)
     {
-        var result = await _httpClient.GetFromJsonAsync<List<DepartmentResponse>>("api/departments");
-        return result ?? new List<DepartmentResponse>();
+        var result = await _httpClient.GetFromJsonAsync<BaseResultList<DepartmentResponse>>($"v1/departments?PageSize={pageSize}");
+        return result?.Data?.ToList() ?? new List<DepartmentResponse>();
     }
 
     /// <summary>
@@ -28,7 +29,8 @@ public class DepartmentService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<DepartmentResponse>($"api/departments/{id}");
+            var result = await _httpClient.GetFromJsonAsync<BaseResult<DepartmentResponse>>($"v1/department/{id}");
+            return result?.Data;
         }
         catch (HttpRequestException)
         {
@@ -41,9 +43,10 @@ public class DepartmentService
     /// </summary>
     public async Task<Guid> CreateAsync(CreateDepartmentRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/departments", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/department", request);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<Guid>();
+        var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
+        return result?.Data ?? Guid.Empty;
     }
 
     /// <summary>
@@ -51,7 +54,7 @@ public class DepartmentService
     /// </summary>
     public async Task UpdateAsync(Guid id, UpdateDepartmentRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"api/departments/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/department/{id}", request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -60,7 +63,7 @@ public class DepartmentService
     /// </summary>
     public async Task DeleteAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"api/departments/{id}");
+        var response = await _httpClient.DeleteAsync($"v1/department/{id}");
         response.EnsureSuccessStatusCode();
     }
 }

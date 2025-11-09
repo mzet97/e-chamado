@@ -6,6 +6,7 @@ using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.OrderTypes;
 using EChamado.Server.Endpoints.Roles;
 using EChamado.Server.Endpoints.StatusTypes;
+using EChamado.Server.Endpoints.SubCategories;
 using EChamado.Server.Endpoints.Users;
 using Microsoft.AspNetCore.Mvc;
 
@@ -84,7 +85,7 @@ public static class Endpoint
         endpoints.MapGroup("v1/categories")
             .WithTags("Category")
             .RequireAuthorization()
-            .MapEndpoint<GetAllCategoriesEndpoint>();
+            .MapEndpoint<SearchCategoriesEndpoint>();
 
         endpoints.MapGroup("v1/category")
             .WithTags("Category")
@@ -92,7 +93,17 @@ public static class Endpoint
             .MapEndpoint<GetCategoryByIdEndpoint>()
             .MapEndpoint<CreateCategoryEndpoint>()
             .MapEndpoint<UpdateCategoryEndpoint>()
-            .MapEndpoint<DeleteCategoryEndpoint>()
+            .MapEndpoint<DeleteCategoryEndpoint>();
+
+        endpoints.MapGroup("v1/subcategories")
+            .WithTags("SubCategory")
+            .RequireAuthorization()
+            .MapEndpoint<SearchSubCategoriesEndpoint>();
+
+        endpoints.MapGroup("v1/subcategory")
+            .WithTags("SubCategory")
+            .RequireAuthorization()
+            .MapEndpoint<GetSubCategoryByIdEndpoint>()
             .MapEndpoint<CreateSubCategoryEndpoint>()
             .MapEndpoint<UpdateSubCategoryEndpoint>()
             .MapEndpoint<DeleteSubCategoryEndpoint>();
@@ -100,7 +111,7 @@ public static class Endpoint
         endpoints.MapGroup("v1/ordertypes")
             .WithTags("OrderType")
             .RequireAuthorization()
-            .MapEndpoint<GetAllOrderTypesEndpoint>();
+            .MapEndpoint<SearchOrderTypesEndpoint>();
 
         endpoints.MapGroup("v1/ordertype")
             .WithTags("OrderType")
@@ -113,7 +124,7 @@ public static class Endpoint
         endpoints.MapGroup("v1/statustypes")
             .WithTags("StatusType")
             .RequireAuthorization()
-            .MapEndpoint<GetAllStatusTypesEndpoint>();
+            .MapEndpoint<SearchStatusTypesEndpoint>();
 
         endpoints.MapGroup("v1/statustype")
             .WithTags("StatusType")

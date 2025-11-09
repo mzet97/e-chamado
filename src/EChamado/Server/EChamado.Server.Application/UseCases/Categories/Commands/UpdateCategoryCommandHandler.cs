@@ -1,3 +1,4 @@
+using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
@@ -8,6 +9,7 @@ namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class UpdateCategoryCommandHandler(
     IUnitOfWork unitOfWork,
+    IMediator mediator,
     ILogger<UpdateCategoryCommandHandler> logger) :
     IRequestHandler<UpdateCategoryCommand, BaseResult>
 {
@@ -34,6 +36,8 @@ public class UpdateCategoryCommandHandler(
         await unitOfWork.Categories.UpdateAsync(category, cancellationToken);
 
         await unitOfWork.CommitAsync();
+
+        await mediator.Publish(new UpdatedCategoryNotification(category.Id, category.Name, category.Description));
 
         logger.LogInformation("Category {CategoryId} updated successfully", request.Id);
 
