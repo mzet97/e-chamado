@@ -1,0 +1,251 @@
+@page "/admin/categories"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject CategoryService CategoryService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@attribute [Authorize]
+
+<PageTitle>Gerenciar Categorias - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Gerenciar Categorias</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreateCategoryDialog">
+            Nova Categoria
+        </MudButton>
+    </div>
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else if (categories == null || !categories.Any())
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudText Typo="Typo.h6" Color="Color.Secondary">
+                Nenhuma categoria encontrada
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Crie a primeira categoria clicando no botão acima
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Elevation="2">
+            @foreach (var category in categories)
+            {
+                <MudExpansionPanel Class="mb-2">
+                    <TitleContent>
+                        <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                            <div>
+                                <MudText Typo="Typo.h6">@category.Name</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@category.Description</MudText>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Color="Color.Primary"
+                                               OnClick="@(() => OpenEditCategoryDialog(category))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="@(() => DeleteCategory(category.Id))" />
+                            </div>
+                        </div>
+                    </TitleContent>
+                    <ChildContent>
+                        <div class="pa-4">
+                            <div class="d-flex justify-space-between align-center mb-3">
+                                <MudText Typo="Typo.subtitle1">Subcategorias</MudText>
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Add"
+                                           OnClick="@(() => OpenCreateSubCategoryDialog(category.Id))">
+                                    Nova Subcategoria
+                                </MudButton>
+                            </div>
+
+                            @if (category.SubCategories == null || !category.SubCategories.Any())
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-2">
+                                    Nenhuma subcategoria cadastrada
+                                </MudText>
+                            }
+                            else
+                            {
+                                <MudList Dense="true">
+                                    @foreach (var subCategory in category.SubCategories)
+                                    {
+                                        <MudListItem>
+                                            <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                                                <div>
+                                                    <MudText>@subCategory.Name</MudText>
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@subCategory.Description</MudText>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Primary"
+                                                                   OnClick="@(() => OpenEditSubCategoryDialog(subCategory, category.Id))" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Error"
+                                                                   OnClick="@(() => DeleteSubCategory(subCategory.Id))" />
+                                                </div>
+                                            </div>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                        </div>
+                    </ChildContent>
+                </MudExpansionPanel>
+            }
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private List<CategoryResponse> categories = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        loading = true;
+        try
+        {
+            categories = await CategoryService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar categorias: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task OpenCreateCategoryDialog()
+    {
+        var parameters = new DialogParameters<CreateCategoryDialog>();
+        var dialog = await DialogService.ShowAsync<CreateCategoryDialog>("Nova Categoria", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task OpenEditCategoryDialog(CategoryResponse category)
+    {
+        var parameters = new DialogParameters<EditCategoryDialog>
+        {
+            { x => x.Category, category }
+        };
+        var dialog = await DialogService.ShowAsync<EditCategoryDialog>("Editar Categoria", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task DeleteCategory(Guid id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita." },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+
+        var dialog = await DialogService.ShowAsync<MudBlazor.Dialogs.ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                await CategoryService.DeleteAsync(id);
+                Snackbar.Add("Categoria excluída com sucesso!", Severity.Success);
+                await LoadCategories();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir categoria: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenCreateSubCategoryDialog(Guid categoryId)
+    {
+        var parameters = new DialogParameters<CreateSubCategoryDialog>
+        {
+            { x => x.CategoryId, categoryId }
+        };
+        var dialog = await DialogService.ShowAsync<CreateSubCategoryDialog>("Nova Subcategoria", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task OpenEditSubCategoryDialog(SubCategoryResponse subCategory, Guid categoryId)
+    {
+        var parameters = new DialogParameters<EditSubCategoryDialog>
+        {
+            { x => x.SubCategory, subCategory },
+            { x => x.CategoryId, categoryId }
+        };
+        var dialog = await DialogService.ShowAsync<EditSubCategoryDialog>("Editar Subcategoria", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task DeleteSubCategory(Guid id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Tem certeza que deseja excluir esta subcategoria? Esta ação não pode ser desfeita." },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+
+        var dialog = await DialogService.ShowAsync<MudBlazor.Dialogs.ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                await CategoryService.DeleteSubCategoryAsync(id);
+                Snackbar.Add("Subcategoria excluída com sucesso!", Severity.Success);
+                await LoadCategories();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir subcategoria: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

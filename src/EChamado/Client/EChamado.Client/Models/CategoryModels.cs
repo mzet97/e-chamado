@@ -17,4 +17,4 @@ public record SubCategoryResponse(
 public record CreateCategoryRequest(string Name, string Description);
 public record UpdateCategoryRequest(string Name, string Description);
 public record CreateSubCategoryRequest(string Name, string Description, Guid CategoryId);
-public record UpdateSubCategoryRequest(string Name, string Description);
+public record UpdateSubCategoryRequest(string Name, string Description, Guid CategoryId);
