@@ -1,10 +1,9 @@
-using EChamado.Server.Domain.Entities;
+using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
 using MediatR;
 using Microsoft.Extensions.Logging;
-
 using EChamado.Server.Application.UseCases.Categories.Notifications;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;

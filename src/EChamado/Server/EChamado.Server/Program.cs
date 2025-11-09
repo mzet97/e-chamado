@@ -1,4 +1,7 @@
+using EChamado.Server.Configuration;
+using EChamado.Server.Endpoints;
 using EChamado.Server.Infrastructure.Configuration;
+using EChamado.Server.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +34,9 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(EChamado.Server.Application.UseCases.Orders.Commands.CreateOrderCommand).Assembly);
 });
 
+// Health Checks
+builder.Services.AddHealthCheckConfiguration(builder.Configuration);
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -41,10 +47,20 @@ await DatabaseInitializer.InitializeDatabaseAsync(app.Services);
 // Usar CORS antes de Routing
 app.UseCors("AllowBlazorClient");
 
+// Logging Middlewares
+app.UseRequestLogging();
+app.UsePerformanceLogging(slowRequestThresholdMs: 3000);
+
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Health Checks
+app.UseHealthCheckConfiguration();
+
+// Mapear todos os endpoints (incluindo SubCategories)
+app.MapEndpoints();
 
 app.MapControllers();
 

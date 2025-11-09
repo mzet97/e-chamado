@@ -24,7 +24,15 @@ public class UpdateSubCategoryCommandHandler(
             throw new NotFoundException($"SubCategory {request.Id} not found");
         }
 
-        subCategory.Update(request.Name, request.Description);
+        var category = await unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken);
+
+        if (category == null)
+        {
+            logger.LogError("Category {CategoryId} not found", request.CategoryId);
+            throw new NotFoundException($"Category {request.CategoryId} not found");
+        }
+
+        subCategory.Update(request.Name, request.Description, request.CategoryId);
 
         if (!subCategory.IsValid())
         {
