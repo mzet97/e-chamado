@@ -73,4 +73,5 @@ public class ApplicationDbContext(DbContextOptions options, ILoggerFactory logge
     public DbSet<Category> Categories { get; set; } = null!;
     public DbSet<StatusType> StatusTypes { get; set; } = null!;
     public DbSet<OrderType> OrderTypes { get; set; } = null!;
+    public DbSet<Comment> Comments { get; set; } = null!;
 }

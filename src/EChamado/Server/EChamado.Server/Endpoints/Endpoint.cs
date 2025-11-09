@@ -1,6 +1,7 @@
 ﻿using EChamado.Server.Common.Api;
 using EChamado.Server.Endpoints.Auth;
 using EChamado.Server.Endpoints.Categories;
+using EChamado.Server.Endpoints.Comments;
 using EChamado.Server.Endpoints.Departments;
 using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.OrderTypes;
@@ -147,8 +148,14 @@ public static class Endpoint
             .MapEndpoint<UpdateOrderEndpoint>()
             .MapEndpoint<AssignOrderEndpoint>()
             .MapEndpoint<CloseOrderEndpoint>()
-            .MapEndpoint<ChangeStatusOrderEndpoint>();
+            .MapEndpoint<ChangeStatusOrderEndpoint>()
+            .MapEndpoint<CreateCommentEndpoint>()
+            .MapEndpoint<GetCommentsByOrderIdEndpoint>();
 
+        endpoints.MapGroup("v1")
+            .WithTags("Comment")
+            .RequireAuthorization()
+            .MapEndpoint<DeleteCommentEndpoint>();
 
     }
 
