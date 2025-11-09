@@ -1,36 +1,39 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class AssignOrderCommandHandler(
     IUnitOfWork unitOfWork,
     ILogger<AssignOrderCommandHandler> logger) :
-    IRequestHandler<AssignOrderCommand, BaseResult>
+    RequestHandlerAsync<AssignOrderCommand>
 {
-    public async Task<BaseResult> Handle(AssignOrderCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<AssignOrderCommand> HandleAsync(AssignOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId, cancellationToken);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.OrderId);
-            throw new NotFoundException($"Order {request.OrderId} not found");
+            logger.LogError("Order {OrderId} not found", command.OrderId);
+            throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
         // Busca usuário para obter email
-        var user = await unitOfWork.Users.GetByIdAsync(request.AssignedToUserId, cancellationToken);
+        var user = await unitOfWork.Users.GetByIdAsync(command.AssignedToUserId, cancellationToken);
 
         if (user == null)
         {
-            logger.LogError("User {UserId} not found", request.AssignedToUserId);
-            throw new NotFoundException($"User {request.AssignedToUserId} not found");
+            logger.LogError("User {UserId} not found", command.AssignedToUserId);
+            throw new NotFoundException($"User {command.AssignedToUserId} not found");
         }
 
-        order.AssignTo(request.AssignedToUserId, user.Email ?? string.Empty);
+        order.AssignTo(command.AssignedToUserId, user.Email ?? string.Empty);
 
         if (!order.IsValid())
         {
@@ -44,8 +47,9 @@ public class AssignOrderCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        logger.LogInformation("Order {OrderId} assigned to user {UserId}", request.OrderId, request.AssignedToUserId);
+        logger.LogInformation("Order {OrderId} assigned to user {UserId}", command.OrderId, command.AssignedToUserId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

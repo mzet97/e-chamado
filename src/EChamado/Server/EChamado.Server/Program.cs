@@ -28,12 +28,6 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddIdentityConfig(builder.Configuration);
 
-// Configuração MediatR
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(typeof(EChamado.Server.Application.UseCases.Orders.Commands.CreateOrderCommand).Assembly);
-});
-
 // Health Checks
 builder.Services.AddHealthCheckConfiguration(builder.Configuration);
 

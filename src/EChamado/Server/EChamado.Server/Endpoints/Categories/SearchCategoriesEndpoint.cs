@@ -1,8 +1,9 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.Queries;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Categories;
 
@@ -14,7 +15,7 @@ public class SearchCategoriesEndpoint : IEndpoint
             .Produces<BaseResultList<CategoryViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         [AsParameters] SearchCategoriesParameters parameters)
     {
         var query = new SearchCategoriesQuery
@@ -30,7 +31,7 @@ public class SearchCategoriesEndpoint : IEndpoint
             PageSize = parameters.PageSize
         };
 
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.Send(query);
 
         if (result.Success)
             return TypedResults.Ok(result);

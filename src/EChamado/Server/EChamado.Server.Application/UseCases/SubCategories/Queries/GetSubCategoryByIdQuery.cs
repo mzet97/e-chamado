@@ -1,7 +1,19 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.SubCategories.Queries;
 
-public record GetSubCategoryByIdQuery(Guid SubCategoryId) : IRequest<BaseResult<SubCategoryViewModel>>;
+public class GetSubCategoryByIdQuery : BrighterRequest<BaseResult<SubCategoryViewModel>>
+{
+    public Guid SubCategoryId { get; set; }
+
+    public GetSubCategoryByIdQuery()
+    {
+    }
+
+    public GetSubCategoryByIdQuery(Guid subCategoryId)
+    {
+        SubCategoryId = subCategoryId;
+    }
+}

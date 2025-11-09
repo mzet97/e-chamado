@@ -1,33 +1,36 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class UpdateOrderCommandHandler(
     IUnitOfWork unitOfWork,
     ILogger<UpdateOrderCommandHandler> logger) :
-    IRequestHandler<UpdateOrderCommand, BaseResult>
+    RequestHandlerAsync<UpdateOrderCommand>
 {
-    public async Task<BaseResult> Handle(UpdateOrderCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<UpdateOrderCommand> HandleAsync(UpdateOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.Id, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.Id, cancellationToken);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.Id);
-            throw new NotFoundException($"Order {request.Id} not found");
+            logger.LogError("Order {OrderId} not found", command.Id);
+            throw new NotFoundException($"Order {command.Id} not found");
         }
 
         order.Update(
-            request.Title,
-            request.Description,
-            request.CategoryId,
-            request.SubCategoryId,
-            request.DepartmentId,
-            request.DueDate
+            command.Title,
+            command.Description,
+            command.CategoryId,
+            command.SubCategoryId,
+            command.DepartmentId,
+            command.DueDate
         );
 
         if (!order.IsValid())
@@ -42,8 +45,9 @@ public class UpdateOrderCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        logger.LogInformation("Order {OrderId} updated successfully", request.Id);
+        logger.LogInformation("Order {OrderId} updated successfully", command.Id);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

@@ -2,7 +2,7 @@ using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries;
@@ -10,16 +10,16 @@ namespace EChamado.Server.Application.UseCases.Orders.Queries;
 public class GetOrderByIdQueryHandler(
     IUnitOfWork unitOfWork,
     ILogger<GetOrderByIdQueryHandler> logger) :
-    IRequestHandler<GetOrderByIdQuery, BaseResult<OrderViewModel>>
+    RequestHandlerAsync<GetOrderByIdQuery>
 {
-    public async Task<BaseResult<OrderViewModel>> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
+    public override async Task<GetOrderByIdQuery> HandleAsync(GetOrderByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(query.OrderId, cancellationToken);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.OrderId);
-            throw new NotFoundException($"Order {request.OrderId} not found");
+            logger.LogError("Order {OrderId} not found", query.OrderId);
+            throw new NotFoundException($"Order {query.OrderId} not found");
         }
 
         var status = await unitOfWork.StatusTypes.GetByIdAsync(order.StatusId, cancellationToken);
@@ -63,8 +63,10 @@ public class GetOrderByIdQueryHandler(
             order.UpdatedAt
         );
 
-        logger.LogInformation("Order {OrderId} retrieved successfully", request.OrderId);
+        logger.LogInformation("Order {OrderId} retrieved successfully", query.OrderId);
 
-        return new BaseResult<OrderViewModel>(viewModel);
+        query.Result = new BaseResult<OrderViewModel>(viewModel);
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

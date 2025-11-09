@@ -1,9 +1,10 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Orders.Queries;
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Orders;
 
@@ -18,7 +19,7 @@ public class SearchOrdersEndpoint : IEndpoint
            .Produces<BaseResultList<OrderListViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         [AsParameters] SearchOrdersParameters parameters)
     {
         var query = new SearchOrdersQuery
@@ -37,7 +38,7 @@ public class SearchOrdersEndpoint : IEndpoint
             PageSize = parameters.PageSize ?? 10
         };
 
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.Send(query);
 
         if (result.Success)
         {

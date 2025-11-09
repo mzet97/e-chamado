@@ -1,8 +1,9 @@
-﻿using EChamado.Server.Application.UseCases.Users.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Users.Queries;
 using EChamado.Server.Application.UseCases.Users.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Users;
 
@@ -17,9 +18,9 @@ public class GetAllUsersEndpoint : IEndpoint
         .Produces<BaseResultList<ApplicationUserViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator)
+        IAmACommandProcessor commandProcessor)
     {
-        var result = await mediator.Send(new GetAllUsersQuery());
+        var result = await commandProcessor.Send(new GetAllUsersQuery());
 
         if (result.Success)
         {

@@ -1,13 +1,18 @@
-using MediatR;
+using Paramore.Brighter;
 using System.Text.Json;
 
 namespace EChamado.Server.Application.UseCases.Categories.Notifications;
 
-public class UpdatedCategoryNotification : INotification
+public class UpdatedCategoryNotification : IRequest
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+
+    public UpdatedCategoryNotification()
+    {
+        Id = Guid.NewGuid();
+    }
 
     public UpdatedCategoryNotification(Guid id, string name, string description)
     {

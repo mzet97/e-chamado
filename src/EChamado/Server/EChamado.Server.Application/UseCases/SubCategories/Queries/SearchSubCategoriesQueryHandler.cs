@@ -3,59 +3,59 @@ using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
 using LinqKit;
-using MediatR;
+using Paramore.Brighter;
 using System.Linq.Expressions;
 
 namespace EChamado.Server.Application.UseCases.SubCategories.Queries;
 
 public class SearchSubCategoriesQueryHandler(IUnitOfWork unitOfWork) :
-    IRequestHandler<SearchSubCategoriesQuery, BaseResultList<SubCategoryViewModel>>
+    RequestHandlerAsync<SearchSubCategoriesQuery>
 {
-    public async Task<BaseResultList<SubCategoryViewModel>> Handle(
-        SearchSubCategoriesQuery request,
-        CancellationToken cancellationToken)
+    public override async Task<SearchSubCategoriesQuery> HandleAsync(
+        SearchSubCategoriesQuery query,
+        CancellationToken cancellationToken = default)
     {
         Expression<Func<SubCategory, bool>>? filter = PredicateBuilder.New<SubCategory>(true);
         Func<IQueryable<SubCategory>, IOrderedQueryable<SubCategory>>? orderBy = null;
 
-        if (!string.IsNullOrWhiteSpace(request.Name))
+        if (!string.IsNullOrWhiteSpace(query.Name))
         {
-            filter = filter.And(x => x.Name == request.Name);
+            filter = filter.And(x => x.Name == query.Name);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Description))
+        if (!string.IsNullOrWhiteSpace(query.Description))
         {
-            filter = filter.And(x => x.Description == request.Description);
+            filter = filter.And(x => x.Description == query.Description);
         }
 
-        if (request.CategoryId.HasValue && request.CategoryId.Value != Guid.Empty)
+        if (query.CategoryId.HasValue && query.CategoryId.Value != Guid.Empty)
         {
-            filter = filter.And(x => x.CategoryId == request.CategoryId.Value);
+            filter = filter.And(x => x.CategoryId == query.CategoryId.Value);
         }
 
-        if (request.Id != Guid.Empty)
+        if (query.Id != Guid.Empty)
         {
-            filter = filter.And(x => x.Id == request.Id);
+            filter = filter.And(x => x.Id == query.Id);
         }
 
-        if (request.CreatedAt != default)
+        if (query.CreatedAt != default)
         {
-            filter = filter.And(x => x.CreatedAt == request.CreatedAt);
+            filter = filter.And(x => x.CreatedAt == query.CreatedAt);
         }
 
-        if (request.UpdatedAt != default)
+        if (query.UpdatedAt != default)
         {
-            filter = filter.And(x => x.UpdatedAt == request.UpdatedAt);
+            filter = filter.And(x => x.UpdatedAt == query.UpdatedAt);
         }
 
-        if (request.DeletedAt != new DateTime())
+        if (query.DeletedAt != new DateTime())
         {
-            filter = filter.And(x => x.DeletedAt == request.DeletedAt);
+            filter = filter.And(x => x.DeletedAt == query.DeletedAt);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Order))
+        if (!string.IsNullOrWhiteSpace(query.Order))
         {
-            switch (request.Order)
+            switch (query.Order)
             {
                 case "Id":
                     orderBy = x => x.OrderBy(n => n.Id);
@@ -95,8 +95,8 @@ public class SearchSubCategoriesQueryHandler(IUnitOfWork unitOfWork) :
             .SearchAsync(
                 filter,
                 orderBy,
-                request.PageSize,
-                request.PageIndex);
+                query.PageSize,
+                query.PageIndex);
 
         var items = result.Data.Select(sc => new SubCategoryViewModel(
             sc.Id,
@@ -105,6 +105,8 @@ public class SearchSubCategoriesQueryHandler(IUnitOfWork unitOfWork) :
             sc.CategoryId
         )).ToList();
 
-        return new BaseResultList<SubCategoryViewModel>(items, result.PagedResult);
+        query.Result = new BaseResultList<SubCategoryViewModel>(items, result.PagedResult);
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

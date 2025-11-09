@@ -2,7 +2,7 @@ using EChamado.Server.Application.UseCases.OrderTypes.ViewModels;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Queries;
@@ -10,16 +10,16 @@ namespace EChamado.Server.Application.UseCases.OrderTypes.Queries;
 public class GetOrderTypeByIdQueryHandler(
     IUnitOfWork unitOfWork,
     ILogger<GetOrderTypeByIdQueryHandler> logger) :
-    IRequestHandler<GetOrderTypeByIdQuery, BaseResult<OrderTypeViewModel>>
+    RequestHandlerAsync<GetOrderTypeByIdQuery>
 {
-    public async Task<BaseResult<OrderTypeViewModel>> Handle(GetOrderTypeByIdQuery request, CancellationToken cancellationToken)
+    public override async Task<GetOrderTypeByIdQuery> HandleAsync(GetOrderTypeByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(request.OrderTypeId, cancellationToken);
+        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(query.OrderTypeId, cancellationToken);
 
         if (orderType == null)
         {
-            logger.LogError("OrderType {OrderTypeId} not found", request.OrderTypeId);
-            throw new NotFoundException($"OrderType {request.OrderTypeId} not found");
+            logger.LogError("OrderType {OrderTypeId} not found", query.OrderTypeId);
+            throw new NotFoundException($"OrderType {query.OrderTypeId} not found");
         }
 
         var viewModel = new OrderTypeViewModel(
@@ -28,8 +28,10 @@ public class GetOrderTypeByIdQueryHandler(
             orderType.Description
         );
 
-        logger.LogInformation("OrderType {OrderTypeId} retrieved successfully", request.OrderTypeId);
+        logger.LogInformation("OrderType {OrderTypeId} retrieved successfully", query.OrderTypeId);
 
-        return new BaseResult<OrderTypeViewModel>(viewModel);
+        query.Result = new BaseResult<OrderTypeViewModel>(viewModel);
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

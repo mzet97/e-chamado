@@ -1,7 +1,8 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Orders.Commands;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using System.Security.Claims;
 
 namespace EChamado.Server.Endpoints.Orders;
@@ -17,7 +18,7 @@ public class CreateOrderEndpoint : IEndpoint
         .Produces<BaseResult<Guid>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         HttpContext httpContext,
         CreateOrderRequest request)
     {
@@ -41,7 +42,7 @@ public class CreateOrderEndpoint : IEndpoint
             userEmail
         );
 
-        var result = await mediator.Send(command);
+        var result = await commandProcessor.Send(command);
 
         if (result.Success)
         {

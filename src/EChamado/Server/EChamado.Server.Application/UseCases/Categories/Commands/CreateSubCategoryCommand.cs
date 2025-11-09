@@ -1,10 +1,22 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
-public record CreateSubCategoryCommand(
-    string Name,
-    string Description,
-    Guid CategoryId
-) : IRequest<BaseResult<Guid>>;
+public class CreateSubCategoryCommand : BrighterRequest<BaseResult<Guid>>
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public Guid CategoryId { get; set; } = default!;
+
+    public CreateSubCategoryCommand()
+    {
+    }
+
+    public CreateSubCategoryCommand(string name, string description, Guid categoryId)
+    {
+        Name = name;
+        Description = description;
+        CategoryId = categoryId;
+    }
+}

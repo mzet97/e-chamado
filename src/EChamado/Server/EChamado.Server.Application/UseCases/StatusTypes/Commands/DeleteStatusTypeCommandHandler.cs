@@ -1,27 +1,29 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.StatusTypes.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.StatusTypes.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 
 public class DeleteStatusTypeCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<DeleteStatusTypeCommandHandler> logger) :
-    IRequestHandler<DeleteStatusTypeCommand, BaseResult>
+    RequestHandlerAsync<DeleteStatusTypeCommand>
 {
-    public async Task<BaseResult> Handle(DeleteStatusTypeCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DeleteStatusTypeCommand> HandleAsync(DeleteStatusTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(request.StatusTypeId, cancellationToken);
+        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(command.StatusTypeId, cancellationToken);
 
         if (statusType == null)
         {
-            logger.LogError("StatusType {StatusTypeId} not found", request.StatusTypeId);
-            throw new NotFoundException($"StatusType {request.StatusTypeId} not found");
+            logger.LogError("StatusType {StatusTypeId} not found", command.StatusTypeId);
+            throw new NotFoundException($"StatusType {command.StatusTypeId} not found");
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -30,10 +32,11 @@ public class DeleteStatusTypeCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new DeletedStatusTypeNotification(statusType.Id, statusType.Name, statusType.Description));
+        await commandProcessor.PublishAsync(new DeletedStatusTypeNotification(statusType.Id, statusType.Name, statusType.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("StatusType {StatusTypeId} deleted successfully", request.StatusTypeId);
+        logger.LogInformation("StatusType {StatusTypeId} deleted successfully", command.StatusTypeId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

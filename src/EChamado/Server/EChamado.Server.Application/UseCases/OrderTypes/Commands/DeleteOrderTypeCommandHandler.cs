@@ -1,27 +1,29 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
 public class DeleteOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<DeleteOrderTypeCommandHandler> logger) :
-    IRequestHandler<DeleteOrderTypeCommand, BaseResult>
+    RequestHandlerAsync<DeleteOrderTypeCommand>
 {
-    public async Task<BaseResult> Handle(DeleteOrderTypeCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DeleteOrderTypeCommand> HandleAsync(DeleteOrderTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(request.OrderTypeId, cancellationToken);
+        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(command.OrderTypeId, cancellationToken);
 
         if (orderType == null)
         {
-            logger.LogError("OrderType {OrderTypeId} not found", request.OrderTypeId);
-            throw new NotFoundException($"OrderType {request.OrderTypeId} not found");
+            logger.LogError("OrderType {OrderTypeId} not found", command.OrderTypeId);
+            throw new NotFoundException($"OrderType {command.OrderTypeId} not found");
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -30,10 +32,11 @@ public class DeleteOrderTypeCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new DeletedOrderTypeNotification(orderType.Id, orderType.Name, orderType.Description));
+        await commandProcessor.PublishAsync(new DeletedOrderTypeNotification(orderType.Id, orderType.Name, orderType.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("OrderType {OrderTypeId} deleted successfully", request.OrderTypeId);
+        logger.LogInformation("OrderType {OrderTypeId} deleted successfully", command.OrderTypeId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

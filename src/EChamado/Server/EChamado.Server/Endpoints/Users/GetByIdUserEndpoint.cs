@@ -1,9 +1,10 @@
-﻿using EChamado.Server.Application.UseCases.Users.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Users.Queries;
 using EChamado.Server.Application.UseCases.Users.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Users;
 
@@ -18,10 +19,10 @@ public class GetByIdUserEndpoint : IEndpoint
         .Produces<BaseResult<ApplicationUserViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         [FromRoute] Guid id)
     {
-        var result = await mediator.Send(new GetByIdUserQuery(id));
+        var result = await commandProcessor.Send(new GetByIdUserQuery(id));
 
         if (result.Success)
         {

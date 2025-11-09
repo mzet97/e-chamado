@@ -1,7 +1,8 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Server.Application.UseCases.SubCategories.Queries;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.SubCategories;
 
@@ -13,11 +14,11 @@ public class GetSubCategoryByIdEndpoint : IEndpoint
             .Produces<BaseResult<SubCategoryViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         Guid id)
     {
         var query = new GetSubCategoryByIdQuery(id);
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.Send(query);
 
         if (result.Success)
             return TypedResults.Ok(result);

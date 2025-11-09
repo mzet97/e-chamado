@@ -1,26 +1,22 @@
-﻿using MediatR;
+﻿using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Auth.Notifications.Handlers;
 
-public class AuthNotificationHandler(ILogger<AuthNotificationHandler> logger) :
-    INotificationHandler<LoginUserNotification>,
-    INotificationHandler<RegisterUserNotification>
+public class LoginUserNotificationHandler(ILogger<LoginUserNotificationHandler> logger) : RequestHandlerAsync<LoginUserNotification>
 {
-
-    public Task Handle(LoginUserNotification notification, CancellationToken cancellationToken)
+    public override async Task<LoginUserNotification> HandleAsync(LoginUserNotification notification, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() =>
-        {
-            logger.LogInformation("LoginUserNotification: " + notification.Message);
-        });
+        logger.LogInformation("LoginUserNotification: " + notification.Message);
+        return await base.HandleAsync(notification, cancellationToken);
     }
+}
 
-    public Task Handle(RegisterUserNotification notification, CancellationToken cancellationToken)
+public class RegisterUserNotificationHandler(ILogger<RegisterUserNotificationHandler> logger) : RequestHandlerAsync<RegisterUserNotification>
+{
+    public override async Task<RegisterUserNotification> HandleAsync(RegisterUserNotification notification, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() =>
-        {
-            logger.LogInformation("RegisterUserNotification: " + notification.Message);
-        });
+        logger.LogInformation("RegisterUserNotification: " + notification.Message);
+        return await base.HandleAsync(notification, cancellationToken);
     }
 }

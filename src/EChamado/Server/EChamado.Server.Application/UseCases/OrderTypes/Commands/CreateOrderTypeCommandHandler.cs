@@ -1,23 +1,25 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
 using EChamado.Server.Domain.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
 public class CreateOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<CreateOrderTypeCommandHandler> logger) :
-    IRequestHandler<CreateOrderTypeCommand, BaseResult<Guid>>
+    RequestHandlerAsync<CreateOrderTypeCommand>
 {
-    public async Task<BaseResult<Guid>> Handle(CreateOrderTypeCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<CreateOrderTypeCommand> HandleAsync(CreateOrderTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var entity = OrderType.Create(request.Name, request.Description);
+        var entity = OrderType.Create(command.Name, command.Description);
 
         if (!entity.IsValid())
         {
@@ -31,10 +33,11 @@ public class CreateOrderTypeCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new CreatedOrderTypeNotification(entity.Id, entity.Name, entity.Description));
+        await commandProcessor.PublishAsync(new CreatedOrderTypeNotification(entity.Id, entity.Name, entity.Description), cancellationToken: cancellationToken);
 
         logger.LogInformation("OrderType {OrderTypeId} created successfully", entity.Id);
 
-        return new BaseResult<Guid>(entity.Id);
+        command.Result = new BaseResult<Guid>(entity.Id);
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

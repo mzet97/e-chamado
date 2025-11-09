@@ -1,28 +1,31 @@
-﻿using EChamado.Server.Application.UseCases.Departments.Notifications;
+﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Departments.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Departments.Commands.Handlers;
 
 public class DeletesDepartmentCommandHandler(IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<DeletesDepartmentCommandHandler> logger) :
-    IRequestHandler<DeletesDepartmentCommand, BaseResult>
+    RequestHandlerAsync<DeletesDepartmentCommand>
 {
-    public async Task<BaseResult> Handle(DeletesDepartmentCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DeletesDepartmentCommand> HandleAsync(DeletesDepartmentCommand command, CancellationToken cancellationToken = default)
     {
-        if (request == null)
+        if (command == null)
         {
             logger.LogError("DeleteDepartmentCommand is null");
-            throw new ArgumentNullException(nameof(request));
+            throw new ArgumentNullException(nameof(command));
         }
 
         await unitOfWork.BeginTransactionAsync();
 
-        foreach (var id in request.Ids)
+        foreach (var id in command.Ids)
         {
             var entity = await unitOfWork
                 .Departments
@@ -39,14 +42,14 @@ public class DeletesDepartmentCommandHandler(IUnitOfWork unitOfWork,
 
             await unitOfWork.CommitAsync();
 
-            await mediator.Publish(
+            await commandProcessor.PublishAsync(
                 new DeletedDepartmentNotification(
                     entity.Id,
                     entity.Name,
-                    entity.Description));
+                    entity.Description), cancellationToken: cancellationToken);
         }
 
-
-        return new BaseResult(true, "Deletado com sucesso");
+        command.Result = new BaseResult(true, "Deletado com sucesso");
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

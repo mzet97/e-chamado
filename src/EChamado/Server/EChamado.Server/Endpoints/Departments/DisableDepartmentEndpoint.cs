@@ -1,8 +1,9 @@
-﻿using EChamado.Server.Application.UseCases.Departments.Commands;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Departments.Commands;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Departments;
 
@@ -17,10 +18,10 @@ public class DisableDepartmentEndpoint : IEndpoint
         .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         [FromRoute] Guid id)
     {
-        var result = await mediator.Send(new DisableDepartmentCommand(id));
+        var result = await commandProcessor.Send(new DisableDepartmentCommand(id));
 
         if (result.Success)
         {

@@ -1,7 +1,8 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Comments.Queries;
 using EChamado.Server.Application.UseCases.Comments.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Comments;
 
@@ -13,11 +14,11 @@ public class GetCommentsByOrderIdEndpoint : IEndpoint
             .Produces<BaseResultList<CommentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         Guid orderId)
     {
         var query = new GetCommentsByOrderIdQuery(orderId);
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.Send(query);
 
         if (result.Success)
             return TypedResults.Ok(result);

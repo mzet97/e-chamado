@@ -1,38 +1,40 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.Categories.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class UpdateSubCategoryCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<UpdateSubCategoryCommandHandler> logger) :
-    IRequestHandler<UpdateSubCategoryCommand, BaseResult>
+    RequestHandlerAsync<UpdateSubCategoryCommand>
 {
-    public async Task<BaseResult> Handle(UpdateSubCategoryCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<UpdateSubCategoryCommand> HandleAsync(UpdateSubCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(request.Id, cancellationToken);
+        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(command.Id, cancellationToken);
 
         if (subCategory == null)
         {
-            logger.LogError("SubCategory {SubCategoryId} not found", request.Id);
-            throw new NotFoundException($"SubCategory {request.Id} not found");
+            logger.LogError("SubCategory {SubCategoryId} not found", command.Id);
+            throw new NotFoundException($"SubCategory {command.Id} not found");
         }
 
-        var category = await unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken);
+        var category = await unitOfWork.Categories.GetByIdAsync(command.CategoryId, cancellationToken);
 
         if (category == null)
         {
-            logger.LogError("Category {CategoryId} not found", request.CategoryId);
-            throw new NotFoundException($"Category {request.CategoryId} not found");
+            logger.LogError("Category {CategoryId} not found", command.CategoryId);
+            throw new NotFoundException($"Category {command.CategoryId} not found");
         }
 
-        subCategory.Update(request.Name, request.Description, request.CategoryId);
+        subCategory.Update(command.Name, command.Description, command.CategoryId);
 
         if (!subCategory.IsValid())
         {
@@ -46,10 +48,11 @@ public class UpdateSubCategoryCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new UpdatedSubCategoryNotification(subCategory.Id, subCategory.Name, subCategory.Description));
+        await commandProcessor.PublishAsync(new UpdatedSubCategoryNotification(subCategory.Id, subCategory.Name, subCategory.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("SubCategory {SubCategoryId} updated successfully", request.Id);
+        logger.LogInformation("SubCategory {SubCategoryId} updated successfully", command.Id);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

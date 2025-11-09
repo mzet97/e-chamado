@@ -1,30 +1,32 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
 public class UpdateOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<UpdateOrderTypeCommandHandler> logger) :
-    IRequestHandler<UpdateOrderTypeCommand, BaseResult>
+    RequestHandlerAsync<UpdateOrderTypeCommand>
 {
-    public async Task<BaseResult> Handle(UpdateOrderTypeCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<UpdateOrderTypeCommand> HandleAsync(UpdateOrderTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(request.Id, cancellationToken);
+        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(command.Id, cancellationToken);
 
         if (orderType == null)
         {
-            logger.LogError("OrderType {OrderTypeId} not found", request.Id);
-            throw new NotFoundException($"OrderType {request.Id} not found");
+            logger.LogError("OrderType {OrderTypeId} not found", command.Id);
+            throw new NotFoundException($"OrderType {command.Id} not found");
         }
 
-        orderType.Update(request.Name, request.Description);
+        orderType.Update(command.Name, command.Description);
 
         if (!orderType.IsValid())
         {
@@ -38,10 +40,11 @@ public class UpdateOrderTypeCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new UpdatedOrderTypeNotification(orderType.Id, orderType.Name, orderType.Description));
+        await commandProcessor.PublishAsync(new UpdatedOrderTypeNotification(orderType.Id, orderType.Name, orderType.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("OrderType {OrderTypeId} updated successfully", request.Id);
+        logger.LogInformation("OrderType {OrderTypeId} updated successfully", command.Id);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }
