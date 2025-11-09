@@ -1,8 +1,9 @@
-﻿using EChamado.Server.Application.UseCases.Departments.Commands;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Departments.Commands;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Departments;
 
@@ -17,7 +18,7 @@ public class DeletesDepartmentEndpoint : IEndpoint
         .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         [FromQuery(Name = "ids")] Guid[] ids)
     {
         if (ids == null || !ids.Any())
@@ -25,7 +26,7 @@ public class DeletesDepartmentEndpoint : IEndpoint
             return TypedResults.BadRequest(new BaseResult(false, "Nenhum ID foi fornecido."));
         }
 
-        var result = await mediator.Send(new DeletesDepartmentCommand(ids));
+        var result = await commandProcessor.Send(new DeletesDepartmentCommand(ids));
 
         if (result.Success)
         {

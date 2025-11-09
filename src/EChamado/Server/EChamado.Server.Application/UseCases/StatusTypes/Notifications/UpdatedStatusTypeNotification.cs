@@ -1,13 +1,18 @@
-using MediatR;
+using Paramore.Brighter;
 using System.Text.Json;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Notifications;
 
-public class UpdatedStatusTypeNotification : INotification
+public class UpdatedStatusTypeNotification : IRequest
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+
+    public UpdatedStatusTypeNotification()
+    {
+        Id = Guid.NewGuid();
+    }
 
     public UpdatedStatusTypeNotification(Guid id, string name, string description)
     {

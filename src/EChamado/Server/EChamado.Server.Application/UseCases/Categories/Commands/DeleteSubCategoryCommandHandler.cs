@@ -1,27 +1,29 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.Categories.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class DeleteSubCategoryCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<DeleteSubCategoryCommandHandler> logger) :
-    IRequestHandler<DeleteSubCategoryCommand, BaseResult>
+    RequestHandlerAsync<DeleteSubCategoryCommand>
 {
-    public async Task<BaseResult> Handle(DeleteSubCategoryCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DeleteSubCategoryCommand> HandleAsync(DeleteSubCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(request.SubCategoryId, cancellationToken);
+        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(command.SubCategoryId, cancellationToken);
 
         if (subCategory == null)
         {
-            logger.LogError("SubCategory {SubCategoryId} not found", request.SubCategoryId);
-            throw new NotFoundException($"SubCategory {request.SubCategoryId} not found");
+            logger.LogError("SubCategory {SubCategoryId} not found", command.SubCategoryId);
+            throw new NotFoundException($"SubCategory {command.SubCategoryId} not found");
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -30,10 +32,11 @@ public class DeleteSubCategoryCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new DeletedSubCategoryNotification(subCategory.Id, subCategory.Name, subCategory.Description));
+        await commandProcessor.PublishAsync(new DeletedSubCategoryNotification(subCategory.Id, subCategory.Name, subCategory.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("SubCategory {SubCategoryId} deleted successfully", request.SubCategoryId);
+        logger.LogInformation("SubCategory {SubCategoryId} deleted successfully", command.SubCategoryId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

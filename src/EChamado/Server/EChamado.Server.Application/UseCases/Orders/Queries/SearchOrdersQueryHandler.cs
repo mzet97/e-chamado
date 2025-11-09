@@ -1,7 +1,7 @@
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries;
@@ -9,58 +9,58 @@ namespace EChamado.Server.Application.UseCases.Orders.Queries;
 public class SearchOrdersQueryHandler(
     IUnitOfWork unitOfWork,
     ILogger<SearchOrdersQueryHandler> logger) :
-    IRequestHandler<SearchOrdersQuery, BaseResultList<OrderListViewModel>>
+    RequestHandlerAsync<SearchOrdersQuery>
 {
-    public async Task<BaseResultList<OrderListViewModel>> Handle(SearchOrdersQuery request, CancellationToken cancellationToken)
+    public override async Task<SearchOrdersQuery> HandleAsync(SearchOrdersQuery query, CancellationToken cancellationToken = default)
     {
         // Busca todos os orders
-        var query = await unitOfWork.Orders.GetAllAsync(cancellationToken);
+        var orders = await unitOfWork.Orders.GetAllAsync(cancellationToken);
 
         // Aplica filtros
-        var filtered = query.AsEnumerable();
+        var filtered = orders.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(request.SearchText))
+        if (!string.IsNullOrWhiteSpace(query.SearchText))
         {
-            var searchLower = request.SearchText.ToLower();
+            var searchLower = query.SearchText.ToLower();
             filtered = filtered.Where(o =>
                 o.Title.ToLower().Contains(searchLower) ||
                 o.Description.ToLower().Contains(searchLower));
         }
 
-        if (request.StatusId.HasValue)
-            filtered = filtered.Where(o => o.StatusId == request.StatusId.Value);
+        if (query.StatusId.HasValue)
+            filtered = filtered.Where(o => o.StatusId == query.StatusId.Value);
 
-        if (request.TypeId.HasValue)
-            filtered = filtered.Where(o => o.TypeId == request.TypeId.Value);
+        if (query.TypeId.HasValue)
+            filtered = filtered.Where(o => o.TypeId == query.TypeId.Value);
 
-        if (request.DepartmentId.HasValue)
-            filtered = filtered.Where(o => o.DepartmentId == request.DepartmentId.Value);
+        if (query.DepartmentId.HasValue)
+            filtered = filtered.Where(o => o.DepartmentId == query.DepartmentId.Value);
 
-        if (request.CategoryId.HasValue)
-            filtered = filtered.Where(o => o.CategoryId == request.CategoryId.Value);
+        if (query.CategoryId.HasValue)
+            filtered = filtered.Where(o => o.CategoryId == query.CategoryId.Value);
 
-        if (request.RequestingUserId.HasValue)
-            filtered = filtered.Where(o => o.RequestingUserId == request.RequestingUserId.Value);
+        if (query.RequestingUserId.HasValue)
+            filtered = filtered.Where(o => o.RequestingUserId == query.RequestingUserId.Value);
 
-        if (request.AssignedToUserId.HasValue)
-            filtered = filtered.Where(o => o.ResponsibleUserId == request.AssignedToUserId.Value);
+        if (query.AssignedToUserId.HasValue)
+            filtered = filtered.Where(o => o.ResponsibleUserId == query.AssignedToUserId.Value);
 
-        if (request.StartDate.HasValue)
-            filtered = filtered.Where(o => o.OpeningDate >= request.StartDate.Value);
+        if (query.StartDate.HasValue)
+            filtered = filtered.Where(o => o.OpeningDate >= query.StartDate.Value);
 
-        if (request.EndDate.HasValue)
-            filtered = filtered.Where(o => o.OpeningDate <= request.EndDate.Value);
+        if (query.EndDate.HasValue)
+            filtered = filtered.Where(o => o.OpeningDate <= query.EndDate.Value);
 
-        if (request.IsOverdue.HasValue && request.IsOverdue.Value)
+        if (query.IsOverdue.HasValue && query.IsOverdue.Value)
             filtered = filtered.Where(o => o.DueDate.HasValue && o.DueDate.Value < DateTime.UtcNow && !o.ClosingDate.HasValue);
 
         var totalCount = filtered.Count();
 
         // Paginação
-        var orders = filtered
+        var ordersResult = filtered
             .OrderByDescending(o => o.OpeningDate)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((query.PageNumber - 1) * query.PageSize)
+            .Take(query.PageSize)
             .ToList();
 
         // Busca dados relacionados
@@ -73,7 +73,7 @@ public class SearchOrdersQueryHandler(
         var departmentDict = departments.ToDictionary(d => d.Id, d => d.Name);
 
         // Mapeia para ViewModels
-        var items = orders.Select(o => new OrderListViewModel(
+        var items = ordersResult.Select(o => new OrderListViewModel(
             o.Id,
             o.Title,
             o.OpeningDate,
@@ -89,6 +89,8 @@ public class SearchOrdersQueryHandler(
 
         logger.LogInformation("Search orders returned {Count} results", items.Count);
 
-        return new BaseResultList<OrderListViewModel>(items, totalCount, request.PageNumber, request.PageSize);
+        query.Result = new BaseResultList<OrderListViewModel>(items, totalCount, query.PageNumber, query.PageSize);
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

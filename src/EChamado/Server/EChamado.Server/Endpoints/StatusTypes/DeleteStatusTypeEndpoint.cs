@@ -1,6 +1,7 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.StatusTypes.Commands;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.StatusTypes;
 
@@ -12,11 +13,11 @@ public class DeleteStatusTypeEndpoint : IEndpoint
             .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         Guid id)
     {
         var command = new DeleteStatusTypeCommand(id);
-        var result = await mediator.Send(command);
+        var result = await commandProcessor.Send(command);
 
         if (result.Success)
             return TypedResults.Ok(result);

@@ -1,6 +1,18 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Comments.Commands;
 
-public record DeleteCommentCommand(Guid CommentId) : IRequest<BaseResult>;
+public class DeleteCommentCommand : BrighterRequest<BaseResult>
+{
+    public Guid CommentId { get; set; } = default!;
+
+    public DeleteCommentCommand()
+    {
+    }
+
+    public DeleteCommentCommand(Guid commentId)
+    {
+        CommentId = commentId;
+    }
+}

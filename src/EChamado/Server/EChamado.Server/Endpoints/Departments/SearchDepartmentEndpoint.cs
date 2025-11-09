@@ -1,9 +1,10 @@
-﻿using EChamado.Server.Application.UseCases.Departments.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Departments.Queries;
 using EChamado.Server.Application.UseCases.Departments.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Departments;
 
@@ -18,7 +19,7 @@ public class SearchDepartmentEndpoint : IEndpoint
            .Produces<BaseResultList<DepartmentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         [AsParameters] SearchDepartment search)
     {
         var query = new SearchDepartmentQuery
@@ -34,7 +35,7 @@ public class SearchDepartmentEndpoint : IEndpoint
             PageSize = search.PageSize ?? 10,
         };
 
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.Send(query);
 
         if (result.Success)
         {

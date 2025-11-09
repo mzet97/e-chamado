@@ -1,27 +1,32 @@
-﻿using EChamado.Server.Application.UseCases.Auth.Notifications;
+﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Auth.Notifications;
 using EChamado.Server.Domain.Services.Interface;
 using EChamado.Shared.Responses;
 using EChamado.Shared.ViewModels.Auth;
-using MediatR;
+using Paramore.Brighter;
 using System.Text;
 
 namespace EChamado.Server.Application.UseCases.Auth.Commands.Handlers;
 
 public class RegisterUserCommandHandler(
     IApplicationUserService applicationUserService,
-    IMediator mediator
-    ) : IRequestHandler<RegisterUserCommand, BaseResult<LoginResponseViewModel>>
+    IAmACommandProcessor commandProcessor
+    ) : RequestHandlerAsync<RegisterUserCommand>
 {
-    public async Task<BaseResult<LoginResponseViewModel>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<RegisterUserCommand> HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
     {
-        var user = request.ToDomain();
+        var user = command.ToDomain();
 
-        var resultCreateUser = await applicationUserService.CreateAsync(user, request.Password);
+        var resultCreateUser = await applicationUserService.CreateAsync(user, command.Password);
 
         if (resultCreateUser.Succeeded)
         {
             await applicationUserService.TrySignInAsync(user);
-            return await mediator.Send(new GetTokenCommand { Email = request.Email });
+            var tokenResult = await commandProcessor.SendAsync(new GetTokenCommand { Email = command.Email }, cancellationToken: cancellationToken);
+            command.Result = tokenResult.Result;
+            return await base.HandleAsync(command, cancellationToken);
         }
 
         var sb = new StringBuilder();
@@ -30,8 +35,9 @@ public class RegisterUserCommandHandler(
             sb.Append(error.Description);
         }
 
-        await mediator.Publish(new RegisterUserNotification { Email = request.Email, Message = sb.ToString() });
+        await commandProcessor.PublishAsync(new RegisterUserNotification { Email = command.Email, Message = sb.ToString() }, cancellationToken: cancellationToken);
 
-        return new BaseResult<LoginResponseViewModel>(null, false, sb.ToString());
+        command.Result = new BaseResult<LoginResponseViewModel>(null, false, sb.ToString());
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

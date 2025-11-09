@@ -1,6 +1,7 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.Commands;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Categories;
 
@@ -12,7 +13,7 @@ public class CreateCategoryEndpoint : IEndpoint
             .Produces<BaseResult<Guid>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         CreateCategoryRequest request)
     {
         var command = new CreateCategoryCommand(
@@ -20,7 +21,7 @@ public class CreateCategoryEndpoint : IEndpoint
             request.Description
         );
 
-        var result = await mediator.Send(command);
+        var result = await commandProcessor.Send(command);
 
         if (result.Success)
             return TypedResults.Ok(result);

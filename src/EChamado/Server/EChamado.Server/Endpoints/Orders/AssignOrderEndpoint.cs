@@ -1,7 +1,8 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Orders.Commands;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Orders;
 
@@ -16,13 +17,13 @@ public class AssignOrderEndpoint : IEndpoint
         .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         Guid id,
         AssignOrderRequest request)
     {
         var command = new AssignOrderCommand(id, request.AssignedToUserId);
 
-        var result = await mediator.Send(command);
+        var result = await commandProcessor.Send(command);
 
         if (result.Success)
         {

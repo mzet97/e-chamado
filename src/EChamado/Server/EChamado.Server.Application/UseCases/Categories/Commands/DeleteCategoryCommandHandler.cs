@@ -1,26 +1,29 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class DeleteCategoryCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<DeleteCategoryCommandHandler> logger) :
-    IRequestHandler<DeleteCategoryCommand, BaseResult>
+    RequestHandlerAsync<DeleteCategoryCommand>
 {
-    public async Task<BaseResult> Handle(DeleteCategoryCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DeleteCategoryCommand> HandleAsync(DeleteCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var category = await unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken);
+        var category = await unitOfWork.Categories.GetByIdAsync(command.CategoryId, cancellationToken);
 
         if (category == null)
         {
-            logger.LogError("Category {CategoryId} not found", request.CategoryId);
-            throw new NotFoundException($"Category {request.CategoryId} not found");
+            logger.LogError("Category {CategoryId} not found", command.CategoryId);
+            throw new NotFoundException($"Category {command.CategoryId} not found");
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -29,10 +32,11 @@ public class DeleteCategoryCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new DeletedCategoryNotification(category.Id, category.Name, category.Description));
+        await commandProcessor.PublishAsync(new DeletedCategoryNotification(category.Id, category.Name, category.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("Category {CategoryId} deleted successfully", request.CategoryId);
+        logger.LogInformation("Category {CategoryId} deleted successfully", command.CategoryId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

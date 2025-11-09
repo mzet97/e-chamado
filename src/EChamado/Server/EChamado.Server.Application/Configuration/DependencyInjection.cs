@@ -2,8 +2,10 @@
 using EChamado.Server.Application.Services;
 using EChamado.Server.Domain.Services.Interface;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Paramore.Brighter;
+using Paramore.Brighter.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace EChamado.Server.Application.Configuration;
 
@@ -15,12 +17,17 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
-        services.AddMediatR(cfg =>
+        // Configure Paramore.Brighter
+        services.AddBrighter(options =>
         {
-            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
-            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
-            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
-        });
+            // Register all handlers from this assembly
+            options.HandlerLifetime = ServiceLifetime.Scoped;
+        })
+        .AutoFromAssemblies(typeof(DependencyInjection).Assembly);
+
+        // Register the generic validation and exception handlers
+        services.AddTransient(typeof(ValidationHandler<>));
+        services.AddTransient(typeof(UnhandledExceptionHandler<>));
 
         return services;
     }

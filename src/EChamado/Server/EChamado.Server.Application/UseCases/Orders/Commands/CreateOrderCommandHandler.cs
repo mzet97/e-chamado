@@ -1,19 +1,21 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Domains.Orders;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class CreateOrderCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
     ILogger<CreateOrderCommandHandler> logger) :
-    IRequestHandler<CreateOrderCommand, BaseResult<Guid>>
+    RequestHandlerAsync<CreateOrderCommand>
 {
-    public async Task<BaseResult<Guid>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<CreateOrderCommand> HandleAsync(CreateOrderCommand command, CancellationToken cancellationToken = default)
     {
         // Busca status padrão "Aberto" ou primeiro status disponível
         var defaultStatus = await unitOfWork.StatusTypes.SearchAsync(
@@ -29,16 +31,16 @@ public class CreateOrderCommandHandler(
         }
 
         var order = Order.Create(
-            request.Title,
-            request.Description,
+            command.Title,
+            command.Description,
             statusId.Value,
-            request.TypeId,
-            request.CategoryId,
-            request.SubCategoryId,
-            request.DepartmentId,
-            request.RequestingUserId,
-            request.RequestingUserEmail,
-            request.DueDate
+            command.TypeId,
+            command.CategoryId,
+            command.SubCategoryId,
+            command.DepartmentId,
+            command.RequestingUserId,
+            command.RequestingUserEmail,
+            command.DueDate
         );
 
         if (!order.IsValid())
@@ -55,6 +57,7 @@ public class CreateOrderCommandHandler(
 
         logger.LogInformation("Order {OrderId} created successfully", order.Id);
 
-        return new BaseResult<Guid>(order.Id);
+        command.Result = new BaseResult<Guid>(order.Id);
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

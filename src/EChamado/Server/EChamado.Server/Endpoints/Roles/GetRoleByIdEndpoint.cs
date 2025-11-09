@@ -1,9 +1,10 @@
-﻿using EChamado.Server.Application.UseCases.Roles.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Roles.Queries;
 using EChamado.Server.Application.UseCases.Roles.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Roles;
 
@@ -18,10 +19,10 @@ public class GetRoleByIdEndpoint : IEndpoint
         .Produces<BaseResult<RolesViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         [FromRoute]  Guid id)
     {
-        var result = await mediator.Send(new GetRoleByIdQuery(id));
+        var result = await commandProcessor.Send(new GetRoleByIdQuery(id));
 
         if (result.Success)
         {

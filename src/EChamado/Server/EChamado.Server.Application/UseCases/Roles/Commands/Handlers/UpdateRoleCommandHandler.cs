@@ -1,31 +1,34 @@
-﻿using EChamado.Server.Domain.Services.Interface;
+﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Domain.Services.Interface;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Roles.Commands.Handlers;
 
 public class UpdateRoleCommandHandler(
     IRoleService roleService,
     ILogger<UpdateRoleCommandHandler> logger) :
-    IRequestHandler<UpdateRoleCommand, BaseResult>
+    RequestHandlerAsync<UpdateRoleCommand>
 {
-    public async Task<BaseResult> Handle(UpdateRoleCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<UpdateRoleCommand> HandleAsync(UpdateRoleCommand command, CancellationToken cancellationToken = default)
     {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
+        if (command == null)
+            throw new ArgumentNullException(nameof(command));
 
-        if (string.IsNullOrWhiteSpace(request.Name))
-            throw new ArgumentNullException(nameof(request.Name));
+        if (string.IsNullOrWhiteSpace(command.Name))
+            throw new ArgumentNullException(nameof(command.Name));
 
-        var role = await roleService.GetRoleByIdAsync(request.Id);
+        var role = await roleService.GetRoleByIdAsync(command.Id);
 
-        var inRoleNameDb = await roleService.GetRoleByNameAsync(request.Name);
+        var inRoleNameDb = await roleService.GetRoleByNameAsync(command.Name);
 
         if (role == null || inRoleNameDb != null)
             throw new Exception("Erro ao atualizar");
 
-        role.Name = request.Name;
+        role.Name = command.Name;
 
         var result = await roleService.UpdateRoleAsync(role);
 
@@ -34,6 +37,7 @@ public class UpdateRoleCommandHandler(
 
         logger.LogInformation("Role atualizar com sucesso: ", role);
 
-        return new BaseResult(true, "Atualizada com sucesso");
+        command.Result = new BaseResult(true, "Atualizada com sucesso");
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

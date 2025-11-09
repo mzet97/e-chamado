@@ -1,34 +1,37 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Comments.Notifications;
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-using EChamado.Server.Application.UseCases.Comments.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Comments.Commands;
 
 public class CreateCommentCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<CreateCommentCommandHandler> logger) :
-    IRequestHandler<CreateCommentCommand, BaseResult<Guid>>
+    RequestHandlerAsync<CreateCommentCommand>
 {
-    public async Task<BaseResult<Guid>> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<CreateCommentCommand> HandleAsync(CreateCommentCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId, cancellationToken);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.OrderId);
-            throw new NotFoundException($"Order {request.OrderId} not found");
+            logger.LogError("Order {OrderId} not found", command.OrderId);
+            throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
         var entity = Comment.Create(
-            request.Text,
-            request.OrderId,
-            request.UserId,
-            request.UserEmail);
+            command.Text,
+            command.OrderId,
+            command.UserId,
+            command.UserEmail);
 
         if (!entity.IsValid())
         {
@@ -42,16 +45,17 @@ public class CreateCommentCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new CreatedCommentNotification(
+        await commandProcessor.PublishAsync(new CreatedCommentNotification(
             entity.Id,
             entity.Text,
             entity.OrderId,
             entity.UserId,
-            entity.UserEmail), cancellationToken);
+            entity.UserEmail), cancellationToken: cancellationToken);
 
         logger.LogInformation("Comment {CommentId} created successfully for Order {OrderId}",
-            entity.Id, request.OrderId);
+            entity.Id, command.OrderId);
 
-        return new BaseResult<Guid>(entity.Id);
+        command.Result = new BaseResult<Guid>(entity.Id);
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

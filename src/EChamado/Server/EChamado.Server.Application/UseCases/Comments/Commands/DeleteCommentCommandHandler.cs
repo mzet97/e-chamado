@@ -1,26 +1,29 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Comments.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-using EChamado.Server.Application.UseCases.Comments.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Comments.Commands;
 
 public class DeleteCommentCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<DeleteCommentCommandHandler> logger) :
-    IRequestHandler<DeleteCommentCommand, BaseResult>
+    RequestHandlerAsync<DeleteCommentCommand>
 {
-    public async Task<BaseResult> Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DeleteCommentCommand> HandleAsync(DeleteCommentCommand command, CancellationToken cancellationToken = default)
     {
-        var comment = await unitOfWork.Comments.GetByIdAsync(request.CommentId, cancellationToken);
+        var comment = await unitOfWork.Comments.GetByIdAsync(command.CommentId, cancellationToken);
 
         if (comment == null)
         {
-            logger.LogError("Comment {CommentId} not found", request.CommentId);
-            throw new NotFoundException($"Comment {request.CommentId} not found");
+            logger.LogError("Comment {CommentId} not found", command.CommentId);
+            throw new NotFoundException($"Comment {command.CommentId} not found");
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -29,12 +32,13 @@ public class DeleteCommentCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new DeletedCommentNotification(
+        await commandProcessor.PublishAsync(new DeletedCommentNotification(
             comment.Id,
-            comment.OrderId), cancellationToken);
+            comment.OrderId), cancellationToken: cancellationToken);
 
-        logger.LogInformation("Comment {CommentId} deleted successfully", request.CommentId);
+        logger.LogInformation("Comment {CommentId} deleted successfully", command.CommentId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

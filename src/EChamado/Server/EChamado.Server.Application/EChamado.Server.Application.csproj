@@ -32,7 +32,8 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageReference Include="LinqKit.Core" Version="1.2.8" />
     <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8" />
-    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Paramore.Brighter" Version="10.1.2" />
+    <PackageReference Include="Paramore.Brighter.Extensions.DependencyInjection" Version="10.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.2" />

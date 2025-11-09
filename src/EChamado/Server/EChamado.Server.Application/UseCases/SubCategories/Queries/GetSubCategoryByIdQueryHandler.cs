@@ -2,7 +2,7 @@ using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.SubCategories.Queries;
@@ -10,16 +10,16 @@ namespace EChamado.Server.Application.UseCases.SubCategories.Queries;
 public class GetSubCategoryByIdQueryHandler(
     IUnitOfWork unitOfWork,
     ILogger<GetSubCategoryByIdQueryHandler> logger) :
-    IRequestHandler<GetSubCategoryByIdQuery, BaseResult<SubCategoryViewModel>>
+    RequestHandlerAsync<GetSubCategoryByIdQuery>
 {
-    public async Task<BaseResult<SubCategoryViewModel>> Handle(GetSubCategoryByIdQuery request, CancellationToken cancellationToken)
+    public override async Task<GetSubCategoryByIdQuery> HandleAsync(GetSubCategoryByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(request.SubCategoryId, cancellationToken);
+        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(query.SubCategoryId, cancellationToken);
 
         if (subCategory == null)
         {
-            logger.LogError("SubCategory {SubCategoryId} not found", request.SubCategoryId);
-            throw new NotFoundException($"SubCategory {request.SubCategoryId} not found");
+            logger.LogError("SubCategory {SubCategoryId} not found", query.SubCategoryId);
+            throw new NotFoundException($"SubCategory {query.SubCategoryId} not found");
         }
 
         var viewModel = new SubCategoryViewModel(
@@ -29,8 +29,10 @@ public class GetSubCategoryByIdQueryHandler(
             subCategory.CategoryId
         );
 
-        logger.LogInformation("SubCategory {SubCategoryId} retrieved successfully", request.SubCategoryId);
+        logger.LogInformation("SubCategory {SubCategoryId} retrieved successfully", query.SubCategoryId);
 
-        return new BaseResult<SubCategoryViewModel>(viewModel);
+        query.Result = new BaseResult<SubCategoryViewModel>(viewModel);
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

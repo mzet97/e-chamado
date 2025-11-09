@@ -1,10 +1,10 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries;
 
-public class SearchOrdersQuery : IRequest<BaseResultList<OrderListViewModel>>
+public class SearchOrdersQuery : BrighterRequest<BaseResultList<OrderListViewModel>>
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;

@@ -1,6 +1,18 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 
-public record DeleteStatusTypeCommand(Guid StatusTypeId) : IRequest<BaseResult>;
+public class DeleteStatusTypeCommand : BrighterRequest<BaseResult>
+{
+    public Guid StatusTypeId { get; set; } = default!;
+
+    public DeleteStatusTypeCommand()
+    {
+    }
+
+    public DeleteStatusTypeCommand(Guid statusTypeId)
+    {
+        StatusTypeId = statusTypeId;
+    }
+}

@@ -1,32 +1,39 @@
-﻿using EChamado.Server.Application.UseCases.Auth.Notifications;
+﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Auth.Notifications;
 using EChamado.Server.Domain.Services.Interface;
 using EChamado.Shared.Responses;
 using EChamado.Shared.ViewModels.Auth;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Auth.Commands.Handlers;
 
 public class LoginUserCommandHandler(
     IApplicationUserService applicationUserService,
-    IMediator mediator)
-    : IRequestHandler<LoginUserCommand, BaseResult<LoginResponseViewModel>>
+    IAmACommandProcessor commandProcessor)
+    : RequestHandlerAsync<LoginUserCommand>
 {
-    public async Task<BaseResult<LoginResponseViewModel>> Handle(LoginUserCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<LoginUserCommand> HandleAsync(LoginUserCommand command, CancellationToken cancellationToken = default)
     {
-        var result = await applicationUserService.PasswordSignInAsync(request.Email, request.Password, false, false);
+        var result = await applicationUserService.PasswordSignInAsync(command.Email, command.Password, false, false);
 
         if (result.Succeeded)
         {
-            return await mediator.Send(new GetTokenCommand { Email = request.Email });
+            var tokenResult = await commandProcessor.SendAsync(new GetTokenCommand { Email = command.Email }, cancellationToken: cancellationToken);
+            command.Result = tokenResult.Result;
+            return await base.HandleAsync(command, cancellationToken);
         }
         else if (result.IsLockedOut)
         {
-            await mediator.Publish(new LoginUserNotification { Email = request.Email, Message = "Falha: Login bloqueado" });
-            return new BaseResult<LoginResponseViewModel>(null, false, "Falha: Login bloqueado");
+            await commandProcessor.PublishAsync(new LoginUserNotification { Email = command.Email, Message = "Falha: Login bloqueado" }, cancellationToken: cancellationToken);
+            command.Result = new BaseResult<LoginResponseViewModel>(null, false, "Falha: Login bloqueado");
+            return await base.HandleAsync(command, cancellationToken);
         }
 
-        await mediator.Publish(new LoginUserNotification { Email = request.Email, Message = "Falha: Erro ao fazer login" });
+        await commandProcessor.PublishAsync(new LoginUserNotification { Email = command.Email, Message = "Falha: Erro ao fazer login" }, cancellationToken: cancellationToken);
 
-        return new BaseResult<LoginResponseViewModel>(null, false, "Falha: Erro ao fazer login");
+        command.Result = new BaseResult<LoginResponseViewModel>(null, false, "Falha: Erro ao fazer login");
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

@@ -1,9 +1,9 @@
-﻿using EChamado.Server.Application.UseCases.Users.ViewModels;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Users.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Users.Queries;
 
-public class GetAllUsersQuery : IRequest<BaseResultList<ApplicationUserViewModel>>
+public class GetAllUsersQuery : BrighterRequest<BaseResultList<ApplicationUserViewModel>>
 {
 }

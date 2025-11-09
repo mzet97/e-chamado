@@ -1,6 +1,7 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Comments.Commands;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Comments;
 
@@ -12,7 +13,7 @@ public class CreateCommentEndpoint : IEndpoint
             .Produces<BaseResult<Guid>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        IAmACommandProcessor commandProcessor,
         Guid orderId,
         CreateCommentRequest request)
     {
@@ -23,7 +24,7 @@ public class CreateCommentEndpoint : IEndpoint
             request.UserEmail
         );
 
-        var result = await mediator.Send(command);
+        var result = await commandProcessor.Send(command);
 
         if (result.Success)
             return TypedResults.Ok(result);

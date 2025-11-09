@@ -1,33 +1,36 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class CloseOrderCommandHandler(
     IUnitOfWork unitOfWork,
     ILogger<CloseOrderCommandHandler> logger) :
-    IRequestHandler<CloseOrderCommand, BaseResult>
+    RequestHandlerAsync<CloseOrderCommand>
 {
-    public async Task<BaseResult> Handle(CloseOrderCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<CloseOrderCommand> HandleAsync(CloseOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId, cancellationToken);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.OrderId);
-            throw new NotFoundException($"Order {request.OrderId} not found");
+            logger.LogError("Order {OrderId} not found", command.OrderId);
+            throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
         if (order.ClosingDate.HasValue)
         {
-            logger.LogWarning("Order {OrderId} is already closed", request.OrderId);
+            logger.LogWarning("Order {OrderId} is already closed", command.OrderId);
             throw new ValidationException("Order is already closed");
         }
 
-        order.Close(request.Evaluation ?? 0);
+        order.Close(command.Evaluation ?? 0);
 
         if (!order.IsValid())
         {
@@ -42,8 +45,9 @@ public class CloseOrderCommandHandler(
         await unitOfWork.CommitAsync();
 
         logger.LogInformation("Order {OrderId} closed successfully with evaluation {Evaluation}",
-            request.OrderId, request.Evaluation);
+            command.OrderId, command.Evaluation);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }
