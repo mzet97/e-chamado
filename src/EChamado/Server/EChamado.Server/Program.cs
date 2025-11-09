@@ -1,3 +1,4 @@
+using EChamado.Server.Endpoints;
 using EChamado.Server.Infrastructure.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,6 +46,9 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Mapear todos os endpoints (incluindo SubCategories)
+app.MapEndpoints();
 
 app.MapControllers();
 

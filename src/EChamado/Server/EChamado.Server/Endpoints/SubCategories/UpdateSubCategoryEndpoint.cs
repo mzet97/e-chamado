@@ -19,7 +19,8 @@ public class UpdateSubCategoryEndpoint : IEndpoint
         var command = new UpdateSubCategoryCommand(
             id,
             request.Name,
-            request.Description
+            request.Description,
+            request.CategoryId
         );
 
         var result = await mediator.Send(command);
@@ -33,5 +34,6 @@ public class UpdateSubCategoryEndpoint : IEndpoint
 
 public record UpdateSubCategoryRequest(
     string Name,
-    string Description
+    string Description,
+    Guid CategoryId
 );

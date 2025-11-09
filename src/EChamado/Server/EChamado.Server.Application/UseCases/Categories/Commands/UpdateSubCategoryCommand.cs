@@ -6,5 +6,6 @@ namespace EChamado.Server.Application.UseCases.Categories.Commands;
 public record UpdateSubCategoryCommand(
     Guid Id,
     string Name,
-    string Description
+    string Description,
+    Guid CategoryId
 ) : IRequest<BaseResult>;
