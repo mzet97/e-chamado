@@ -1,0 +1,123 @@
+@page "/admin/statustypes"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject LookupService LookupService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@attribute [Authorize]
+
+<PageTitle>Gerenciar Status - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Gerenciar Status de Chamado</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreateDialog">
+            Novo Status
+        </MudButton>
+    </div>
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+        <MudTable Items="@statusTypes" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@loading" Dense="true">
+            <HeaderContent>
+                <MudTh>Nome</MudTh>
+                <MudTh>Descrição</MudTh>
+                <MudTh Style="width: 120px;">Ações</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nome">@context.Name</MudTd>
+                <MudTd DataLabel="Descrição">@context.Description</MudTd>
+                <MudTd DataLabel="Ações">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small"
+                                   Color="Color.Error"
+                                   OnClick="@(() => DeleteStatusType(context.Id))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum status encontrado</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private List<StatusTypeResponse> statusTypes = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatusTypes();
+    }
+
+    private async Task LoadStatusTypes()
+    {
+        loading = true;
+        try
+        {
+            statusTypes = await LookupService.GetStatusTypesAsync(forceRefresh: true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar status: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var dialog = await DialogService.ShowAsync<CreateStatusTypeDialog>("Novo Status");
+        var result = await dialog.Result;
+        if (!result.Canceled) await LoadStatusTypes();
+    }
+
+    private async Task OpenEditDialog(StatusTypeResponse statusType)
+    {
+        var parameters = new DialogParameters<EditStatusTypeDialog>
+        {
+            { x => x.StatusType, statusType }
+        };
+        var dialog = await DialogService.ShowAsync<EditStatusTypeDialog>("Editar Status", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled) await LoadStatusTypes();
+    }
+
+    private async Task DeleteStatusType(Guid id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Tem certeza que deseja excluir este status?" },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+        var dialog = await DialogService.ShowAsync<MudBlazor.Dialogs.ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            try
+            {
+                await LookupService.DeleteStatusTypeAsync(id);
+                Snackbar.Add("Status excluído com sucesso!", Severity.Success);
+                await LoadStatusTypes();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir status: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

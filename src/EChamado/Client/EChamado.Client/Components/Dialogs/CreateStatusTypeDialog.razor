@@ -1,0 +1,81 @@
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject LookupService LookupService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success">
+            <MudTextField @bind-Value="name"
+                          Label="Nome"
+                          Required="true"
+                          RequiredError="Nome é obrigatório"
+                          Variant="Variant.Outlined"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="description"
+                          Label="Descrição"
+                          Lines="3"
+                          Variant="Variant.Outlined" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Submit"
+                   Disabled="@(!success || processing)">
+            @if (processing)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Criando...</MudText>
+            }
+            else
+            {
+                <MudText>Criar</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; } = null!;
+
+    private MudForm form = null!;
+    private bool success;
+    private bool processing;
+    private string name = string.Empty;
+    private string description = string.Empty;
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+
+        if (!form.IsValid)
+            return;
+
+        processing = true;
+
+        try
+        {
+            var request = new CreateStatusTypeRequest(name, description);
+            await LookupService.CreateStatusTypeAsync(request);
+            Snackbar.Add("Status criado com sucesso!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao criar status: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            processing = false;
+        }
+    }
+}
