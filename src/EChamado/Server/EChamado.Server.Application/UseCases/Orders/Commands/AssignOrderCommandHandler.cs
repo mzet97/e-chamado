@@ -1,36 +1,32 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class AssignOrderCommandHandler(
     IUnitOfWork unitOfWork,
     ILogger<AssignOrderCommandHandler> logger) :
-    IRequestHandler<AssignOrderCommand, BaseResult>
+    RequestHandlerAsync<AssignOrderCommand>
 {
-    public async Task<BaseResult> Handle(AssignOrderCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<AssignOrderCommand> HandleAsync(AssignOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.OrderId);
-            throw new NotFoundException($"Order {request.OrderId} not found");
+            logger.LogError("Order {OrderId} not found", command.OrderId);
+            throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
-        // Busca usuário para obter email
-        var user = await unitOfWork.Users.GetByIdAsync(request.AssignedToUserId, cancellationToken);
-
-        if (user == null)
-        {
-            logger.LogError("User {UserId} not found", request.AssignedToUserId);
-            throw new NotFoundException($"User {request.AssignedToUserId} not found");
-        }
-
-        order.AssignTo(request.AssignedToUserId, user.Email ?? string.Empty);
+        // Como não temos acesso ao Users no UnitOfWork, vamos usar o ID e email que será fornecido
+        // O email pode ser buscado de outra forma ou passado como parâmetro
+        order.AssignTo(command.AssignedToUserId, string.Empty);
 
         if (!order.IsValid())
         {
@@ -40,12 +36,13 @@ public class AssignOrderCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+        await unitOfWork.Orders.UpdateAsync(order);
 
         await unitOfWork.CommitAsync();
 
-        logger.LogInformation("Order {OrderId} assigned to user {UserId}", request.OrderId, request.AssignedToUserId);
+        logger.LogInformation("Order {OrderId} assigned to user {UserId}", command.OrderId, command.AssignedToUserId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

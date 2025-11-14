@@ -1,21 +1,30 @@
-﻿using EChamado.Server.Domain.Domains.Identities;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Shared.Responses;
 using EChamado.Shared.ViewModels.Auth;
-using MediatR;
 using System.ComponentModel.DataAnnotations;
 
 namespace EChamado.Server.Application.UseCases.Auth.Commands;
 
-public class RegisterUserCommand : IRequest<BaseResult<LoginResponseViewModel>>
+public class RegisterUserCommand : BrighterRequest<BaseResult<LoginResponseViewModel>>
 {
     [Required(ErrorMessage = "O campo {0} é requerido")]
     [EmailAddress(ErrorMessage = "O campo {0} é inválido")]
-    public required string Email { get; set; }
+    public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "O campo {0} é requeridod")]
     [StringLength(255, ErrorMessage = "O campo  {0} deve está entre {2} e {1} caracteres", MinimumLength = 6)]
-    public required string Password { get; set; }
+    public string Password { get; set; } = string.Empty;
 
+    public RegisterUserCommand()
+    {
+    }
+
+    public RegisterUserCommand(string email, string password)
+    {
+        Email = email;
+        Password = password;
+    }
 
     public ApplicationUser ToDomain()
     {

@@ -80,7 +80,7 @@ namespace EChamado.Server.Infrastructure.OpenIddict
 
                 // URIs específicos para Blazor WASM
                 descriptor.RedirectUris.Add(new Uri("https://localhost:7274/authentication/login-callback"));
-                descriptor.PostLogoutRedirectUris.Add(new Uri("https://localhost:7274/"));
+                descriptor.PostLogoutRedirectUris.Add(new Uri("https://localhost:7274/authentication/logout-callback"));
 
                 await manager.CreateAsync(descriptor, cancellationToken);
             }
@@ -114,7 +114,7 @@ namespace EChamado.Server.Infrastructure.OpenIddict
                 descriptor.RedirectUris.Clear();
                 descriptor.PostLogoutRedirectUris.Clear();
                 descriptor.RedirectUris.Add(new Uri("https://localhost:7274/authentication/login-callback"));
-                descriptor.PostLogoutRedirectUris.Add(new Uri("https://localhost:7274/"));
+                descriptor.PostLogoutRedirectUris.Add(new Uri("https://localhost:7274/authentication/logout-callback"));
 
                 await manager.UpdateAsync(blazorClient, descriptor, cancellationToken);
             }

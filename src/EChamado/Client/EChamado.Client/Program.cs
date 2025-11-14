@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using EChamado.Client.Services;
+using EChamado.Client.Authentication;
+using MudBlazor.Services;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -16,52 +17,47 @@ namespace EChamado.Client
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
 
-            // Configura HttpClient normal
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+            builder.Services.AddMudServices();
 
-            // Configuração OIDC (Authorization Code + PKCE)
-            builder.Services.AddOidcAuthentication(options =>
+            // URLs de configuração
+            var authServerUrl = builder.Configuration["AuthServerUrl"] ?? "https://localhost:7132";
+            var backendUrl = builder.Configuration["BackendUrl"] ?? "https://localhost:7296";
+
+            // HttpClient principal (para o Auth Server)
+            builder.Services.AddScoped(sp => new HttpClient
             {
-                // Carrega as configurações de appsettings.json
-                builder.Configuration.Bind("oidc", options.ProviderOptions);
-
-                // Garante os escopos necessários
-                options.ProviderOptions.DefaultScopes.Clear();
-                foreach (var scope in builder.Configuration.GetSection("oidc:DefaultScopes").Get<string[]>())
-                {
-                    options.ProviderOptions.DefaultScopes.Add(scope);
-                }
+                BaseAddress = new Uri(authServerUrl)
             });
 
-            // HttpClients autenticados para consumir a API
-            var backendUrl = builder.Configuration["BackendUrl"];
+            // Autenticação customizada baseada em cookie
+            builder.Services.AddAuthorizationCore();
+            builder.Services.AddScoped<AuthenticationStateProvider, CookieAuthenticationStateProvider>();
 
+            // HttpClients para consumir a API
             builder.Services.AddHttpClient<OrderService>(client =>
             {
                 client.BaseAddress = new Uri(backendUrl!);
-            })
-            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+            });
 
             builder.Services.AddHttpClient<CategoryService>(client =>
             {
                 client.BaseAddress = new Uri(backendUrl!);
-            })
-            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+            });
 
             builder.Services.AddHttpClient<DepartmentService>(client =>
             {
                 client.BaseAddress = new Uri(backendUrl!);
-            })
-            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+            });
 
             builder.Services.AddHttpClient<LookupService>(client =>
             {
                 client.BaseAddress = new Uri(backendUrl!);
-            })
-            .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+            });
 
-            builder.Services.AddScoped<AuthenticationStateProvider,
-                RemoteAuthenticationService<RemoteAuthenticationState, RemoteUserAccount, OidcProviderOptions>>();
+            builder.Services.AddHttpClient<CommentService>(client =>
+            {
+                client.BaseAddress = new Uri(backendUrl!);
+            });
 
             await builder.Build().RunAsync();
         }

@@ -1,11 +1,19 @@
-﻿using EChamado.Shared.Responses;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Shared.Responses;
 using EChamado.Shared.ViewModels.Auth;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Auth.Commands;
 
-public class GetTokenCommand : 
-    IRequest<BaseResult<LoginResponseViewModel>>
+public class GetTokenCommand : BrighterRequest<BaseResult<LoginResponseViewModel>>
 {
     public string Email { get; set; } = string.Empty;
+
+    public GetTokenCommand()
+    {
+    }
+
+    public GetTokenCommand(string email)
+    {
+        Email = email;
+    }
 }

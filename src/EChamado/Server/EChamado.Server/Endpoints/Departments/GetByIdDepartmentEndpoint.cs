@@ -1,8 +1,10 @@
-﻿using EChamado.Server.Application.UseCases.Departments.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Departments.Queries;
 using EChamado.Server.Application.UseCases.Departments.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Departments;
 
@@ -17,10 +19,10 @@ public class GetByIdDepartmentEndpoint : IEndpoint
         .Produces<BaseResult<DepartmentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator, 
+        [FromServices] IAmACommandProcessor commandProcessor,
         Guid id)
     {
-        var result = await mediator.Send(new GetByIdDepartmentQuery(id));
+        var result = await commandProcessor.SendWithResultAsync(new GetByIdDepartmentQuery(id));
 
         if (result.Success)
         {

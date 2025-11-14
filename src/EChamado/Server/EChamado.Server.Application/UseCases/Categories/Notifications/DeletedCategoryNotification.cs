@@ -1,17 +1,23 @@
-using MediatR;
+using Paramore.Brighter;
 using System.Text.Json;
 
 namespace EChamado.Server.Application.UseCases.Categories.Notifications;
 
-public class DeletedCategoryNotification : INotification
+public class DeletedCategoryNotification : IRequest
 {
-    public Guid Id { get; set; }
+    public Id Id { get; set; }
+    public Id CorrelationId { get; set; } = new Id(Guid.NewGuid().ToString());
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
+    public DeletedCategoryNotification()
+    {
+        Id = new Id(Guid.NewGuid().ToString());
+    }
+
     public DeletedCategoryNotification(Guid id, string name, string description)
     {
-        Id = id;
+        Id = new Id(id.ToString());
         Name = name;
         Description = description;
     }

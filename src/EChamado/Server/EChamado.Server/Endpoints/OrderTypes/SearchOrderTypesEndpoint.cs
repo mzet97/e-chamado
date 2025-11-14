@@ -1,8 +1,10 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.OrderTypes.Queries;
 using EChamado.Server.Application.UseCases.OrderTypes.ViewModels;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.OrderTypes;
 
@@ -14,12 +16,11 @@ public class SearchOrderTypesEndpoint : IEndpoint
             .Produces<BaseResultList<OrderTypeViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        [FromServices] IAmACommandProcessor commandProcessor,
         [AsParameters] SearchOrderTypesParameters parameters)
     {
         var query = new SearchOrderTypesQuery
         {
-            Id = parameters.Id,
             Name = parameters.Name ?? string.Empty,
             Description = parameters.Description ?? string.Empty,
             CreatedAt = parameters.CreatedAt,
@@ -30,7 +31,7 @@ public class SearchOrderTypesEndpoint : IEndpoint
             PageSize = parameters.PageSize
         };
 
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.SendWithResultAsync(query);
 
         if (result.Success)
             return TypedResults.Ok(result);
@@ -41,7 +42,6 @@ public class SearchOrderTypesEndpoint : IEndpoint
 
 public class SearchOrderTypesParameters
 {
-    [FromQuery] public Guid Id { get; set; }
     [FromQuery] public string? Name { get; set; }
     [FromQuery] public string? Description { get; set; }
     [FromQuery] public DateTime CreatedAt { get; set; }

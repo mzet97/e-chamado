@@ -1,17 +1,23 @@
-﻿using MediatR;
+﻿using Paramore.Brighter;
 using System.Text.Json;
 
 namespace EChamado.Server.Application.UseCases.Departments.Notifications;
 
-public class UpdatedDepartmentNotification : INotification
+public class UpdatedDepartmentNotification : IRequest
 {
-    public Guid Id { get; set; }
+    public Id Id { get; set; }
+    public Id CorrelationId { get; set; } = new Id(Guid.NewGuid().ToString());
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
+    public UpdatedDepartmentNotification()
+    {
+        Id = new Id(Guid.NewGuid().ToString());
+    }
+
     public UpdatedDepartmentNotification(Guid id, string name, string description)
     {
-        Id = id;
+        Id = new Id(id.ToString());
         Name = name;
         Description = description;
     }

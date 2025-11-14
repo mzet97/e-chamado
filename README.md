@@ -208,6 +208,21 @@ User:
 - **[ANALISE-COMPLETA.md](ANALISE-COMPLETA.md)** - Análise detalhada de cada camada do sistema
 - **[MATRIZ-FEATURES.md](MATRIZ-FEATURES.md)** - Matriz comparativa de features implementadas
 
+### Correção de redirecionamento pós-login (Nov/2025)
+- Sintoma: 404 após login ao redirecionar incorretamente para o cliente em vez do servidor de autenticação.
+- Causa raiz:
+  - Uso de `RedirectToPage` em app sem Razor Pages em `src/EChamado/Echamado.Auth/Controllers/AccountController.cs:28,54,58,62`.
+  - `ReturnUrl` maiúsculo não capturado pela UI (`Login.razor`), esvaziando `returnUrl` no POST.
+  - Divergência de `PostLogoutRedirectUri` entre servidor e cliente.
+- Correções:
+  - Troca para `Redirect` com preservação de `returnUrl` e validação segura do destino em `AccountController.cs:21-79`.
+  - Suporte a `ReturnUrl` maiúsculo na UI em `src/EChamado/Echamado.Auth/Components/Pages/Accounts/Login.razor:55-70`.
+  - Alinhamento de `PostLogoutRedirectUris` para `https://localhost:7274/authentication/logout-callback` em `src/EChamado/Server/EChamado.Server.Infrastructure/OpenIddict/OpenIddictWorker.cs:82-84,113-118`.
+- Verificação:
+  - Construção: `dotnet build src/EChamado/EChamado.sln` (sucesso).
+  - Fluxo: acessar `https://localhost:7274`, iniciar login; verificar redirecionamento para `https://localhost:7132/Account/Login?returnUrl=...` e retorno para `/connect/authorize` em `https://localhost:7296`.
+  - Logout: verificar retorno para `https://localhost:7274/authentication/logout-callback`.
+
 ---
 
 ## 🎯 Roadmap

@@ -1,19 +1,35 @@
-using MudBlazor.Services;
-using Echamado.Auth.Components;
-using EChamado.Server.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using EChamado.Server.Domain.Domains.Identities;
-using Microsoft.AspNetCore.Identity;
-using Echamado.Auth.Models;
-using Microsoft.AspNetCore.Mvc;
+using EChamado.Server.Infrastructure.Persistence;
+using Echamado.Auth.Components;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(
+                "https://localhost:5199",
+                "https://localhost:7274",
+                "http://localhost:5199",
+                "http://localhost:7274")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
 // Add services to the container.
+builder.Services.AddControllers();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -46,6 +62,20 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+
+// Cookie de autenticação compartilhado com o Server (esquema "External")
+builder.Services.AddAuthentication()
+    .AddCookie("External", options =>
+    {
+        options.Cookie.Name = "EChamado.External";
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+        options.LoginPath = "/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
+    });
 
 // Configuração de autenticação com cookie "External" (compartilhado com EChamado.Server)
 builder.Services.ConfigureApplicationCookie(options =>
@@ -83,6 +113,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
+app.UseCors();
+
 app.UseAntiforgery();
 
 app.UseAuthentication();
@@ -90,9 +122,8 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-
 
 app.Run();

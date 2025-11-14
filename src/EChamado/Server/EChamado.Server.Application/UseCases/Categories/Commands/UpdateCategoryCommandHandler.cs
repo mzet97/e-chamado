@@ -1,29 +1,32 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class UpdateCategoryCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<UpdateCategoryCommandHandler> logger) :
-    IRequestHandler<UpdateCategoryCommand, BaseResult>
+    RequestHandlerAsync<UpdateCategoryCommand>
 {
-    public async Task<BaseResult> Handle(UpdateCategoryCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<UpdateCategoryCommand> HandleAsync(UpdateCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var category = await unitOfWork.Categories.GetByIdAsync(request.Id, cancellationToken);
+        var category = await unitOfWork.Categories.GetByIdAsync(command.Id);
 
         if (category == null)
         {
-            logger.LogError("Category {CategoryId} not found", request.Id);
-            throw new NotFoundException($"Category {request.Id} not found");
+            logger.LogError("Category {CategoryId} not found", command.Id);
+            throw new NotFoundException($"Category {command.Id} not found");
         }
 
-        category.Update(request.Name, request.Description);
+        category.Update(command.Name, command.Description);
 
         if (!category.IsValid())
         {
@@ -33,14 +36,15 @@ public class UpdateCategoryCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Categories.UpdateAsync(category, cancellationToken);
+        await unitOfWork.Categories.UpdateAsync(category);
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new UpdatedCategoryNotification(category.Id, category.Name, category.Description));
+        await commandProcessor.PublishAsync(new UpdatedCategoryNotification(category.Id, category.Name, category.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("Category {CategoryId} updated successfully", request.Id);
+        logger.LogInformation("Category {CategoryId} updated successfully", command.Id);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

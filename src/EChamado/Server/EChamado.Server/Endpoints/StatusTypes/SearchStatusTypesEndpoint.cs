@@ -1,7 +1,9 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.StatusTypes.Queries;
 using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.StatusTypes;
@@ -14,12 +16,11 @@ public class SearchStatusTypesEndpoint : IEndpoint
             .Produces<BaseResultList<StatusTypeViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        [FromServices] IAmACommandProcessor commandProcessor,
         [AsParameters] SearchStatusTypesParameters parameters)
     {
         var query = new SearchStatusTypesQuery
         {
-            Id = parameters.Id,
             Name = parameters.Name ?? string.Empty,
             Description = parameters.Description ?? string.Empty,
             CreatedAt = parameters.CreatedAt,
@@ -30,7 +31,7 @@ public class SearchStatusTypesEndpoint : IEndpoint
             PageSize = parameters.PageSize
         };
 
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.SendWithResultAsync(query);
 
         if (result.Success)
             return TypedResults.Ok(result);

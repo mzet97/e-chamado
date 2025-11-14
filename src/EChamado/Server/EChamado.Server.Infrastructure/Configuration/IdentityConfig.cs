@@ -3,6 +3,8 @@ using EChamado.Server.Infrastructure.OpenIddict;
 using EChamado.Server.Infrastructure.Persistence;
 using EChamado.Shared.Shared.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -83,7 +85,8 @@ namespace EChamado.Server.Infrastructure.Configuration
             // -------------------------
             // 4) CONFIGURAÇÃO DATA PROTECTION (para compartilhar cookies entre apps)
             // -------------------------
-            var keysPath = Path.Combine(Path.GetTempPath(), "EChamado-DataProtection-Keys");
+            var keysPath = Environment.GetEnvironmentVariable("DP_KEYS_PATH")
+                             ?? Path.Combine(Path.GetTempPath(), "EChamado-DataProtection-Keys");
             Directory.CreateDirectory(keysPath);
 
             services.AddDataProtection()
@@ -113,10 +116,51 @@ namespace EChamado.Server.Infrastructure.Configuration
 
                 options.Events.OnRedirectToLogin = context =>
                 {
-                    // Redireciona para a aplicação Blazor Server de Identity (localhost:7132)
-                    var loginUrl = "https://localhost:7132/Account/Login";
-                    var returnUrl = Uri.EscapeDataString(context.RedirectUri);
-                    context.Response.Redirect($"{loginUrl}?returnUrl={returnUrl}");
+                    var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                    var logger = loggerFactory.CreateLogger("EChamado.Server.Infrastructure.IdentityConfig");
+
+                    try
+                    {
+                        // context.RedirectUri já contém o path completo com query string
+                        // Ex: /Account/Login?ReturnUrl=/connect/authorize?params...
+                        logger.LogInformation("OnRedirectToLogin: Original RedirectUri={RedirectUri}", context.RedirectUri);
+
+                        // Extrai o ReturnUrl dos query params
+                        var queryString = context.RedirectUri.Contains('?')
+                            ? context.RedirectUri.Substring(context.RedirectUri.IndexOf('?'))
+                            : "";
+
+                        var returnUrl = "/connect/authorize";
+                        if (!string.IsNullOrEmpty(queryString))
+                        {
+                            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(queryString);
+                            if (query.TryGetValue("ReturnUrl", out var value))
+                            {
+                                returnUrl = value.ToString();
+                            }
+                        }
+
+                        logger.LogInformation("OnRedirectToLogin: Extracted ReturnUrl={ReturnUrl}", returnUrl);
+
+                        // Constrói URL completa para o servidor OpenIddict (7296)
+                        var fullReturnUrl = $"https://localhost:7296{returnUrl}";
+                        var encodedReturnUrl = Uri.EscapeDataString(fullReturnUrl);
+
+                        // Redireciona para a aplicação Blazor Server de Identity (localhost:7132)
+                        var loginUrl = "https://localhost:7132/Account/Login";
+                        var finalUrl = $"{loginUrl}?returnUrl={encodedReturnUrl}";
+
+                        logger.LogInformation("OnRedirectToLogin: Final URL={FinalUrl}", finalUrl);
+
+                        context.Response.Redirect(finalUrl);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error in OnRedirectToLogin. RedirectUri={RedirectUri}", context.RedirectUri);
+                        // Fallback: redireciona para login sem returnUrl
+                        context.Response.Redirect("https://localhost:7132/Account/Login");
+                    }
+
                     return Task.CompletedTask;
                 };
             });
@@ -171,6 +215,7 @@ namespace EChamado.Server.Infrastructure.Configuration
                 .AddValidation(options =>
                 {
                     options.UseLocalServer();
+                    options.UseSystemNetHttp();
                     options.UseAspNetCore();
                 });
 

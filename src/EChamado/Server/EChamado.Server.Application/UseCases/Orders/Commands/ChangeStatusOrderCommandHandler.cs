@@ -1,35 +1,38 @@
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class ChangeStatusOrderCommandHandler(
     IUnitOfWork unitOfWork,
     ILogger<ChangeStatusOrderCommandHandler> logger) :
-    IRequestHandler<ChangeStatusOrderCommand, BaseResult>
+    RequestHandlerAsync<ChangeStatusOrderCommand>
 {
-    public async Task<BaseResult> Handle(ChangeStatusOrderCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<ChangeStatusOrderCommand> HandleAsync(ChangeStatusOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.OrderId);
-            throw new NotFoundException($"Order {request.OrderId} not found");
+            logger.LogError("Order {OrderId} not found", command.OrderId);
+            throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
-        var status = await unitOfWork.StatusTypes.GetByIdAsync(request.StatusId, cancellationToken);
+        var status = await unitOfWork.StatusTypes.GetByIdAsync(command.StatusId);
 
         if (status == null)
         {
-            logger.LogError("Status {StatusId} not found", request.StatusId);
-            throw new NotFoundException($"Status {request.StatusId} not found");
+            logger.LogError("Status {StatusId} not found", command.StatusId);
+            throw new NotFoundException($"Status {command.StatusId} not found");
         }
 
-        order.ChangeStatus(request.StatusId);
+        order.ChangeStatus(command.StatusId);
 
         if (!order.IsValid())
         {
@@ -39,12 +42,13 @@ public class ChangeStatusOrderCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+        await unitOfWork.Orders.UpdateAsync(order);
 
         await unitOfWork.CommitAsync();
 
-        logger.LogInformation("Order {OrderId} status changed to {StatusId}", request.OrderId, request.StatusId);
+        logger.LogInformation("Order {OrderId} status changed to {StatusId}", command.OrderId, command.StatusId);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

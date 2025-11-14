@@ -2,24 +2,26 @@
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Services.Interface;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Roles.Queries.Handlers;
 
 public class GetRoleByNameQueryHandler(IRoleService roleService) :
-    IRequestHandler<GetRoleByNameQuery, BaseResult<RolesViewModel>>
+    RequestHandlerAsync<GetRoleByNameQuery>
 {
-    public async Task<BaseResult<RolesViewModel>> Handle(
-        GetRoleByNameQuery request,
-        CancellationToken cancellationToken)
+    public override async Task<GetRoleByNameQuery> HandleAsync(
+        GetRoleByNameQuery query,
+        CancellationToken cancellationToken = default)
     {
-        var role = await roleService.GetRoleByNameAsync(request.Name);
+        var role = await roleService.GetRoleByNameAsync(query.Name);
 
         if (role == null)
             throw new NotFoundException("Role não encontrada");
 
         var rolesViewModel = new RolesViewModel(role.Id, role.Name);
 
-        return new BaseResult<RolesViewModel>(rolesViewModel, true, "Obtido com sucesso");
+        query.Result = new BaseResult<RolesViewModel>(rolesViewModel, true, "Obtido com sucesso");
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

@@ -1,7 +1,10 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.Queries;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using EChamado.Server.Common.Api;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Categories;
 
@@ -13,11 +16,11 @@ public class GetCategoryByIdEndpoint : IEndpoint
             .Produces<BaseResult<CategoryViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        [FromServices] IAmACommandProcessor commandProcessor,
         Guid id)
     {
         var query = new GetCategoryByIdQuery(id);
-        var result = await mediator.Send(query);
+        var result = await commandProcessor.SendWithResultAsync(query);
 
         if (result.Success)
             return TypedResults.Ok(result);

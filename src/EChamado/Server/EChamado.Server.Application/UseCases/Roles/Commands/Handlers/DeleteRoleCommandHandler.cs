@@ -1,33 +1,37 @@
-﻿using EChamado.Server.Domain.Services.Interface;
+﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Domain.Services.Interface;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Roles.Commands.Handlers;
 
 public class DeleteRoleCommandHandler(
     IRoleService roleService,
     ILogger<DeleteRoleCommandHandler> logger) :
-    IRequestHandler<DeleteRoleCommand, BaseResult>
+    RequestHandlerAsync<DeleteRoleCommand>
 {
-    public async Task<BaseResult> Handle(DeleteRoleCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DeleteRoleCommand> HandleAsync(DeleteRoleCommand command, CancellationToken cancellationToken = default)
     {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
+        if (command == null)
+            throw new ArgumentNullException(nameof(command));
 
-      
-        var role = await roleService.GetRoleByIdAsync(request.Id);
+
+        var role = await roleService.GetRoleByIdAsync(command.Id);
 
         if(role == null)
             throw new Exception("Erro ao deletar");
 
-        var result = await roleService.DeleteRoleAsync(request.Id);
+        var result = await roleService.DeleteRoleAsync(command.Id);
 
         if (!result.Succeeded || result == null)
             throw new Exception("Erro ao deletar");
 
         logger.LogInformation("Role deletada com sucesso: ", role);
 
-        return new BaseResult(true, "Deletada com sucesso");
+        command.Result = new BaseResult(true, "Deletada com sucesso");
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

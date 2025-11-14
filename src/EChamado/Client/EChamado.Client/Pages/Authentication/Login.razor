@@ -3,4 +3,14 @@
 
 <PageTitle>Login</PageTitle>
 
-<RemoteAuthenticatorView Action="login" />
+@code {
+    protected override void OnInitialized()
+    {
+        // Fluxo simples: Redireciona direto para o Auth Server com returnUrl para o callback do cliente
+        var callbackUrl = "https://localhost:7274/authentication/login-callback";
+        var encodedCallback = Uri.EscapeDataString(callbackUrl);
+        var authUrl = $"https://localhost:7132/Account/Login?returnUrl={encodedCallback}";
+
+        Navigation.NavigateTo(authUrl, forceLoad: true);
+    }
+}

@@ -1,9 +1,20 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
-public record CloseOrderCommand(
-    Guid OrderId,
-    int? Evaluation
-) : IRequest<BaseResult>;
+public class CloseOrderCommand : BrighterRequest<BaseResult>
+{
+    public Guid OrderId { get; set; } = default!;
+    public int? Evaluation { get; set; }
+
+    public CloseOrderCommand()
+    {
+    }
+
+    public CloseOrderCommand(Guid orderId, int? evaluation)
+    {
+        OrderId = orderId;
+        Evaluation = evaluation;
+    }
+}

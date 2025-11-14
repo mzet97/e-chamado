@@ -1,9 +1,9 @@
-﻿using EChamado.Server.Application.UseCases.Roles.ViewModels;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Roles.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Roles.Queries;
 
-public class GetAllRolesQuery : IRequest<BaseResultList<RolesViewModel>>
+public class GetAllRolesQuery : BrighterRequest<BaseResultList<RolesViewModel>>
 {
 }

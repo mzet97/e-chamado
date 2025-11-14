@@ -1,30 +1,32 @@
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.StatusTypes.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.StatusTypes.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 
 public class UpdateStatusTypeCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<UpdateStatusTypeCommandHandler> logger) :
-    IRequestHandler<UpdateStatusTypeCommand, BaseResult>
+    RequestHandlerAsync<UpdateStatusTypeCommand>
 {
-    public async Task<BaseResult> Handle(UpdateStatusTypeCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<UpdateStatusTypeCommand> HandleAsync(UpdateStatusTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(request.Id, cancellationToken);
+        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(command.Id);
 
         if (statusType == null)
         {
-            logger.LogError("StatusType {StatusTypeId} not found", request.Id);
-            throw new NotFoundException($"StatusType {request.Id} not found");
+            logger.LogError("StatusType {StatusTypeId} not found", command.Id);
+            throw new NotFoundException($"StatusType {command.Id} not found");
         }
 
-        statusType.Update(request.Name, request.Description);
+        statusType.Update(command.Name, command.Description);
 
         if (!statusType.IsValid())
         {
@@ -34,14 +36,15 @@ public class UpdateStatusTypeCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.StatusTypes.UpdateAsync(statusType, cancellationToken);
+        await unitOfWork.StatusTypes.UpdateAsync(statusType);
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new UpdatedStatusTypeNotification(statusType.Id, statusType.Name, statusType.Description));
+        await commandProcessor.PublishAsync(new UpdatedStatusTypeNotification(statusType.Id, statusType.Name, statusType.Description), cancellationToken: cancellationToken);
 
-        logger.LogInformation("StatusType {StatusTypeId} updated successfully", request.Id);
+        logger.LogInformation("StatusType {StatusTypeId} updated successfully", command.Id);
 
-        return new BaseResult();
+        command.Result = new BaseResult();
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

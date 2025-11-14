@@ -14,8 +14,12 @@ public class UnitOfWork : IUnitOfWork
     }
 
     private ICategoryRepository? _categoryRepository;
-    public ICategoryRepository Categories => 
+    public ICategoryRepository Categories =>
         _categoryRepository ??= new CategoryRepository(_context);
+
+    private ICommentRepository? _commentsRepository;
+    public ICommentRepository Comments =>
+        _commentsRepository ??= new CommentRepository(_context);
 
     private IDepartmentRepository? _departmentsRepository;
     public IDepartmentRepository Departments =>

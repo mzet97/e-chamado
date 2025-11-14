@@ -1,11 +1,12 @@
-﻿using EChamado.Server.Domain.Domains.Identities;
+﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Domain.Services.Interface;
 using EChamado.Shared.Responses;
 using EChamado.Shared.Shared.Settings;
 using EChamado.Shared.ViewModels.Auth;
-using MediatR;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Paramore.Brighter;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -15,11 +16,15 @@ namespace EChamado.Server.Application.UseCases.Auth.Commands.Handlers;
 public class GetTokenCommandHandler(
     IOptions<AppSettings> appSettings,
     IApplicationUserService applicationUserService
-    ) : IRequestHandler<GetTokenCommand, BaseResult<LoginResponseViewModel>>
+    ) : RequestHandlerAsync<GetTokenCommand>
 {
-    public async Task<BaseResult<LoginResponseViewModel>> Handle(GetTokenCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<GetTokenCommand> HandleAsync(GetTokenCommand command, CancellationToken cancellationToken = default)
     {
-        return await GetJwt(request.Email);
+        var result = await GetJwt(command.Email);
+        command.Result = result;
+        return await base.HandleAsync(command, cancellationToken);
     }
 
     public async Task<BaseResult<LoginResponseViewModel>> GetJwt(string email)

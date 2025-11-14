@@ -1,3 +1,4 @@
+using System;
 using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +12,12 @@ public static class DatabaseInitializer
 {
     public static async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
     {
+        var skipInitializer = Environment.GetEnvironmentVariable("SKIP_DB_INITIALIZER");
+        if (string.Equals(skipInitializer, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         using var scope = serviceProvider.CreateScope();
         var services = scope.ServiceProvider;
         var logger = services.GetRequiredService<ILogger<ApplicationDbContext>>();
@@ -67,8 +74,10 @@ public static class DatabaseInitializer
             adminUser = new ApplicationUser
             {
                 UserName = "admin",
+                FullName = "Administrador",
                 Email = adminEmail,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                CreatedAtUtc = DateTime.UtcNow
             };
 
             var result = await userManager.CreateAsync(adminUser, "Admin@123");
@@ -94,8 +103,10 @@ public static class DatabaseInitializer
             testUser = new ApplicationUser
             {
                 UserName = "testuser",
+                FullName = "Usuário de Teste",
                 Email = testEmail,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                CreatedAtUtc = DateTime.UtcNow
             };
 
             var result = await userManager.CreateAsync(testUser, "User@123");
@@ -115,3 +126,4 @@ public static class DatabaseInitializer
         await context.SaveChangesAsync();
     }
 }
+

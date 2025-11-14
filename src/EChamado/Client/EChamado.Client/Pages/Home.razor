@@ -151,12 +151,12 @@
                     <RowTemplate>
                         <MudTd DataLabel="Título">@context.Title</MudTd>
                         <MudTd DataLabel="Status">
-                            <MudChip Size="Size.Small" Color="GetStatusColor(context.StatusName)">
+                            <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.StatusName)">
                                 @context.StatusName
                             </MudChip>
                         </MudTd>
                         <MudTd DataLabel="Departamento">@context.DepartmentName</MudTd>
-                        <MudTd DataLabel="Data">@context.OpeningDate.ToString("dd/MM/yyyy")</MudText>
+                        <MudTd DataLabel="Data">@context.OpeningDate.ToString("dd/MM/yyyy")</MudTd>
                         <MudTd DataLabel="Ações">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                            Size="Size.Small"
