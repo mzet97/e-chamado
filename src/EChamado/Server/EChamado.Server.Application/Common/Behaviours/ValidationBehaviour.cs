@@ -13,6 +13,11 @@ public class RequestValidationAttribute : RequestHandlerAttribute
         : base(step, timing)
     {
     }
+
+    public override Type GetHandlerType()
+    {
+        return typeof(ValidationHandler<>);
+    }
 }
 
 /// <summary>

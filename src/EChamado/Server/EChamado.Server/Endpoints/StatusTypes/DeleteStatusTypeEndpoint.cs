@@ -1,27 +1,42 @@
 using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.StatusTypes.Commands;
+using EChamado.Server.Endpoints.StatusTypes.DTOs;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
 using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.StatusTypes;
 
 public class DeleteStatusTypeEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapDelete("/{id:guid}", HandleAsync)
-            .WithName("Deletar um status de chamado")
+        => app.MapDelete("/{id}", HandleAsync)
+            .WithName("Deletar um status")
             .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        Guid id)
+        Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var command = new DeleteStatusTypeCommand(id);
-        var result = await commandProcessor.Send(command);
+        try
+        {
+            var request = new DeleteStatusTypeRequest { Id = id };
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
+            var result = command.Result;
 
-        return TypedResults.BadRequest(result);
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

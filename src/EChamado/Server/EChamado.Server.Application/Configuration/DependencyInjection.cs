@@ -23,7 +23,7 @@ public static class DependencyInjection
             // Register all handlers from this assembly
             options.HandlerLifetime = ServiceLifetime.Scoped;
         })
-        .AutoFromAssemblies(typeof(DependencyInjection).Assembly);
+        .AutoFromAssemblies(new[] { typeof(DependencyInjection).Assembly });
 
         // Register the generic validation and exception handlers
         services.AddTransient(typeof(ValidationHandler<>));
@@ -40,7 +40,6 @@ public static class DependencyInjection
         services.AddScoped<IUserClaimService, UserClaimService>();
         services.AddScoped<IUserLoginService, UserLoginService>();
         services.AddScoped<IUserRoleService, UserRoleService>();
-        services.AddScoped<IUserTokenService, UserTokenService>();
         services.AddScoped<IOpenIddictService, OpenIddictService>();
 
         return services;

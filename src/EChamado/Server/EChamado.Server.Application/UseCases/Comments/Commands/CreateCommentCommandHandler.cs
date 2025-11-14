@@ -19,7 +19,7 @@ public class CreateCommentCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CreateCommentCommand> HandleAsync(CreateCommentCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId);
 
         if (order == null)
         {

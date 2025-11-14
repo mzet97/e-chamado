@@ -1,5 +1,7 @@
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using MudBlazor
+
 @inject DepartmentService DepartmentService
 @inject ISnackbar Snackbar
 
@@ -40,7 +42,7 @@
 
 @code {
     [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; } = null!;
+    private object? MudDialog { get; set; }
 
     private MudForm form = null!;
     private bool success;
@@ -50,7 +52,7 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        (MudDialog as dynamic)?.Cancel();
     }
 
     private async Task Submit()
@@ -67,7 +69,7 @@
             var request = new CreateDepartmentRequest(name, description);
             await DepartmentService.CreateAsync(request);
             Snackbar.Add("Departamento criado com sucesso!", Severity.Success);
-            MudDialog.Close(DialogResult.Ok(true));
+            (MudDialog as dynamic)?.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {

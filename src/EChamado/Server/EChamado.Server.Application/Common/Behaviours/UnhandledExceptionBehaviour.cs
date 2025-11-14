@@ -12,6 +12,11 @@ public class RequestLoggingAttribute : RequestHandlerAttribute
         : base(step, timing)
     {
     }
+
+    public override Type GetHandlerType()
+    {
+        return typeof(UnhandledExceptionHandler<>);
+    }
 }
 
 /// <summary>

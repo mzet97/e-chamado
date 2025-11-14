@@ -14,7 +14,7 @@ public class GetOrderTypeByIdQueryHandler(
 {
     public override async Task<GetOrderTypeByIdQuery> HandleAsync(GetOrderTypeByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(query.OrderTypeId, cancellationToken);
+        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(query.OrderTypeId);
 
         if (orderType == null)
         {

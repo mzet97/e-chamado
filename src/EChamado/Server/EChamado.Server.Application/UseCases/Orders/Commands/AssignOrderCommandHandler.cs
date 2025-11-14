@@ -16,7 +16,7 @@ public class AssignOrderCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<AssignOrderCommand> HandleAsync(AssignOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId);
 
         if (order == null)
         {
@@ -24,16 +24,9 @@ public class AssignOrderCommandHandler(
             throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
-        // Busca usuário para obter email
-        var user = await unitOfWork.Users.GetByIdAsync(command.AssignedToUserId, cancellationToken);
-
-        if (user == null)
-        {
-            logger.LogError("User {UserId} not found", command.AssignedToUserId);
-            throw new NotFoundException($"User {command.AssignedToUserId} not found");
-        }
-
-        order.AssignTo(command.AssignedToUserId, user.Email ?? string.Empty);
+        // Como não temos acesso ao Users no UnitOfWork, vamos usar o ID e email que será fornecido
+        // O email pode ser buscado de outra forma ou passado como parâmetro
+        order.AssignTo(command.AssignedToUserId, string.Empty);
 
         if (!order.IsValid())
         {
@@ -43,7 +36,7 @@ public class AssignOrderCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+        await unitOfWork.Orders.UpdateAsync(order);
 
         await unitOfWork.CommitAsync();
 

@@ -23,8 +23,12 @@ public record OrderViewModel(
     Guid? ResponsibleUserId,
     string? ResponsibleUserEmail,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
-);
+    DateTime? UpdatedAt,
+    List<CommentResponse>? Comments = null
+)
+{
+    public bool IsOverdue => DueDate.HasValue && DueDate.Value < DateTime.Now && !ClosingDate.HasValue;
+};
 
 public record OrderListViewModel(
     Guid Id,
@@ -72,5 +76,3 @@ public record UpdateOrderRequest(
 );
 
 public record CloseOrderRequest(int Evaluation);
-
-public record AssignOrderRequest(Guid ResponsibleUserId, string ResponsibleUserEmail);

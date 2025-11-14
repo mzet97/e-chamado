@@ -104,7 +104,7 @@
             { "ButtonText", "Excluir" },
             { "Color", Color.Error }
         };
-        var dialog = await DialogService.ShowAsync<MudBlazor.Dialogs.ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
         var result = await dialog.Result;
         if (!result.Canceled)
         {

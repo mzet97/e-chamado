@@ -28,11 +28,6 @@ public class SearchCategoriesQueryHandler(IUnitOfWork unitOfWork) :
             filter = filter.And(x => x.Description == query.Description);
         }
 
-        if (query.Id != Guid.Empty)
-        {
-            filter = filter.And(x => x.Id == query.Id);
-        }
-
         if (query.CreatedAt != default)
         {
             filter = filter.And(x => x.CreatedAt == query.CreatedAt);

@@ -5,13 +5,15 @@ namespace EChamado.Server.Application.UseCases.Auth.Notifications;
 
 public class LoginUserNotification : IRequest
 {
-    public Guid Id { get; set; }
+    public Id Id { get; set; }
+    public Id CorrelationId { get; set; }
     public string Email { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
 
     public LoginUserNotification()
     {
-        Id = Guid.NewGuid();
+        Id = new Id(Guid.NewGuid().ToString());
+        CorrelationId = new Id(Guid.NewGuid().ToString());
     }
 
     public override string? ToString()

@@ -1,28 +1,40 @@
 using EChamado.Server.Application.Common.Messaging;
-using EChamado.Server.Application.UseCases.Categories.ViewModels;
-using EChamado.Server.Application.UseCases.SubCategories.Queries;
+using EChamado.Server.Endpoints.SubCategories.DTOs;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
+using EChamado.Shared.ViewModels;
 using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.SubCategories;
 
 public class GetSubCategoryByIdEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapGet("/{id:guid}", HandleAsync)
-            .WithName("Obter subcategoria por ID")
-            .Produces<BaseResult<SubCategoryViewModel>>();
+        => app.MapGet("/{id}", HandleAsync)
+            .WithName("Buscar subcategoria por ID")
+            .Produces<BaseResult<BaseViewModel>>();
 
-    private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        Guid id)
+    public static async Task<IResult> HandleAsync(
+        Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var query = new GetSubCategoryByIdQuery(id);
-        var result = await commandProcessor.Send(query);
+        try
+        {
+            var requestDto = new GetSubCategoryByIdRequest { Id = id };
+            var query = requestDto.ToQuery();
+            await commandProcessor.SendAsync(query);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
-
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.NotFound(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<BaseViewModel>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

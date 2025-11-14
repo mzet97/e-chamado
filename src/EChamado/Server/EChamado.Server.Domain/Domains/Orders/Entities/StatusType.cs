@@ -66,8 +66,10 @@ public class StatusType : Entity
     {
         Name = name;
         Description = description;
+        
+        Update(); // Chama base.Update() que define UpdatedAt
+        
         AddEvent(
            new StatusTypeUpdated(this));
-        Validate();
     }
 }

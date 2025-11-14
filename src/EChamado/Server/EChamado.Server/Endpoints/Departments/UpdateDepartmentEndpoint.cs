@@ -1,40 +1,41 @@
-﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Departments.Commands;
+using EChamado.Server.Endpoints.Departments.DTOs;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using Microsoft.AspNetCore.Mvc;
 using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Departments;
 
 public class UpdateDepartmentEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-    => app.MapPut("/{id}", HandleAsync)
-        .WithName("Atualiza um departamento")
-        .WithSummary("Atualiza um departamento")
-        .WithDescription("Atualiza um departamento")
-        .WithOrder(4)
-        .Produces<BaseResult>();
+        => app.MapPut("/", HandleAsync)
+            .WithName("Atualizar um departamento")
+            .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        [FromRoute] Guid id,
-        [FromBody] UpdateDepartmentCommand command)
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] UpdateDepartmentRequest request)
     {
-
-        if(id != command.Id)
+        try
         {
-            return TypedResults.BadRequest("Id da rota e Id do corpo da requisição não são iguais");
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
+
+            var result = command.Result;
+
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
         }
-
-        var result = await commandProcessor.Send(command);
-
-        if (result.Success)
+        catch (Exception ex)
         {
-            return TypedResults.Ok(result);
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
         }
-
-        return TypedResults.BadRequest(result);
     }
 }

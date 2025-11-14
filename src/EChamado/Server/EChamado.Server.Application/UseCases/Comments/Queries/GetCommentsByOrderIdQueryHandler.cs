@@ -23,7 +23,8 @@ public class GetCommentsByOrderIdQueryHandler(IUnitOfWork unitOfWork) :
             c.CreatedAt
         )).ToList();
 
-        query.Result = new BaseResultList<CommentViewModel>(items, new PagedResult(items.Count, 1, items.Count));
+        var pagedResult = PagedResult.Create(1, items.Count, items.Count);
+        query.Result = new BaseResultList<CommentViewModel>(items, pagedResult);
 
         return await base.HandleAsync(query, cancellationToken);
     }

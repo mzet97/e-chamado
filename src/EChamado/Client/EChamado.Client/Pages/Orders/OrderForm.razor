@@ -77,11 +77,11 @@
 
                     <!-- Categoria -->
                     <MudItem xs="12" md="6">
-                        <MudSelect @bind-Value="selectedCategoryId"
+                        <MudSelect T="Guid?" Value="selectedCategoryId"
+                                   ValueChanged="OnCategoryChanged"
                                    Label="Categoria"
                                    Variant="Variant.Outlined"
-                                   Clearable="true"
-                                   ValueChanged="OnCategoryChanged">
+                                   Clearable="true">
                             @foreach (var cat in categories)
                             {
                                 <MudSelectItem Value="@cat.Id">@cat.Name</MudSelectItem>
@@ -281,7 +281,6 @@
                 var request = new UpdateOrderRequest(
                     model.Title,
                     model.Description,
-                    model.TypeId,
                     selectedCategoryId,
                     model.SubCategoryId,
                     model.DepartmentId,

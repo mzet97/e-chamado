@@ -18,7 +18,7 @@ public class UpdateStatusTypeCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<UpdateStatusTypeCommand> HandleAsync(UpdateStatusTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(command.Id, cancellationToken);
+        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(command.Id);
 
         if (statusType == null)
         {
@@ -36,7 +36,7 @@ public class UpdateStatusTypeCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.StatusTypes.UpdateAsync(statusType, cancellationToken);
+        await unitOfWork.StatusTypes.UpdateAsync(statusType);
 
         await unitOfWork.CommitAsync();
 

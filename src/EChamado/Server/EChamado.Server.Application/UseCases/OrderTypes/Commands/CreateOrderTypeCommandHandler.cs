@@ -1,6 +1,6 @@
 using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
-using EChamado.Server.Domain.Entities;
+using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
@@ -19,6 +19,11 @@ public class CreateOrderTypeCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CreateOrderTypeCommand> HandleAsync(CreateOrderTypeCommand command, CancellationToken cancellationToken = default)
     {
+        if (command is null)
+        {
+            throw new ArgumentNullException(nameof(command));
+        }
+
         var entity = OrderType.Create(command.Name, command.Description);
 
         if (!entity.IsValid())

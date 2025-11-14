@@ -1,6 +1,59 @@
 @page "/authentication/login-callback"
 @inject NavigationManager Navigation
+@inject ILogger<LoginCallback> Logger
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Login Callback</PageTitle>
 
-<RemoteAuthenticatorView Action="login-callback" />
+<div style="text-align: center; padding: 50px;">
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    <p>Processando login...</p>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Logger.LogInformation("Login callback received");
+
+            // Extrai o token da URL
+            var uri = new Uri(Navigation.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var token = query["token"];
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Logger.LogInformation("Token received: {Token}", token);
+
+                // Armazena o token no localStorage
+                await JS.InvokeVoidAsync("localStorage.setItem", "authToken", token);
+
+                Logger.LogInformation("Token stored in localStorage");
+
+                // Notifica mudança no estado de autenticação
+                if (AuthenticationStateProvider is EChamado.Client.Authentication.CookieAuthenticationStateProvider provider)
+                {
+                    provider.NotifyAuthenticationStateChanged();
+                }
+            }
+            else
+            {
+                Logger.LogWarning("No token found in callback URL");
+            }
+
+            // Aguarda um momento
+            await Task.Delay(500);
+
+            // Redireciona para a home
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error processing login callback");
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+    }
+}

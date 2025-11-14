@@ -8,14 +8,5 @@ public static class Configuration
 
     public static string BackendUrl { get; set; } = "https://localhost:7296";
 
-    public static MudTheme Theme = new()
-    {
-        Typography = new Typography
-        {
-            Default = new Default
-            {
-                FontFamily = ["Inter", "sans-serif"]
-            }
-        }
-    };
+    public static MudTheme Theme = new();
 }

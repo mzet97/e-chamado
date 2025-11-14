@@ -75,7 +75,7 @@
                                         @comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                                     </MudText>
                                 </div>
-                                <MudText Style="white-space: pre-wrap;">@comment.Content</MudText>
+                                <MudText Style="white-space: pre-wrap;">@comment.Text</MudText>
                             </MudPaper>
                         }
                     }
@@ -119,7 +119,7 @@
                     <!-- Status -->
                     <div class="mb-3">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">Status</MudText>
-                        <MudChip Color="GetStatusColor(order.StatusName)" Class="mt-1">
+                        <MudChip T="string" Color="GetStatusColor(order.StatusName)" Class="mt-1">
                             @order.StatusName
                         </MudChip>
                     </div>
@@ -164,7 +164,7 @@
                         {
                             @if (order.IsOverdue)
                             {
-                                <MudChip Color="Color.Error" Class="mt-1">
+                                <MudChip T="string" Color="Color.Error" Class="mt-1">
                                     Vencido - @order.DueDate.Value.ToString("dd/MM/yyyy")
                                 </MudChip>
                             }
@@ -186,11 +186,11 @@
                     </div>
 
                     <!-- Responsável -->
-                    @if (!string.IsNullOrEmpty(order.AssignedToUserEmail))
+                    @if (!string.IsNullOrEmpty(order.ResponsibleUserEmail))
                     {
                         <div class="mb-3">
                             <MudText Typo="Typo.body2" Color="Color.Secondary">Responsável</MudText>
-                            <MudText Typo="Typo.body1">@order.AssignedToUserEmail</MudText>
+                            <MudText Typo="Typo.body1">@order.ResponsibleUserEmail</MudText>
                         </div>
                     }
 
@@ -246,7 +246,7 @@
                     </MudButton>
 
                     <!-- Assumir chamado -->
-                    @if (string.IsNullOrEmpty(order.AssignedToUserEmail))
+                    @if (string.IsNullOrEmpty(order.ResponsibleUserEmail))
                     {
                         <MudButton Variant="Variant.Outlined"
                                    Color="Color.Info"
@@ -322,7 +322,18 @@
 
         try
         {
-            var request = new AddCommentRequest(newComment);
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userEmail = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                ?? authState.User.Identity?.Name ?? "Usuário";
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                Snackbar.Add("Não foi possível identificar o usuário", Severity.Error);
+                return;
+            }
+
+            var request = new AddCommentRequest(newComment, Guid.Parse(userId), userEmail);
             await OrderService.AddCommentAsync(Id, request);
 
             Snackbar.Add("Comentário adicionado com sucesso!", Severity.Success);
@@ -387,7 +398,7 @@
                 return;
             }
 
-            var request = new AssignOrderRequest(Guid.Parse(userId));
+            var request = new Services.AssignOrderRequest(Guid.Parse(userId));
             await OrderService.AssignAsync(Id, request);
 
             Snackbar.Add("Chamado assumido com sucesso!", Severity.Success);

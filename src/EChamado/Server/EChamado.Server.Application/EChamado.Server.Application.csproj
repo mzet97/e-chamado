@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Common\Caching\" />
     <Folder Include="UseCases\Categories\Commands\Handlers\" />
     <Folder Include="UseCases\Categories\Notifications\Handlers\" />
     <Folder Include="UseCases\Categories\Queries\Handlers\" />
@@ -29,22 +30,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
     <PackageReference Include="LinqKit.Core" Version="1.2.8" />
     <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8" />
-    <PackageReference Include="Paramore.Brighter" Version="10.1.2" />
-    <PackageReference Include="Paramore.Brighter.Extensions.DependencyInjection" Version="10.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="9.0.2" />
+    <PackageReference Include="Paramore.Brighter" Version="10.0.2" />
+    <PackageReference Include="Paramore.Brighter.Extensions.DependencyInjection" Version="10.0.2" />
+    <PackageReference Include="Paramore.Darker" Version="4.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="9.0.10" />
+    <PackageReference Include="OpenIddict.Server.AspNetCore" Version="7.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\EChamado.Shared\EChamado.Shared.csproj" />
     <ProjectReference Include="..\EChamado.Server.Domain\EChamado.Server.Domain.csproj" />
-    <ProjectReference Include="..\EChamado.Server.Infrastructure\EChamado.Server.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

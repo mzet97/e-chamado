@@ -18,7 +18,7 @@ public class DeleteOrderTypeCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<DeleteOrderTypeCommand> HandleAsync(DeleteOrderTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(command.OrderTypeId, cancellationToken);
+        var orderType = await unitOfWork.OrderTypes.GetByIdAsync(command.OrderTypeId);
 
         if (orderType == null)
         {
@@ -28,7 +28,7 @@ public class DeleteOrderTypeCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.OrderTypes.DeleteAsync(orderType, cancellationToken);
+        await unitOfWork.OrderTypes.RemoveAsync(orderType.Id);
 
         await unitOfWork.CommitAsync();
 

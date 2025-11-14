@@ -5,17 +5,18 @@ namespace EChamado.Server.Application.UseCases.Comments.Notifications;
 
 public class DeletedCommentNotification : IRequest
 {
-    public Guid Id { get; set; }
+    public Id Id { get; set; }
+    public Id CorrelationId { get; set; } = new Id(Guid.NewGuid().ToString());
     public Guid OrderId { get; set; }
 
     public DeletedCommentNotification()
     {
-        Id = Guid.NewGuid();
+        Id = new Id(Guid.NewGuid().ToString());
     }
 
     public DeletedCommentNotification(Guid id, Guid orderId)
     {
-        Id = id;
+        Id = new Id(id.ToString());
         OrderId = orderId;
     }
 

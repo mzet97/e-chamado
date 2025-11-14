@@ -24,8 +24,9 @@ public class RegisterUserCommandHandler(
         if (resultCreateUser.Succeeded)
         {
             await applicationUserService.TrySignInAsync(user);
-            var tokenResult = await commandProcessor.SendAsync(new GetTokenCommand { Email = command.Email }, cancellationToken: cancellationToken);
-            command.Result = tokenResult.Result;
+            var tokenCommand = new GetTokenCommand { Email = command.Email };
+            await commandProcessor.SendAsync(tokenCommand, cancellationToken: cancellationToken);
+            command.Result = tokenCommand.Result;
             return await base.HandleAsync(command, cancellationToken);
         }
 

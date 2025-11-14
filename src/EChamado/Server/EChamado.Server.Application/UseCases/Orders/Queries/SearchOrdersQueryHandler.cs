@@ -14,7 +14,7 @@ public class SearchOrdersQueryHandler(
     public override async Task<SearchOrdersQuery> HandleAsync(SearchOrdersQuery query, CancellationToken cancellationToken = default)
     {
         // Busca todos os orders
-        var orders = await unitOfWork.Orders.GetAllAsync(cancellationToken);
+        var orders = await unitOfWork.Orders.GetAllAsync();
 
         // Aplica filtros
         var filtered = orders.AsEnumerable();
@@ -46,10 +46,10 @@ public class SearchOrdersQueryHandler(
             filtered = filtered.Where(o => o.ResponsibleUserId == query.AssignedToUserId.Value);
 
         if (query.StartDate.HasValue)
-            filtered = filtered.Where(o => o.OpeningDate >= query.StartDate.Value);
+            filtered = filtered.Where(o => o.OpeningDate.HasValue && o.OpeningDate.Value >= query.StartDate.Value);
 
         if (query.EndDate.HasValue)
-            filtered = filtered.Where(o => o.OpeningDate <= query.EndDate.Value);
+            filtered = filtered.Where(o => o.OpeningDate.HasValue && o.OpeningDate.Value <= query.EndDate.Value);
 
         if (query.IsOverdue.HasValue && query.IsOverdue.Value)
             filtered = filtered.Where(o => o.DueDate.HasValue && o.DueDate.Value < DateTime.UtcNow && !o.ClosingDate.HasValue);
@@ -64,9 +64,9 @@ public class SearchOrdersQueryHandler(
             .ToList();
 
         // Busca dados relacionados
-        var statuses = await unitOfWork.StatusTypes.GetAllAsync(cancellationToken);
-        var types = await unitOfWork.OrderTypes.GetAllAsync(cancellationToken);
-        var departments = await unitOfWork.Departments.GetAllAsync(cancellationToken);
+        var statuses = await unitOfWork.StatusTypes.GetAllAsync();
+        var types = await unitOfWork.OrderTypes.GetAllAsync();
+        var departments = await unitOfWork.Departments.GetAllAsync();
 
         var statusDict = statuses.ToDictionary(s => s.Id, s => s.Name);
         var typeDict = types.ToDictionary(t => t.Id, t => t.Name);
@@ -76,12 +76,12 @@ public class SearchOrdersQueryHandler(
         var items = ordersResult.Select(o => new OrderListViewModel(
             o.Id,
             o.Title,
-            o.OpeningDate,
+            o.OpeningDate ?? DateTime.UtcNow,
             o.ClosingDate,
             o.DueDate,
             statusDict.GetValueOrDefault(o.StatusId, "Unknown"),
             typeDict.GetValueOrDefault(o.TypeId, "Unknown"),
-            o.DepartmentId.HasValue ? departmentDict.GetValueOrDefault(o.DepartmentId.Value) : null,
+            departmentDict.GetValueOrDefault(o.DepartmentId),
             o.RequestingUserEmail,
             o.ResponsibleUserEmail,
             o.DueDate.HasValue && o.DueDate.Value < DateTime.UtcNow && !o.ClosingDate.HasValue
@@ -89,7 +89,8 @@ public class SearchOrdersQueryHandler(
 
         logger.LogInformation("Search orders returned {Count} results", items.Count);
 
-        query.Result = new BaseResultList<OrderListViewModel>(items, totalCount, query.PageNumber, query.PageSize);
+        var pagedResult = PagedResult.Create(query.PageNumber, query.PageSize, totalCount);
+        query.Result = new BaseResultList<OrderListViewModel>(items, pagedResult);
 
         return await base.HandleAsync(query, cancellationToken);
     }

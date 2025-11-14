@@ -18,7 +18,7 @@ public class UpdateSubCategoryCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<UpdateSubCategoryCommand> HandleAsync(UpdateSubCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(command.Id, cancellationToken);
+        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(command.Id);
 
         if (subCategory == null)
         {
@@ -26,7 +26,7 @@ public class UpdateSubCategoryCommandHandler(
             throw new NotFoundException($"SubCategory {command.Id} not found");
         }
 
-        var category = await unitOfWork.Categories.GetByIdAsync(command.CategoryId, cancellationToken);
+        var category = await unitOfWork.Categories.GetByIdAsync(command.CategoryId);
 
         if (category == null)
         {
@@ -44,7 +44,7 @@ public class UpdateSubCategoryCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.SubCategories.UpdateAsync(subCategory, cancellationToken);
+        await unitOfWork.SubCategories.UpdateAsync(subCategory);
 
         await unitOfWork.CommitAsync();
 

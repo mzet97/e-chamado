@@ -13,7 +13,7 @@ public class CommentRepository : Repository<Comment>, ICommentRepository
 
     public async Task<IEnumerable<Comment>> GetByOrderIdAsync(Guid orderId, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
+        return await DbSet
             .Where(c => c.OrderId == orderId && !c.IsDeleted)
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(cancellationToken);

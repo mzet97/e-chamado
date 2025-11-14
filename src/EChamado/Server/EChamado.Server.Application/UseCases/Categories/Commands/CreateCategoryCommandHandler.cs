@@ -1,6 +1,6 @@
 using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.UseCases.Categories.Notifications;
-using EChamado.Server.Domain.Domains.Categories;
+using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;

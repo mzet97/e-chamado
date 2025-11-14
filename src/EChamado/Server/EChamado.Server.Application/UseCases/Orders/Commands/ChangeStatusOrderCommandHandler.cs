@@ -16,7 +16,7 @@ public class ChangeStatusOrderCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<ChangeStatusOrderCommand> HandleAsync(ChangeStatusOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId);
 
         if (order == null)
         {
@@ -24,7 +24,7 @@ public class ChangeStatusOrderCommandHandler(
             throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
-        var status = await unitOfWork.StatusTypes.GetByIdAsync(command.StatusId, cancellationToken);
+        var status = await unitOfWork.StatusTypes.GetByIdAsync(command.StatusId);
 
         if (status == null)
         {
@@ -42,7 +42,7 @@ public class ChangeStatusOrderCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+        await unitOfWork.Orders.UpdateAsync(order);
 
         await unitOfWork.CommitAsync();
 

@@ -78,7 +78,7 @@
             </MudItem>
 
             <MudItem xs="12" md="3">
-                <MudSwitch @bind-Checked="showOnlyOverdue"
+                <MudSwitch T="bool" @bind-Checked="showOnlyOverdue"
                            Color="Color.Error"
                            Label="Somente Vencidos" />
             </MudItem>
@@ -95,7 +95,7 @@
     </MudPaper>
 
     <!-- Tabela -->
-    <MudTable ServerData="@(new Func<TableState, Task<TableData<OrderListViewModel>>>(ServerReload))"
+    <MudTable T="OrderListViewModel" ServerData="@(new Func<TableState, CancellationToken, Task<TableData<OrderListViewModel>>>(ServerReload))"
               Dense="false"
               Hover="true"
               @ref="table"
@@ -123,7 +123,7 @@
                 <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Title</MudText>
             </MudTd>
             <MudTd DataLabel="Status">
-                <MudChip Size="Size.Small" Color="GetStatusColor(context.StatusName)">
+                <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.StatusName)">
                     @context.StatusName
                 </MudChip>
             </MudTd>
@@ -134,7 +134,7 @@
             <MudTd DataLabel="Prazo">
                 @if (context.IsOverdue)
                 {
-                    <MudChip Size="Size.Small" Color="Color.Error">Vencido</MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Error">Vencido</MudChip>
                 }
                 else if (context.DueDate.HasValue)
                 {
@@ -210,7 +210,7 @@
         }
     }
 
-    private async Task<TableData<OrderListViewModel>> ServerReload(TableState state)
+    private async Task<TableData<OrderListViewModel>> ServerReload(TableState state, CancellationToken cancellationToken)
     {
         isLoading = true;
 

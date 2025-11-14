@@ -18,7 +18,7 @@ public class DeleteCommentCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<DeleteCommentCommand> HandleAsync(DeleteCommentCommand command, CancellationToken cancellationToken = default)
     {
-        var comment = await unitOfWork.Comments.GetByIdAsync(command.CommentId, cancellationToken);
+        var comment = await unitOfWork.Comments.GetByIdAsync(command.CommentId);
 
         if (comment == null)
         {
@@ -28,7 +28,7 @@ public class DeleteCommentCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Comments.DeleteAsync(comment, cancellationToken);
+        await unitOfWork.Comments.RemoveAsync(comment.Id);
 
         await unitOfWork.CommitAsync();
 

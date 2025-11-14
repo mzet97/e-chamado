@@ -4,6 +4,7 @@ using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Shared.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Paramore.Brighter;
+using EChamado.Server.Common.Api;
 
 namespace EChamado.Server.Endpoints.Categories;
 
@@ -15,12 +16,11 @@ public class SearchCategoriesEndpoint : IEndpoint
             .Produces<BaseResultList<CategoryViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
+        [FromServices] IAmACommandProcessor commandProcessor,
         [AsParameters] SearchCategoriesParameters parameters)
     {
         var query = new SearchCategoriesQuery
         {
-            Id = parameters.Id,
             Name = parameters.Name ?? string.Empty,
             Description = parameters.Description ?? string.Empty,
             CreatedAt = parameters.CreatedAt,
@@ -31,7 +31,7 @@ public class SearchCategoriesEndpoint : IEndpoint
             PageSize = parameters.PageSize
         };
 
-        var result = await commandProcessor.Send(query);
+        var result = await commandProcessor.SendWithResultAsync(query);
 
         if (result.Success)
             return TypedResults.Ok(result);

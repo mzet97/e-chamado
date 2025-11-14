@@ -1,5 +1,6 @@
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using MudBlazor
 @inject LookupService LookupService
 @inject ISnackbar Snackbar
 
@@ -40,7 +41,7 @@
 
 @code {
     [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; } = null!;
+    private object? MudDialog { get; set; }
 
     [Parameter]
     public StatusTypeResponse StatusType { get; set; } = null!;
@@ -59,7 +60,7 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        (MudDialog as dynamic)?.Cancel();
     }
 
     private async Task Submit()
@@ -76,7 +77,7 @@
             var request = new UpdateStatusTypeRequest(name, description);
             await LookupService.UpdateStatusTypeAsync(StatusType.Id, request);
             Snackbar.Add("Status atualizado com sucesso!", Severity.Success);
-            MudDialog.Close(DialogResult.Ok(true));
+            (MudDialog as dynamic)?.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {

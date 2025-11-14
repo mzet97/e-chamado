@@ -1,40 +1,41 @@
-﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Roles.Commands;
+using EChamado.Server.Endpoints.Roles.DTOs;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using Microsoft.AspNetCore.Mvc;
 using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Roles;
 
 public class UpdateRoleEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-    => app.MapPut("/{id:guid}", HandleAsync)
-        .WithName("Atualiza um role")
-        .WithSummary("Atualiza um role")
-        .WithDescription("Atualiza um role")
-        .WithOrder(5)
-        .Produces<BaseResult>();
+        => app.MapPut("/", HandleAsync)
+            .WithName("Atualizar uma role")
+            .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        [FromRoute] Guid id,
-        [FromBody] UpdateRoleCommand command)
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] UpdateRoleRequest request)
     {
-
-        if (id != command.Id)
+        try
         {
-            return TypedResults.BadRequest("Id da rota e Id do corpo da requisição não são iguais");
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
+
+            var result = command.Result;
+
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
         }
-
-        var result = await commandProcessor.Send(command);
-
-        if (result.Success)
+        catch (Exception ex)
         {
-            return TypedResults.Ok(result);
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
         }
-
-        return TypedResults.BadRequest(result);
     }
 }

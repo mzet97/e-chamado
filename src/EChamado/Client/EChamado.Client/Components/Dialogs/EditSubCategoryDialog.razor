@@ -1,5 +1,6 @@
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using MudBlazor
 @inject CategoryService CategoryService
 @inject ISnackbar Snackbar
 
@@ -40,7 +41,7 @@
 
 @code {
     [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; } = null!;
+    private object? MudDialog { get; set; }
 
     [Parameter]
     public SubCategoryResponse SubCategory { get; set; } = null!;
@@ -62,7 +63,7 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        (MudDialog as dynamic)?.Cancel();
     }
 
     private async Task Submit()
@@ -79,7 +80,7 @@
             var request = new UpdateSubCategoryRequest(name, description, CategoryId);
             await CategoryService.UpdateSubCategoryAsync(SubCategory.Id, request);
             Snackbar.Add("Subcategoria atualizada com sucesso!", Severity.Success);
-            MudDialog.Close(DialogResult.Ok(true));
+            (MudDialog as dynamic)?.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {

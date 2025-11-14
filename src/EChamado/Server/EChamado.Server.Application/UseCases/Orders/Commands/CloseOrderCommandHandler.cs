@@ -16,7 +16,7 @@ public class CloseOrderCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CloseOrderCommand> HandleAsync(CloseOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.OrderId);
 
         if (order == null)
         {
@@ -40,7 +40,7 @@ public class CloseOrderCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+        await unitOfWork.Orders.UpdateAsync(order);
 
         await unitOfWork.CommitAsync();
 

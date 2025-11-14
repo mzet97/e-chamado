@@ -10,6 +10,5 @@ public class CommentDeleted : DomainEvent
     public CommentDeleted(Comment comment)
     {
         Comment = comment;
-        AggregateId = comment.OrderId;
     }
 }

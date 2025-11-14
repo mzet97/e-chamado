@@ -1,9 +1,11 @@
-﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Auth.Commands;
+using EChamado.Server.Endpoints.Auth.DTOs;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
 using EChamado.Shared.ViewModels.Auth;
 using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Auth;
 
@@ -14,21 +16,32 @@ public class RegisterUserEndpoint : IEndpoint
              .WithName("Register: Register a new user")
              .WithSummary("Criar um novo usuario")
              .WithDescription("Criar um novo usuario")
-             .WithOrder(1)
+             .WithOrder(2)
              .Produces<BaseResult<LoginResponseViewModel?>>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        RegisterUserCommand command)
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] RegisterRequestDto request)
     {
-
-        var result = await commandProcessor.Send(command);
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
+            var result = command.Result;
 
-        return TypedResults.BadRequest(result);
+            if (result.Success)
+            {
+                return TypedResults.Ok(result);
+            }
+
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<LoginResponseViewModel?>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

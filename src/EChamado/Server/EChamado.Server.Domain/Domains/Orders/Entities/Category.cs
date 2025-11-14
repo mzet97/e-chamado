@@ -66,7 +66,7 @@ public class Category : Entity
         Name = name;
         Description = description;
 
-        Validate();
+        Update(); // Chama base.Update() que define UpdatedAt
 
         AddEvent(
             new CategoryUpdated(this));

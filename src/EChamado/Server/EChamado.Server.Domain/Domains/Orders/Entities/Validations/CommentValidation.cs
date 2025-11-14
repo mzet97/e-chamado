@@ -7,7 +7,7 @@ public class CommentValidation : AbstractValidator<Comment>
     public CommentValidation()
     {
         RuleFor(x => x.Text)
-            .NotEmpty()
+            .Must(text => !string.IsNullOrWhiteSpace(text))
             .WithMessage("O texto do comentário é obrigatório")
             .MaximumLength(2000)
             .WithMessage("O texto do comentário deve ter no máximo 2000 caracteres");

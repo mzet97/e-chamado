@@ -1,10 +1,10 @@
-﻿using EChamado.Server.Common.Api;
+using EChamado.Server.Common.Api;
 using EChamado.Server.Endpoints.Auth;
 using EChamado.Server.Endpoints.Categories;
 using EChamado.Server.Endpoints.Comments;
 using EChamado.Server.Endpoints.Departments;
-using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.OrderTypes;
+using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.Roles;
 using EChamado.Server.Endpoints.StatusTypes;
 using EChamado.Server.Endpoints.SubCategories;
@@ -39,11 +39,16 @@ public static class Endpoint
                 return Results.Ok(new { Message = "Este é um exemplo de cache", Timestamp = DateTime.UtcNow });
             }).CacheOutput("DefaultPolicy");
 
-        endpoints.MapGroup("v1/auth")
-            .WithTags("auth")
-            .MapEndpoint<RegisterUserEndpoint>()
-            .MapEndpoint<LoginUserEndpoint>();
+        // VERSION 1 ENDPOINTS (V1)
+        // TODOS OS ENDPOINTS ESTÃO NA V1 AGORA
 
+        // Auth v1
+        endpoints.MapGroup("v1/auth")
+           .WithTags("auth")
+           .MapEndpoint<RegisterUserEndpoint>()
+           .MapEndpoint<LoginUserEndpoint>();
+
+        // Roles v1
         endpoints.MapGroup("v1/roles")
            .WithTags("role")
            .RequireAuthorization()
@@ -58,17 +63,19 @@ public static class Endpoint
            .MapEndpoint<UpdateRoleEndpoint>()
            .MapEndpoint<DeleteRoleEndpoint>();
 
+        // Users v1
         endpoints.MapGroup("v1/users")
-          .WithTags("user")
-          .RequireAuthorization()
-          .MapEndpoint<GetAllUsersEndpoint>();
+            .WithTags("user")
+            .RequireAuthorization()
+            .MapEndpoint<GetAllUsersEndpoint>();
 
         endpoints.MapGroup("v1/user")
-           .WithTags("user")
-           .RequireAuthorization()
-           .MapEndpoint<GetByIdUserEndpoint>()
-           .MapEndpoint<GetByEmailUserEndpoint>();
+            .WithTags("user")
+            .RequireAuthorization()
+            .MapEndpoint<GetByIdUserEndpoint>()
+            .MapEndpoint<GetByEmailUserEndpoint>();
 
+        // Departments v1
         endpoints.MapGroup("v1/departments")
             .WithTags("Department")
             .RequireAuthorization()
@@ -83,6 +90,7 @@ public static class Endpoint
             .MapEndpoint<CreateDepartmentEndpoint>()
             .MapEndpoint<UpdateDepartmentEndpoint>();
 
+        // Categories v1
         endpoints.MapGroup("v1/categories")
             .WithTags("Category")
             .RequireAuthorization()
@@ -96,6 +104,7 @@ public static class Endpoint
             .MapEndpoint<UpdateCategoryEndpoint>()
             .MapEndpoint<DeleteCategoryEndpoint>();
 
+        // SubCategories v1
         endpoints.MapGroup("v1/subcategories")
             .WithTags("SubCategory")
             .RequireAuthorization()
@@ -109,6 +118,7 @@ public static class Endpoint
             .MapEndpoint<UpdateSubCategoryEndpoint>()
             .MapEndpoint<DeleteSubCategoryEndpoint>();
 
+        // OrderTypes v1
         endpoints.MapGroup("v1/ordertypes")
             .WithTags("OrderType")
             .RequireAuthorization()
@@ -122,6 +132,7 @@ public static class Endpoint
             .MapEndpoint<UpdateOrderTypeEndpoint>()
             .MapEndpoint<DeleteOrderTypeEndpoint>();
 
+        // StatusTypes v1
         endpoints.MapGroup("v1/statustypes")
             .WithTags("StatusType")
             .RequireAuthorization()
@@ -135,28 +146,29 @@ public static class Endpoint
             .MapEndpoint<UpdateStatusTypeEndpoint>()
             .MapEndpoint<DeleteStatusTypeEndpoint>();
 
+        // Orders v1
         endpoints.MapGroup("v1/orders")
             .WithTags("Order")
             .RequireAuthorization()
-            .MapEndpoint<SearchOrdersEndpoint>();
+            .MapEndpoint<SearchOrdersEndpoint>()
+            .MapEndpoint<GetOrderByIdEndpoint>();
 
         endpoints.MapGroup("v1/order")
             .WithTags("Order")
             .RequireAuthorization()
-            .MapEndpoint<GetOrderByIdEndpoint>()
             .MapEndpoint<CreateOrderEndpoint>()
             .MapEndpoint<UpdateOrderEndpoint>()
             .MapEndpoint<AssignOrderEndpoint>()
-            .MapEndpoint<CloseOrderEndpoint>()
             .MapEndpoint<ChangeStatusOrderEndpoint>()
-            .MapEndpoint<CreateCommentEndpoint>()
-            .MapEndpoint<GetCommentsByOrderIdEndpoint>();
+            .MapEndpoint<CloseOrderEndpoint>();
 
-        endpoints.MapGroup("v1")
+        // Comments v1
+        endpoints.MapGroup("v1/comments")
             .WithTags("Comment")
             .RequireAuthorization()
+            .MapEndpoint<CreateCommentEndpoint>()
+            .MapEndpoint<GetCommentsByOrderIdEndpoint>()
             .MapEndpoint<DeleteCommentEndpoint>();
-
     }
 
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)

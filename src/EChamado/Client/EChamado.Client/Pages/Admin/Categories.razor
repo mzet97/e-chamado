@@ -79,10 +79,10 @@
                             }
                             else
                             {
-                                <MudList Dense="true">
+                                <MudList T="string" Dense="true">
                                     @foreach (var subCategory in category.SubCategories)
                                     {
-                                        <MudListItem>
+                                        <MudListItem T="string">
                                             <div class="d-flex justify-space-between align-center" style="width: 100%;">
                                                 <div>
                                                     <MudText>@subCategory.Name</MudText>
@@ -173,7 +173,7 @@
             { "Color", Color.Error }
         };
 
-        var dialog = await DialogService.ShowAsync<MudBlazor.Dialogs.ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)
@@ -231,7 +231,7 @@
             { "Color", Color.Error }
         };
 
-        var dialog = await DialogService.ShowAsync<MudBlazor.Dialogs.ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)

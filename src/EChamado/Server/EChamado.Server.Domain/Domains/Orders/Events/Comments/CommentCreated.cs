@@ -10,6 +10,5 @@ public class CommentCreated : DomainEvent
     public CommentCreated(Comment comment)
     {
         Comment = comment;
-        AggregateId = comment.OrderId;
     }
 }

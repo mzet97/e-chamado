@@ -33,11 +33,6 @@ public class SearchSubCategoriesQueryHandler(IUnitOfWork unitOfWork) :
             filter = filter.And(x => x.CategoryId == query.CategoryId.Value);
         }
 
-        if (query.Id != Guid.Empty)
-        {
-            filter = filter.And(x => x.Id == query.Id);
-        }
-
         if (query.CreatedAt != default)
         {
             filter = filter.And(x => x.CreatedAt == query.CreatedAt);

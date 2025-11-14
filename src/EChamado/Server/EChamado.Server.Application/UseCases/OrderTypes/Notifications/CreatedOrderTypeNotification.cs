@@ -5,18 +5,19 @@ namespace EChamado.Server.Application.UseCases.OrderTypes.Notifications;
 
 public class CreatedOrderTypeNotification : IRequest
 {
-    public Guid Id { get; set; }
+    public Id Id { get; set; }
+    public Id CorrelationId { get; set; } = new Id(Guid.NewGuid().ToString());
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
     public CreatedOrderTypeNotification()
     {
-        Id = Guid.NewGuid();
+        Id = new Id(Guid.NewGuid().ToString());
     }
 
     public CreatedOrderTypeNotification(Guid id, string name, string description)
     {
-        Id = id;
+        Id = new Id(id.ToString());
         Name = name;
         Description = description;
     }

@@ -1,4 +1,5 @@
 using EChamado.Client.Models;
+using EChamado.Shared.Responses;
 using System.Net.Http.Json;
 
 namespace EChamado.Client.Services;
@@ -17,9 +18,10 @@ public class OrderService
     /// </summary>
     public async Task<Guid> CreateAsync(CreateOrderRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/orders", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/orders", request);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<Guid>();
+        var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
+        return result?.Data ?? Guid.Empty;
     }
 
     /// <summary>
@@ -27,7 +29,7 @@ public class OrderService
     /// </summary>
     public async Task UpdateAsync(Guid id, UpdateOrderRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"api/orders/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/orders/{id}", request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -36,18 +38,37 @@ public class OrderService
     /// </summary>
     public async Task CloseAsync(Guid id, int evaluation)
     {
-        var response = await _httpClient.PostAsJsonAsync($"api/orders/{id}/close", new CloseOrderRequest(evaluation));
+        var response = await _httpClient.PostAsJsonAsync($"v1/orders/{id}/close", new CloseOrderRequest(evaluation));
         response.EnsureSuccessStatusCode();
     }
 
     /// <summary>
     /// Atribui um chamado a um responsável
     /// </summary>
-    public async Task AssignAsync(Guid id, Guid responsibleUserId, string responsibleUserEmail)
+    public async Task AssignAsync(Guid id, AssignOrderRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync($"api/orders/{id}/assign",
-            new AssignOrderRequest(responsibleUserId, responsibleUserEmail));
+        var response = await _httpClient.PostAsJsonAsync($"v1/orders/{id}/assign", request);
         response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
+    /// Altera o status de um chamado
+    /// </summary>
+    public async Task ChangeStatusAsync(Guid id, ChangeStatusRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"v1/orders/{id}/status", request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
+    /// Adiciona um comentário a um chamado
+    /// </summary>
+    public async Task<Guid> AddCommentAsync(Guid id, AddCommentRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"v1/orders/{id}/comments", request);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
+        return result?.Data ?? Guid.Empty;
     }
 
     /// <summary>
@@ -57,7 +78,8 @@ public class OrderService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<OrderViewModel>($"api/orders/{id}");
+            var result = await _httpClient.GetFromJsonAsync<BaseResult<OrderViewModel>>($"v1/orders/{id}");
+            return result?.Data;
         }
         catch (HttpRequestException)
         {
@@ -71,8 +93,21 @@ public class OrderService
     public async Task<PagedResult<OrderListViewModel>> SearchAsync(SearchOrdersParameters parameters)
     {
         var queryString = BuildQueryString(parameters);
-        var result = await _httpClient.GetFromJsonAsync<PagedResult<OrderListViewModel>>($"api/orders?{queryString}");
-        return result ?? new PagedResult<OrderListViewModel>(new List<OrderListViewModel>(), 0, 1, 10, 0);
+        var result = await _httpClient.GetFromJsonAsync<BaseResultList<OrderListViewModel>>($"v1/orders?{queryString}");
+        
+        if (result?.Data != null)
+        {
+            var pagedData = result.PagedResult;
+            return new PagedResult<OrderListViewModel>(
+                result.Data.ToList(),
+                pagedData?.RowCount ?? 0,
+                pagedData?.CurrentPage ?? 1,
+                pagedData?.PageSize ?? 10,
+                pagedData?.PageCount ?? 0
+            );
+        }
+        
+        return new PagedResult<OrderListViewModel>(new List<OrderListViewModel>(), 0, 1, 10, 0);
     }
 
     /// <summary>
@@ -80,9 +115,22 @@ public class OrderService
     /// </summary>
     public async Task<PagedResult<OrderListViewModel>> GetMyTicketsAsync(int pageNumber = 1, int pageSize = 10)
     {
-        var result = await _httpClient.GetFromJsonAsync<PagedResult<OrderListViewModel>>(
-            $"api/orders/my-tickets?pageNumber={pageNumber}&pageSize={pageSize}");
-        return result ?? new PagedResult<OrderListViewModel>(new List<OrderListViewModel>(), 0, 1, 10, 0);
+        var result = await _httpClient.GetFromJsonAsync<BaseResultList<OrderListViewModel>>(
+            $"v1/orders/my-tickets?pageNumber={pageNumber}&pageSize={pageSize}");
+            
+        if (result?.Data != null)
+        {
+            var pagedData = result.PagedResult;
+            return new PagedResult<OrderListViewModel>(
+                result.Data.ToList(),
+                pagedData?.RowCount ?? 0,
+                pagedData?.CurrentPage ?? 1,
+                pagedData?.PageSize ?? 10,
+                pagedData?.PageCount ?? 0
+            );
+        }
+        
+        return new PagedResult<OrderListViewModel>(new List<OrderListViewModel>(), 0, 1, 10, 0);
     }
 
     /// <summary>
@@ -90,9 +138,22 @@ public class OrderService
     /// </summary>
     public async Task<PagedResult<OrderListViewModel>> GetAssignedToMeAsync(int pageNumber = 1, int pageSize = 10)
     {
-        var result = await _httpClient.GetFromJsonAsync<PagedResult<OrderListViewModel>>(
-            $"api/orders/assigned-to-me?pageNumber={pageNumber}&pageSize={pageSize}");
-        return result ?? new PagedResult<OrderListViewModel>(new List<OrderListViewModel>(), 0, 1, 10, 0);
+        var result = await _httpClient.GetFromJsonAsync<BaseResultList<OrderListViewModel>>(
+            $"v1/orders/assigned-to-me?pageNumber={pageNumber}&pageSize={pageSize}");
+            
+        if (result?.Data != null)
+        {
+            var pagedData = result.PagedResult;
+            return new PagedResult<OrderListViewModel>(
+                result.Data.ToList(),
+                pagedData?.RowCount ?? 0,
+                pagedData?.CurrentPage ?? 1,
+                pagedData?.PageSize ?? 10,
+                pagedData?.PageCount ?? 0
+            );
+        }
+        
+        return new PagedResult<OrderListViewModel>(new List<OrderListViewModel>(), 0, 1, 10, 0);
     }
 
     private static string BuildQueryString(SearchOrdersParameters parameters)
@@ -136,6 +197,26 @@ public class OrderService
         return string.Join("&", queryParams);
     }
 }
+
+/// <summary>
+/// Request para adicionar comentário
+/// </summary>
+public record AddCommentRequest(string Text, Guid UserId, string UserEmail);
+
+/// <summary>
+/// Request para alterar status
+/// </summary>
+public record ChangeStatusRequest(Guid StatusId);
+
+/// <summary>
+/// Request para atribuir chamado
+/// </summary>
+public record AssignOrderRequest(Guid AssignedToUserId);
+
+/// <summary>
+/// Request para fechar chamado
+/// </summary>
+public record CloseOrderRequest(int Evaluation);
 
 /// <summary>
 /// Parâmetros para busca de chamados

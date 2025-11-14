@@ -19,10 +19,10 @@ public class GetRoleByNameEndpoint : IEndpoint
         .Produces<BaseResult<RolesViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        [FromRoute] string name)
+        [FromRoute] string name,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await commandProcessor.Send(new GetRoleByNameQuery(name));
+        var result = await commandProcessor.SendWithResultAsync(new GetRoleByNameQuery(name));
 
         if (result.Success)
         {

@@ -14,7 +14,7 @@ public class GetStatusTypeByIdQueryHandler(
 {
     public override async Task<GetStatusTypeByIdQuery> HandleAsync(GetStatusTypeByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(query.StatusTypeId, cancellationToken);
+        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(query.StatusTypeId);
 
         if (statusType == null)
         {

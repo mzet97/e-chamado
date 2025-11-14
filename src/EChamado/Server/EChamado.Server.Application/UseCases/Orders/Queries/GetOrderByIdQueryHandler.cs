@@ -14,7 +14,7 @@ public class GetOrderByIdQueryHandler(
 {
     public override async Task<GetOrderByIdQuery> HandleAsync(GetOrderByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(query.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(query.OrderId);
 
         if (order == null)
         {
@@ -22,27 +22,28 @@ public class GetOrderByIdQueryHandler(
             throw new NotFoundException($"Order {query.OrderId} not found");
         }
 
-        var status = await unitOfWork.StatusTypes.GetByIdAsync(order.StatusId, cancellationToken);
-        var type = await unitOfWork.OrderTypes.GetByIdAsync(order.TypeId, cancellationToken);
-
-        var category = order.CategoryId.HasValue
-            ? await unitOfWork.Categories.GetByIdAsync(order.CategoryId.Value, cancellationToken)
-            : null;
+        var status = await unitOfWork.StatusTypes.GetByIdAsync(order.StatusId);
+        var type = await unitOfWork.OrderTypes.GetByIdAsync(order.TypeId);
+        var category = await unitOfWork.Categories.GetByIdAsync(order.CategoryId);
+        var department = await unitOfWork.Departments.GetByIdAsync(order.DepartmentId);
 
         var subCategory = order.SubCategoryId.HasValue
-            ? await unitOfWork.SubCategories.GetByIdAsync(order.SubCategoryId.Value, cancellationToken)
+            ? await unitOfWork.SubCategories.GetByIdAsync(order.SubCategoryId.Value)
             : null;
 
-        var department = order.DepartmentId.HasValue
-            ? await unitOfWork.Departments.GetByIdAsync(order.DepartmentId.Value, cancellationToken)
-            : null;
+        // Converter Evaluation de string para int?
+        int? evaluation = null;
+        if (!string.IsNullOrEmpty(order.Evaluation) && int.TryParse(order.Evaluation, out var evalValue))
+        {
+            evaluation = evalValue;
+        }
 
         var viewModel = new OrderViewModel(
             order.Id,
             order.Title,
             order.Description,
-            order.Evaluation,
-            order.OpeningDate,
+            evaluation,
+            order.OpeningDate ?? DateTime.UtcNow,
             order.ClosingDate,
             order.DueDate,
             order.StatusId,

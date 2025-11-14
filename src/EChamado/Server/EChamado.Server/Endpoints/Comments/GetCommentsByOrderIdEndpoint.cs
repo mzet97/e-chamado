@@ -3,6 +3,8 @@ using EChamado.Server.Application.UseCases.Comments.Queries;
 using EChamado.Server.Application.UseCases.Comments.ViewModels;
 using EChamado.Shared.Responses;
 using Paramore.Brighter;
+using EChamado.Server.Common.Api;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Comments;
 
@@ -14,11 +16,11 @@ public class GetCommentsByOrderIdEndpoint : IEndpoint
             .Produces<BaseResultList<CommentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
+        [FromServices] IAmACommandProcessor commandProcessor,
         Guid orderId)
     {
         var query = new GetCommentsByOrderIdQuery(orderId);
-        var result = await commandProcessor.Send(query);
+        var result = await commandProcessor.SendWithResultAsync(query);
 
         if (result.Success)
             return TypedResults.Ok(result);

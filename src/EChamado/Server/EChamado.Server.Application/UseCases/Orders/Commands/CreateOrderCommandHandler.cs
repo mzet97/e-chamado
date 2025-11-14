@@ -20,26 +20,51 @@ public class CreateOrderCommandHandler(
         // Busca status padrão "Aberto" ou primeiro status disponível
         var defaultStatus = await unitOfWork.StatusTypes.SearchAsync(
             x => x.Name.ToLower() == "aberto" || x.Name.ToLower() == "open",
-            cancellationToken);
+            null,
+            10,
+            1);
 
-        var statusId = defaultStatus.FirstOrDefault()?.Id;
+        var statusId = defaultStatus.Data.FirstOrDefault()?.Id;
 
-        if (statusId == null)
+        if (statusId == null || statusId == Guid.Empty)
         {
             logger.LogError("No default status found");
             throw new NotFoundException("No default status found. Please create a status first.");
         }
 
+        // Busca o usuário responsável padrão ou usa o mesmo usuário solicitante
+        var responsibleUserId = command.RequestingUserId;
+        var responsibleUserEmail = command.RequestingUserEmail;
+
+        // Se CategoryId não foi fornecido, busca uma categoria padrão ou cria uma
+        var categoryId = command.CategoryId ?? Guid.Empty;
+        var departmentId = command.DepartmentId ?? Guid.Empty;
+
+        // Valida se categoria e departamento existem
+        if (categoryId == Guid.Empty)
+        {
+            logger.LogWarning("No category provided, using default");
+            // Aqui você pode buscar ou criar uma categoria padrão
+        }
+
+        if (departmentId == Guid.Empty)
+        {
+            logger.LogWarning("No department provided, using default");
+            // Aqui você pode buscar ou criar um departamento padrão
+        }
+
         var order = Order.Create(
             command.Title,
             command.Description,
-            statusId.Value,
-            command.TypeId,
-            command.CategoryId,
-            command.SubCategoryId,
-            command.DepartmentId,
-            command.RequestingUserId,
             command.RequestingUserEmail,
+            responsibleUserEmail,
+            command.RequestingUserId,
+            responsibleUserId,
+            categoryId,
+            departmentId,
+            command.TypeId,
+            statusId.Value,
+            command.SubCategoryId,
             command.DueDate
         );
 

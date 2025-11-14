@@ -10,10 +10,14 @@ public class CategoryValidation : AbstractValidator<Category>
         Include(new EntityValidation());
 
         RuleFor(category => category.Name)
-            .NotEmpty().WithMessage("Name is required.")
-            .MaximumLength(100).WithMessage("Name cannot exceed 100 characters.");
+            .Must(name => !string.IsNullOrWhiteSpace(name))
+                .WithMessage("O nome da categoria é obrigatório.")
+            .MinimumLength(2).WithMessage("O nome da categoria deve ter pelo menos 2 caracteres.")
+            .MaximumLength(100).WithMessage("O nome da categoria deve ter no máximo 100 caracteres.");
 
         RuleFor(category => category.Description)
-            .MaximumLength(500).WithMessage("Description cannot exceed 500 characters.");
+            .Must(description => !string.IsNullOrWhiteSpace(description))
+                .WithMessage("A descrição da categoria é obrigatória.")
+            .MaximumLength(500).WithMessage("A descrição da categoria deve ter no máximo 500 caracteres.");
     }
 }

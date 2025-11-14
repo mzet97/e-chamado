@@ -18,7 +18,7 @@ public class DeleteStatusTypeCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<DeleteStatusTypeCommand> HandleAsync(DeleteStatusTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(command.StatusTypeId, cancellationToken);
+        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(command.StatusTypeId);
 
         if (statusType == null)
         {
@@ -28,7 +28,7 @@ public class DeleteStatusTypeCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.StatusTypes.DeleteAsync(statusType, cancellationToken);
+        await unitOfWork.StatusTypes.RemoveAsync(statusType.Id);
 
         await unitOfWork.CommitAsync();
 

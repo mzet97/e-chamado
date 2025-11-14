@@ -19,10 +19,10 @@ public class GetRoleByIdEndpoint : IEndpoint
         .Produces<BaseResult<RolesViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        [FromRoute]  Guid id)
+        [FromRoute] Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await commandProcessor.Send(new GetRoleByIdQuery(id));
+        var result = await commandProcessor.SendWithResultAsync(new GetRoleByIdQuery(id));
 
         if (result.Success)
         {

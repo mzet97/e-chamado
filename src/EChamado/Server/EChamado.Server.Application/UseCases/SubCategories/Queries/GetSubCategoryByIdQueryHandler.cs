@@ -14,7 +14,7 @@ public class GetSubCategoryByIdQueryHandler(
 {
     public override async Task<GetSubCategoryByIdQuery> HandleAsync(GetSubCategoryByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(query.SubCategoryId, cancellationToken);
+        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(query.SubCategoryId);
 
         if (subCategory == null)
         {

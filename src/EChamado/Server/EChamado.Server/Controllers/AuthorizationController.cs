@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using EChamado.Server.Domain.Services.Interface;
 using Microsoft.AspNetCore.Identity;
@@ -15,7 +16,8 @@ namespace EChamado.Server.Controllers
     public class AuthorizationController(
         IOpenIddictApplicationManager applicationManager,
         IOpenIddictService openIddictService,
-        UserManager<ApplicationUser> userManager
+        UserManager<ApplicationUser> userManager,
+        ILogger<AuthorizationController> logger
     ) : Controller
     {
         [HttpGet("~/connect/authorize")]
@@ -26,21 +28,33 @@ namespace EChamado.Server.Controllers
             var request = HttpContext.GetOpenIddictServerRequest()
                           ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
+            logger.LogInformation("Authorization request received. Client: {ClientId}, RedirectUri: {RedirectUri}, Scope: {Scope}, ResponseType: {ResponseType}, State: {State}, CodeChallenge: {CodeChallenge}",
+                request.ClientId, request.RedirectUri, request.Scope, request.ResponseType, request.State, request.CodeChallenge);
+
             // Tenta obter o usuário autenticado via cookie "External"
             var result = await HttpContext.AuthenticateAsync("External");
             if (!result.Succeeded)
             {
+                logger.LogInformation("User not authenticated via External cookie. Redirecting to login.");
+
                 // Se não estiver autenticado, redireciona para a aplicação externa de login
+                var redirectUri = Request.PathBase + Request.Path +
+                                  QueryString.Create(Request.HasFormContentType
+                                      ? Request.Form.ToList()
+                                      : Request.Query.ToList());
+
+                logger.LogInformation("Redirect URI for login: {RedirectUri}", redirectUri);
+
                 return Challenge(
                     authenticationSchemes: new[] { "External" },
                     properties: new AuthenticationProperties
                     {
-                        RedirectUri = Request.PathBase + Request.Path +
-                                      QueryString.Create(Request.HasFormContentType
-                                          ? Request.Form.ToList()
-                                          : Request.Query.ToList())
+                        RedirectUri = redirectUri
                     });
             }
+
+            logger.LogInformation("User authenticated via External cookie. UserId: {UserId}",
+                result.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
             // Busca o usuário completo do Identity
             var userId = result.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -61,7 +75,8 @@ namespace EChamado.Server.Controllers
             // Cria claims principal para gerar authorization code
             var claims = new List<Claim>
             {
-                new Claim(Claims.Subject, user.Id),
+                new Claim(Claims.Subject, user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(Claims.Email, user.Email ?? string.Empty),
                 new Claim(Claims.Name, user.UserName ?? string.Empty),
                 new Claim(Claims.PreferredUsername, user.UserName ?? string.Empty)
@@ -79,11 +94,25 @@ namespace EChamado.Server.Controllers
                 Claims.Name,
                 Claims.Role);
 
+            // Define os destinos dos claims na ClaimsIdentity
+            claimsIdentity.SetDestinations(claim => claim.Type switch
+            {
+                Claims.Name or Claims.Email => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                Claims.Role => new[] { Destinations.AccessToken },
+                Claims.Subject => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                ClaimTypes.NameIdentifier => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                Claims.PreferredUsername => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                _ => new[] { Destinations.AccessToken }
+            });
+
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
             // Seta os escopos solicitados
             claimsPrincipal.SetScopes(request.GetScopes());
 
+            logger.LogInformation("Generating authorization code. Will redirect to: {RedirectUri}", request.RedirectUri);
+
+            // SignIn retorna um código de autorização e redireciona automaticamente para request.RedirectUri
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
@@ -125,25 +154,47 @@ namespace EChamado.Server.Controllers
                         }));
                 }
 
+                // SetDestinations na identity ANTES de criar o principal
                 identity.SetDestinations(claim => claim.Type switch
                 {
-                    Claims.Name or Claims.Email when claim.Subject.HasScope(Scopes.Profile) =>
-                        new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    Claims.Name or Claims.Email => new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     Claims.Role => new[] { Destinations.AccessToken },
+                    JwtRegisteredClaimNames.Sub => new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     _ => new[] { Destinations.AccessToken }
                 });
 
-                return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                var principal = new ClaimsPrincipal(identity);
+                principal.SetScopes(request.GetScopes());
+
+                return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
             if (request.IsAuthorizationCodeGrantType())
             {
-                var principal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
-                principal.SetDestinations(claim => claim.Type switch
+                var authenticateResult = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+                if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
                 {
-                    Claims.Name or Claims.Email when principal.HasScope(Scopes.Profile) =>
-                        new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    return Forbid(
+                        authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                        properties: new AuthenticationProperties(new Dictionary<string, string>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The authorization code is no longer valid."
+                        }));
+                }
+
+                var principal = authenticateResult.Principal;
+
+                // Criar novo principal com claims destinations configurados
+                var identity = (ClaimsIdentity)principal.Identity!;
+                identity.SetDestinations(claim => claim.Type switch
+                {
+                    Claims.Name or Claims.Email => new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     Claims.Role => new[] { Destinations.AccessToken },
+                    Claims.Subject => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    ClaimTypes.NameIdentifier => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    Claims.PreferredUsername => new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     _ => new[] { Destinations.AccessToken }
                 });
 
@@ -183,12 +234,15 @@ namespace EChamado.Server.Controllers
                     }
                 }
 
-                // Define os destinos dos claims
-                principal.SetDestinations(claim => claim.Type switch
+                // ✅ Define os destinos dos claims na Identity ANTES do SignIn
+                var identity = (ClaimsIdentity)principal.Identity!;
+                identity.SetDestinations(claim => claim.Type switch
                 {
-                    Claims.Name or Claims.Email when principal.HasScope(Scopes.Profile) =>
+                    Claims.Name or Claims.Email =>
                         new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     Claims.Role => new[] { Destinations.AccessToken },
+                    Claims.Subject => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                    ClaimTypes.NameIdentifier => new[] { Destinations.AccessToken, Destinations.IdentityToken },
                     _ => new[] { Destinations.AccessToken }
                 });
 

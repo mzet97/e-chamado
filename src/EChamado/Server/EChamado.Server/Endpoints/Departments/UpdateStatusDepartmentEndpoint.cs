@@ -18,10 +18,11 @@ public class UpdateStatusDepartmentEndpoint : IEndpoint
         .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
+        [FromServices] IAmACommandProcessor commandProcessor,
         [FromBody] UpdateStatusDepartmentCommand command)
     {
-        var result = await commandProcessor.Send(command);
+        await commandProcessor.SendAsync(command);
+        var result = command.Result;
 
         if (result.Success)
         {

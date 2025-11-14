@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Client;
+﻿using EChamado.Server.Domain.Services.Interface;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;

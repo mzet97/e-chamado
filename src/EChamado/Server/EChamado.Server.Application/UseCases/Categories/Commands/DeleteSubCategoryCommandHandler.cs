@@ -18,7 +18,7 @@ public class DeleteSubCategoryCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<DeleteSubCategoryCommand> HandleAsync(DeleteSubCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(command.SubCategoryId, cancellationToken);
+        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(command.SubCategoryId);
 
         if (subCategory == null)
         {
@@ -28,7 +28,7 @@ public class DeleteSubCategoryCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.SubCategories.DeleteAsync(subCategory, cancellationToken);
+        await unitOfWork.SubCategories.RemoveAsync(subCategory.Id);
 
         await unitOfWork.CommitAsync();
 

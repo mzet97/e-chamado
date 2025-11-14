@@ -1,38 +1,41 @@
-﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Departments.Commands;
+using EChamado.Server.Endpoints.Departments.DTOs;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using Microsoft.AspNetCore.Mvc;
 using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Departments;
 
 public class DeletesDepartmentEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-    => app.MapDelete("/", HandleAsync)
-        .WithName("Deleta uma lista de departamentos")
-        .WithSummary("Deleta uma lista de departamentos")
-        .WithDescription("Deleta uma lista de departamentos")
-        .WithOrder(6)
-        .Produces<BaseResult>();
+        => app.MapDelete("/", HandleAsync)
+            .WithName("Deletar departamentos")
+            .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
-        [FromQuery(Name = "ids")] Guid[] ids)
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] DeleteDepartmentRequest request)
     {
-        if (ids == null || !ids.Any())
+        try
         {
-            return TypedResults.BadRequest(new BaseResult(false, "Nenhum ID foi fornecido."));
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
+
+            var result = command.Result;
+
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
         }
-
-        var result = await commandProcessor.Send(new DeletesDepartmentCommand(ids));
-
-        if (result.Success)
+        catch (Exception ex)
         {
-            return TypedResults.Ok(result);
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
         }
-
-        return TypedResults.BadRequest(result);
     }
 }

@@ -20,8 +20,9 @@ public class LoginUserCommandHandler(
 
         if (result.Succeeded)
         {
-            var tokenResult = await commandProcessor.SendAsync(new GetTokenCommand { Email = command.Email }, cancellationToken: cancellationToken);
-            command.Result = tokenResult.Result;
+            var tokenCommand = new GetTokenCommand { Email = command.Email };
+            await commandProcessor.SendAsync(tokenCommand, cancellationToken: cancellationToken);
+            command.Result = tokenCommand.Result;
             return await base.HandleAsync(command, cancellationToken);
         }
         else if (result.IsLockedOut)

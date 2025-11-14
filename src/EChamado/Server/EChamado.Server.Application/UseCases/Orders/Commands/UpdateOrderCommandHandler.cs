@@ -16,7 +16,7 @@ public class UpdateOrderCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<UpdateOrderCommand> HandleAsync(UpdateOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(command.Id, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(command.Id);
 
         if (order == null)
         {
@@ -27,9 +27,14 @@ public class UpdateOrderCommandHandler(
         order.Update(
             command.Title,
             command.Description,
-            command.CategoryId,
+            order.RequestingUserEmail,
+            order.RequestingUserId,
+            order.ResponsibleUserId,
+            command.CategoryId ?? order.CategoryId,
+            command.DepartmentId ?? order.DepartmentId,
+            command.TypeId,
+            order.StatusId,
             command.SubCategoryId,
-            command.DepartmentId,
             command.DueDate
         );
 
@@ -41,7 +46,7 @@ public class UpdateOrderCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Orders.UpdateAsync(order, cancellationToken);
+        await unitOfWork.Orders.UpdateAsync(order);
 
         await unitOfWork.CommitAsync();
 

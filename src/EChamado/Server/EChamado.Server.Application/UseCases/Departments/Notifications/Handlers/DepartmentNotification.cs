@@ -1,4 +1,4 @@
-﻿using EChamado.Server.Infrastructure.MessageBus;
+﻿using EChamado.Server.Domain.Services.Interface;
 using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 

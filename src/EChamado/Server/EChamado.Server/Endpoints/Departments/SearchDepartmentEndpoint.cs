@@ -19,14 +19,13 @@ public class SearchDepartmentEndpoint : IEndpoint
            .Produces<BaseResultList<DepartmentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IAmACommandProcessor commandProcessor,
+        [FromServices] IAmACommandProcessor commandProcessor,
         [AsParameters] SearchDepartment search)
     {
         var query = new SearchDepartmentQuery
         {
             Name = search.Name ?? "",
             Description = search.Description ?? "",
-            Id = search.Id ?? Guid.Empty,
             CreatedAt = search.CreatedAt ?? default,
             UpdatedAt = search.UpdatedAt ?? default,
             DeletedAt = search.DeletedAt ?? default,
@@ -35,7 +34,7 @@ public class SearchDepartmentEndpoint : IEndpoint
             PageSize = search.PageSize ?? 10,
         };
 
-        var result = await commandProcessor.Send(query);
+        var result = await commandProcessor.SendWithResultAsync(query);
 
         if (result.Success)
         {

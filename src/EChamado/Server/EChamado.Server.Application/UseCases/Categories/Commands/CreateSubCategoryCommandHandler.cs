@@ -19,7 +19,7 @@ public class CreateSubCategoryCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CreateSubCategoryCommand> HandleAsync(CreateSubCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var category = await unitOfWork.Categories.GetByIdAsync(command.CategoryId, cancellationToken);
+        var category = await unitOfWork.Categories.GetByIdAsync(command.CategoryId);
 
         if (category == null)
         {

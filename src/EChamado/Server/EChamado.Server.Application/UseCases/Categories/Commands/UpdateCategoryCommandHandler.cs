@@ -18,7 +18,7 @@ public class UpdateCategoryCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<UpdateCategoryCommand> HandleAsync(UpdateCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var category = await unitOfWork.Categories.GetByIdAsync(command.Id, cancellationToken);
+        var category = await unitOfWork.Categories.GetByIdAsync(command.Id);
 
         if (category == null)
         {
@@ -36,7 +36,7 @@ public class UpdateCategoryCommandHandler(
 
         await unitOfWork.BeginTransactionAsync();
 
-        await unitOfWork.Categories.UpdateAsync(category, cancellationToken);
+        await unitOfWork.Categories.UpdateAsync(category);
 
         await unitOfWork.CommitAsync();
 
