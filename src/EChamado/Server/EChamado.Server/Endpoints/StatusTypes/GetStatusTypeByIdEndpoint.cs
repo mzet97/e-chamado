@@ -16,14 +16,24 @@ public class GetStatusTypeByIdEndpoint : IEndpoint
             .Produces<BaseResult<StatusTypeViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        [FromServices] IAmACommandProcessor commandProcessor,
-        Guid id)
+        Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await commandProcessor.SendWithResultAsync(new GetStatusTypeByIdQuery(id));
+        try
+        {
+            var query = new GetStatusTypeByIdQuery(id);
+            await commandProcessor.SendAsync(query);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
-
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.NotFound(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<StatusTypeViewModel>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

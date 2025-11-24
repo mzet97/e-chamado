@@ -19,24 +19,34 @@ public class SearchOrderTypesEndpoint : IEndpoint
         [FromServices] IAmACommandProcessor commandProcessor,
         [AsParameters] SearchOrderTypesParameters parameters)
     {
-        var query = new SearchOrderTypesQuery
+        try
         {
-            Name = parameters.Name ?? string.Empty,
-            Description = parameters.Description ?? string.Empty,
-            CreatedAt = parameters.CreatedAt,
-            UpdatedAt = parameters.UpdatedAt,
-            DeletedAt = parameters.DeletedAt,
-            Order = parameters.Order,
-            PageIndex = parameters.PageIndex,
-            PageSize = parameters.PageSize
-        };
+            var query = new SearchOrderTypesQuery
+            {
+                Name = parameters.Name ?? string.Empty,
+                Description = parameters.Description ?? string.Empty,
+                CreatedAt = parameters.CreatedAt,
+                UpdatedAt = parameters.UpdatedAt,
+                DeletedAt = parameters.DeletedAt,
+                Order = parameters.Order,
+                PageIndex = parameters.PageIndex,
+                PageSize = parameters.PageSize
+            };
 
-        var result = await commandProcessor.SendWithResultAsync(query);
+            await commandProcessor.SendAsync(query);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
-
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.BadRequest(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResultList<OrderTypeViewModel>(
+                new List<OrderTypeViewModel>(),
+                null,
+                false,
+                $"Erro interno: {ex.Message}"));
+        }
     }
 }
 

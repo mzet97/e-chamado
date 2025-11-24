@@ -20,7 +20,7 @@ public class SecurityHeadersMiddleware
         headers["Referrer-Policy"] = "no-referrer";
         headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
         // CSP mínima; ajustar conforme assets do Client
-        headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://localhost:7296 https://localhost:7132";
+        headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://localhost:7296 https://localhost:7133";
         return _next(context);
     }
 }

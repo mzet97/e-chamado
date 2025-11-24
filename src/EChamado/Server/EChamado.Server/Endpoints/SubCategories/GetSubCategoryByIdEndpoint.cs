@@ -11,7 +11,7 @@ namespace EChamado.Server.Endpoints.SubCategories;
 public class GetSubCategoryByIdEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapGet("/{id}", HandleAsync)
+        => app.MapGet("/{id:guid}", HandleAsync)
             .WithName("Buscar subcategoria por ID")
             .Produces<BaseResult<BaseViewModel>>();
 

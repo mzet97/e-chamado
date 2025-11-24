@@ -198,15 +198,27 @@ User:
 
 ## 📚 Documentação
 
-### Guias de Implementação
-- **[PRÓXIMOS-PASSOS.md](PRÓXIMOS-PASSOS.md)** - Resumo executivo do que falta implementar
-- **[PLANO-FASES-4-6.md](PLANO-FASES-4-6.md)** - Plano detalhado (1.088 linhas) com código de exemplo
-- **[PLANO-IMPLEMENTACAO.md](PLANO-IMPLEMENTACAO.md)** - Histórico das FASES 1-3 concluídas
-- **[SSO-SETUP.md](SSO-SETUP.md)** - Guia completo de configuração SSO/OIDC
+### 📖 Guias Principais
+- **[CLAUDE.md](CLAUDE.md)** - 📘 Guia completo para desenvolvimento do projeto
+- **[docs/](docs/)** - 📁 **Toda a documentação técnica** (47 arquivos organizados)
+- **[docs/README.md](docs/README.md)** - 📑 Índice completo da documentação
 
-### Análises Técnicas
-- **[ANALISE-COMPLETA.md](ANALISE-COMPLETA.md)** - Análise detalhada de cada camada do sistema
-- **[MATRIZ-FEATURES.md](MATRIZ-FEATURES.md)** - Matriz comparativa de features implementadas
+### 🔐 Autenticação (Migrado para OpenIddict)
+- **[docs/AUTENTICACAO-SISTEMAS-EXTERNOS.md](docs/AUTENTICACAO-SISTEMAS-EXTERNOS.md)** - ⭐ Guia principal de autenticação
+- **[docs/exemplos-autenticacao-openiddict.md](docs/exemplos-autenticacao-openiddict.md)** - 💻 Exemplos práticos (C#, Python, JS)
+- **[docs/MIGRATION-GUIDE-JWT-TO-OPENIDDICT.md](docs/MIGRATION-GUIDE-JWT-TO-OPENIDDICT.md)** - 🔄 Guia de migração
+
+### 🏗️ Arquitetura & Planejamento
+- **[docs/ANALISE-COMPLETA.md](docs/ANALISE-COMPLETA.md)** - 📊 Análise técnica completa
+- **[docs/MATRIZ-FEATURES.md](docs/MATRIZ-FEATURES.md)** - ✅ Status das funcionalidades
+- **[docs/PLANO-IMPLEMENTACAO.md](docs/PLANO-IMPLEMENTACAO.md)** - 📋 Fases 1-3 (concluídas)
+- **[docs/PLANO-FASES-4-6.md](docs/PLANO-FASES-4-6.md)** - 🚀 Próximas fases
+
+### 🧪 Scripts de Teste
+No diretório raiz do projeto:
+- `test-openiddict-login.sh` - Script Bash/Linux/WSL
+- `test-openiddict-login.ps1` - Script PowerShell/Windows
+- `test-openiddict-login.py` - Script Python
 
 ### Correção de redirecionamento pós-login (Nov/2025)
 - Sintoma: 404 após login ao redirecionar incorretamente para o cliente em vez do servidor de autenticação.

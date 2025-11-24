@@ -11,7 +11,7 @@ namespace EChamado.Server.Endpoints.Orders;
 public class GetOrderByIdEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapGet("/{id}", HandleAsync)
+        => app.MapGet("/{id:guid}", HandleAsync)
             .WithName("Buscar ordem por ID")
             .Produces<BaseResult<OrderViewModel>>();
 

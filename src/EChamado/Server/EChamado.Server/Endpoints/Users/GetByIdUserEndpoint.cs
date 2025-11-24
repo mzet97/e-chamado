@@ -11,7 +11,7 @@ namespace EChamado.Server.Endpoints.Users;
 public class GetByIdUserEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapGet("/{id}", HandleAsync)
+        => app.MapGet("/{id:guid}", HandleAsync)
             .WithName("Buscar usuário por ID")
             .Produces<BaseResult<ApplicationUserViewModel>>();
 

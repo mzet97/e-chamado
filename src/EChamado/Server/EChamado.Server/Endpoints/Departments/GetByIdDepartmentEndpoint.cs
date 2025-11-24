@@ -11,7 +11,7 @@ namespace EChamado.Server.Endpoints.Departments;
 public class GetByIdDepartmentEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-    => app.MapGet("/{id}", HandleAsync)
+    => app.MapGet("/{id:guid}", HandleAsync)
         .WithName("Obtem departamento pelo id")
         .WithSummary("Obtem departamento pelo id")
         .WithDescription("Obtem departamento pelo id")
@@ -19,16 +19,24 @@ public class GetByIdDepartmentEndpoint : IEndpoint
         .Produces<BaseResult<DepartmentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        [FromServices] IAmACommandProcessor commandProcessor,
-        Guid id)
+        Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await commandProcessor.SendWithResultAsync(new GetByIdDepartmentQuery(id));
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var query = new GetByIdDepartmentQuery(id);
+            await commandProcessor.SendAsync(query);
 
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.NotFound(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<DepartmentViewModel>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

@@ -1,5 +1,4 @@
 using EChamado.Server.Common.Api;
-using EChamado.Server.Endpoints.Auth;
 using EChamado.Server.Endpoints.Categories;
 using EChamado.Server.Endpoints.Comments;
 using EChamado.Server.Endpoints.Departments;
@@ -42,21 +41,15 @@ public static class Endpoint
         // VERSION 1 ENDPOINTS (V1)
         // TODOS OS ENDPOINTS ESTÃO NA V1 AGORA
 
-        // Auth v1
-        endpoints.MapGroup("v1/auth")
-           .WithTags("auth")
-           .MapEndpoint<RegisterUserEndpoint>()
-           .MapEndpoint<LoginUserEndpoint>();
+        // Auth v1 - MIGRADO PARA OPENIDDICT
+        // Use /connect/token no Auth Server (porta 7132) para autenticação
+        // Exemplos: ver arquivos test-openiddict-login.sh, test-openiddict-login.ps1, test-openiddict-login.py
 
         // Roles v1
-        endpoints.MapGroup("v1/roles")
-           .WithTags("role")
-           .RequireAuthorization()
-           .MapEndpoint<GetAllRolesEndpoint>();
-
         endpoints.MapGroup("v1/role")
            .WithTags("role")
            .RequireAuthorization()
+           .MapEndpoint<GetAllRolesEndpoint>()
            .MapEndpoint<GetRoleByIdEndpoint>()
            .MapEndpoint<GetRoleByNameEndpoint>()
            .MapEndpoint<CreateRoleEndpoint>()
@@ -67,11 +60,7 @@ public static class Endpoint
         endpoints.MapGroup("v1/users")
             .WithTags("user")
             .RequireAuthorization()
-            .MapEndpoint<GetAllUsersEndpoint>();
-
-        endpoints.MapGroup("v1/user")
-            .WithTags("user")
-            .RequireAuthorization()
+            .MapEndpoint<GetAllUsersEndpoint>()
             .MapEndpoint<GetByIdUserEndpoint>()
             .MapEndpoint<GetByEmailUserEndpoint>();
 
@@ -80,12 +69,8 @@ public static class Endpoint
             .WithTags("Department")
             .RequireAuthorization()
             .MapEndpoint<SearchDepartmentEndpoint>()
-            .MapEndpoint<DeletesDepartmentEndpoint>()
-            .MapEndpoint<UpdateStatusDepartmentEndpoint>();
-
-        endpoints.MapGroup("v1/department")
-            .WithTags("Department")
-            .RequireAuthorization()
+            .MapEndpoint<DeleteDepartmentEndpoint>()
+            .MapEndpoint<UpdateStatusDepartmentEndpoint>()
             .MapEndpoint<GetByIdDepartmentEndpoint>()
             .MapEndpoint<CreateDepartmentEndpoint>()
             .MapEndpoint<UpdateDepartmentEndpoint>();
@@ -93,40 +78,29 @@ public static class Endpoint
         // Categories v1
         endpoints.MapGroup("v1/categories")
             .WithTags("Category")
-            .RequireAuthorization()
-            .MapEndpoint<SearchCategoriesEndpoint>();
-
-        endpoints.MapGroup("v1/category")
-            .WithTags("Category")
-            .RequireAuthorization()
+            .RequireAuthorization() // TEMPORÁRIAMENTE DESABILITADO
             .MapEndpoint<GetCategoryByIdEndpoint>()
             .MapEndpoint<CreateCategoryEndpoint>()
             .MapEndpoint<UpdateCategoryEndpoint>()
-            .MapEndpoint<DeleteCategoryEndpoint>();
+            .MapEndpoint<DeleteCategoryEndpoint>()
+            .MapEndpoint<SearchCategoriesEndpoint>();
 
         // SubCategories v1
         endpoints.MapGroup("v1/subcategories")
             .WithTags("SubCategory")
             .RequireAuthorization()
-            .MapEndpoint<SearchSubCategoriesEndpoint>();
-
-        endpoints.MapGroup("v1/subcategory")
-            .WithTags("SubCategory")
-            .RequireAuthorization()
+            .MapEndpoint<SearchSubCategoriesEndpoint>()
             .MapEndpoint<GetSubCategoryByIdEndpoint>()
             .MapEndpoint<CreateSubCategoryEndpoint>()
             .MapEndpoint<UpdateSubCategoryEndpoint>()
             .MapEndpoint<DeleteSubCategoryEndpoint>();
 
+
         // OrderTypes v1
         endpoints.MapGroup("v1/ordertypes")
             .WithTags("OrderType")
             .RequireAuthorization()
-            .MapEndpoint<SearchOrderTypesEndpoint>();
-
-        endpoints.MapGroup("v1/ordertype")
-            .WithTags("OrderType")
-            .RequireAuthorization()
+            .MapEndpoint<SearchOrderTypesEndpoint>()
             .MapEndpoint<GetOrderTypeByIdEndpoint>()
             .MapEndpoint<CreateOrderTypeEndpoint>()
             .MapEndpoint<UpdateOrderTypeEndpoint>()
@@ -136,11 +110,7 @@ public static class Endpoint
         endpoints.MapGroup("v1/statustypes")
             .WithTags("StatusType")
             .RequireAuthorization()
-            .MapEndpoint<SearchStatusTypesEndpoint>();
-
-        endpoints.MapGroup("v1/statustype")
-            .WithTags("StatusType")
-            .RequireAuthorization()
+            .MapEndpoint<SearchStatusTypesEndpoint>()
             .MapEndpoint<GetStatusTypeByIdEndpoint>()
             .MapEndpoint<CreateStatusTypeEndpoint>()
             .MapEndpoint<UpdateStatusTypeEndpoint>()
@@ -151,11 +121,7 @@ public static class Endpoint
             .WithTags("Order")
             .RequireAuthorization()
             .MapEndpoint<SearchOrdersEndpoint>()
-            .MapEndpoint<GetOrderByIdEndpoint>();
-
-        endpoints.MapGroup("v1/order")
-            .WithTags("Order")
-            .RequireAuthorization()
+            .MapEndpoint<GetOrderByIdEndpoint>()
             .MapEndpoint<CreateOrderEndpoint>()
             .MapEndpoint<UpdateOrderEndpoint>()
             .MapEndpoint<AssignOrderEndpoint>()

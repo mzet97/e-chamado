@@ -19,16 +19,24 @@ public class GetRoleByIdEndpoint : IEndpoint
         .Produces<BaseResult<RolesViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        [FromRoute] Guid id,
+        Guid id,
         [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await commandProcessor.SendWithResultAsync(new GetRoleByIdQuery(id));
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var query = new GetRoleByIdQuery(id);
+            await commandProcessor.SendAsync(query);
 
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.NotFound(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<RolesViewModel>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

@@ -189,14 +189,74 @@ dotnet format --verify-no-changes
 
 ## Authentication Flow
 
-The system uses **Authorization Code Flow + PKCE** with OpenIddict:
+The system uses **OpenIddict** for OAuth 2.0 / OpenID Connect authentication.
 
+### Architecture
 1. **Echamado.Auth** (port 7132) - OpenIddict authorization server
-2. **EChamado.Client** - Blazor WASM with OIDC authentication
+2. **EChamado.Client** - Blazor WASM with OIDC authentication (Authorization Code + PKCE)
 3. **EChamado.Server** - API validates tokens from OpenIddict
 
-**Default users** (seeded in database):
-- Admin: `admin@echamado.com` / `Admin@123`
+### Supported Grant Types
+
+The OpenIddict server supports multiple authentication flows:
+
+**1. Authorization Code + PKCE** (for SPAs like Blazor)
+- Client: `bwa-client`
+- Used by: EChamado.Client (Blazor WASM)
+- Redirect URI: `https://localhost:7274/authentication/login-callback`
+
+**2. Password Grant** (for mobile/desktop apps, scripts)
+- Client: `mobile-client`
+- Endpoint: `POST https://localhost:7132/connect/token`
+- Used by: Mobile apps, desktop applications, CLI tools, automated scripts
+
+**3. Client Credentials** (for M2M - Machine to Machine)
+- Used by: Backend services, APIs, scheduled jobs
+- Add new clients in `OpenIddictWorker.cs`
+
+**4. Refresh Token**
+- All clients support token refresh
+- Endpoint: `POST https://localhost:7132/connect/token`
+
+### Testing Authentication
+
+Test scripts are available in the root directory:
+
+```bash
+# Bash/Linux/WSL
+./test-openiddict-login.sh
+
+# PowerShell/Windows
+.\test-openiddict-login.ps1
+
+# Python
+python test-openiddict-login.py
+```
+
+### Obtaining Tokens for API Calls
+
+**For testing/mobile apps (Password Grant):**
+```bash
+curl -X POST https://localhost:7132/connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "username=admin@admin.com" \
+  -d "password=Admin@123" \
+  -d "client_id=mobile-client" \
+  -d "scope=openid profile email roles api chamados"
+```
+
+**Using the token:**
+```bash
+curl -X GET https://localhost:7296/v1/categories \
+  -H "Authorization: Bearer {ACCESS_TOKEN}"
+```
+
+**For more examples:** See [`docs/AUTENTICACAO-SISTEMAS-EXTERNOS.md`](docs/AUTENTICACAO-SISTEMAS-EXTERNOS.md) and [`docs/exemplos-autenticacao-openiddict.md`](docs/exemplos-autenticacao-openiddict.md)
+
+### Default Users
+(seeded in database)
+- Admin: `admin@admin.com` / `Admin@123`
 - User: `user@echamado.com` / `User@123`
 
 **CORS Configuration**: Client (7274) and Auth (7132) are whitelisted in API CORS policy.
@@ -356,7 +416,7 @@ public class CreateOrderCommandHandlerTests
 
 ## Pending Work (Phases 4-6)
 
-Detailed plans are available in `PLANO-FASES-4-6.md` (1,088 lines). Key remaining work:
+Detailed plans are available in [`docs/PLANO-FASES-4-6.md`](docs/PLANO-FASES-4-6.md) (1,088 lines). Key remaining work:
 
 **Phase 4** (5-6 days): Complete admin UI
 - Admin pages for Categories, Departments, OrderTypes, StatusTypes
@@ -394,10 +454,10 @@ Check OIDC configuration matches between client `appsettings.json` and server
 
 ## References
 
-- **Architecture docs**: `ANALISE-COMPLETA.md` - Detailed technical analysis
-- **Features matrix**: `MATRIZ-FEATURES.md` - Feature implementation status
-- **Implementation plan**: `PLANO-IMPLEMENTACAO.md` - Phases 1-3 (completed)
-- **Future work**: `PLANO-FASES-4-6.md` - Detailed plans for remaining phases
-- **SSO setup**: `SSO-SETUP.md` - Complete OpenIddict configuration guide
-- **Testing guide**: `TESTING.md` - Testing strategy and examples
-- **Health checks**: `HEALTH-CHECKS.md` - Health check implementation details
+- **Architecture docs**: [`docs/ANALISE-COMPLETA.md`](docs/ANALISE-COMPLETA.md) - Detailed technical analysis
+- **Features matrix**: [`docs/MATRIZ-FEATURES.md`](docs/MATRIZ-FEATURES.md) - Feature implementation status
+- **Implementation plan**: [`docs/PLANO-IMPLEMENTACAO.md`](docs/PLANO-IMPLEMENTACAO.md) - Phases 1-3 (completed)
+- **Future work**: [`docs/PLANO-FASES-4-6.md`](docs/PLANO-FASES-4-6.md) - Detailed plans for remaining phases
+- **SSO setup**: [`docs/SSO-SETUP.md`](docs/SSO-SETUP.md) - Complete OpenIddict configuration guide
+- **Testing guide**: [`docs/TESTING.md`](docs/TESTING.md) - Testing strategy and examples
+- **Health checks**: [`docs/HEALTH-CHECKS.md`](docs/HEALTH-CHECKS.md) - Health check implementation details

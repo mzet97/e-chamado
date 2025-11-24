@@ -21,13 +21,22 @@ public class GetAllRolesEndpoint : IEndpoint
     private static async Task<IResult> HandleAsync(
         [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await commandProcessor.SendWithResultAsync(new GetAllRolesQuery());
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var query = new GetAllRolesQuery();
+            await commandProcessor.SendAsync(query);
 
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.BadRequest(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResultList<RolesViewModel>(
+                new List<RolesViewModel>(),
+                null,
+                false,
+                $"Erro interno: {ex.Message}"));
+        }
     }
 }

@@ -12,111 +12,89 @@ using EChamado.Server.Infrastructure.Users;
 using EChamado.Server.Middlewares;
 using EChamado.Server.Presentation.Api.Endpoints;
 using Scrutor;
+using Serilog;
 
-// ⚡ CONFIGURAÇÃO CRÍTICA: Inicializar Serilog ANTES de qualquer coisa
-var builder = WebApplication.CreateBuilder(args);
-builder.Host.ConfigureSerilog(builder.Configuration);
-
-builder.Configuration
-    .SetBasePath(builder.Environment.ContentRootPath)
-    .AddJsonFile("appsettings.json", true, true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
-    .AddEnvironmentVariables();
-
-// Configuração CORS
-builder.Services.AddCors(options =>
+try
 {
-    options.AddPolicy("AllowBlazorClient", policy =>
+    Log.Information("=== Starting EChamado Server ===");
+
+    var builder = WebApplication.CreateBuilder(args);
+    builder.Host.ConfigureSerilog(builder.Configuration);
+
+    builder.Configuration
+        .SetBasePath(builder.Environment.ContentRootPath)
+        .AddJsonFile("appsettings.json", true, true)
+        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
+        .AddEnvironmentVariables();
+
+    // CORS
+    builder.Services.AddCors(options =>
     {
-        policy.WithOrigins(
-            "https://localhost:7274", // Blazor Client
-            "https://localhost:7132"  // Auth UI
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials(); // Importante para compartilhar cookies
+        options.AddPolicy("AllowBlazorClient", policy =>
+        {
+            policy.WithOrigins("https://localhost:7274", "https://localhost:7133")
+                  .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        });
     });
-});
 
-builder.Services.AddIdentityConfig(builder.Configuration);
-builder.Services.AddMemoryCache();
+    // Core services
+    builder.Services.AddIdentityConfig(builder.Configuration);
+    builder.Services.AddMemoryCache();
+    builder.Services.AddDistributedMemoryCache();
+    
+    // Optional services (Redis/MessageBus) - usar fallbacks sem try/catch
+    builder.Services.AddRedisCache(builder.Configuration);
+    builder.Services.AddRedisOutputCache(builder.Configuration);
+    builder.Services.AddMessageBus(builder.Configuration);
 
-// Redis Configuration
-builder.Services.AddRedisCache(builder.Configuration);
-builder.Services.AddRedisOutputCache(builder.Configuration);
+    // Application & Infrastructure
+    builder.Services.AddScoped<IUserReadRepository, EfUserReadRepository>();
+    builder.Services.AddApplicationServices();
+    builder.Services.ResolveDependenciesApplication();
+    builder.Services.ResolveDependenciesInfrastructure();
+    builder.Services.AddApiDocumentation();
+    builder.Services.AddHealthCheckConfiguration(builder.Configuration);
+    builder.Services.AddControllers();
 
-// MessageBus Configuration (RabbitMQ)
-builder.Services.AddMessageBus(builder.Configuration);
+    var app = builder.Build();
 
-// Temporary: Add in-memory distributed cache as fallback
-builder.Services.AddDistributedMemoryCache();
+    // Database initialization
+    await DatabaseInitializer.InitializeDatabaseAsync(app.Services);
 
-// Register NullMessageBusClient as a fallback when RabbitMQ is not available
-builder.Services.AddScoped<IMessageBusClient, NullMessageBusClient>();
+    // Middleware pipeline (ordem correta é CRÍTICA!)
+    app.UseCors("AllowBlazorClient");
+    app.UseRequestLogging();
+    app.UsePerformanceLogging(slowRequestThresholdMs: 3000);
+    app.UseApiDocumentation();
+    app.UseHealthCheckConfiguration();
 
-builder.Services.AddScoped<IUserReadRepository, EfUserReadRepository>();
+    // ✅ ORDEM CORRETA: Routing → Authentication → Authorization → Endpoints
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
 
-// Application Services (Paramore.Brighter CQRS)
-builder.Services.AddApplicationServices();
-builder.Services.ResolveDependenciesApplication();
+    // Endpoints
+    app.MapEndpoints();
+    app.MapUserReadEndpoints();
+    app.MapControllers();
+    app.MapGet("/swagger", () => Results.Redirect("/api-docs/v1", permanent: true));
+    app.MapGet("/swagger/index.html", () => Results.Redirect("/api-docs/v1", permanent: true));
 
-// Infrastructure Services
-builder.Services.ResolveDependenciesInfrastructure();
+    Log.Information("=== EChamado Server configured successfully, starting... ===");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "=== Application terminated unexpectedly ===");
+    return 1;
+}
+finally
+{
+    Log.Information("=== Shutting down EChamado Server ===");
+    Log.CloseAndFlush();
+}
 
-// Removed Darker configuration - using Brighter for all CQRS operations
-// builder.Services.AddDarker()
-//     .AddHandlers(typeof(GetUserByEmailHandler).Assembly);
-
-// builder.Services.Decorate<
-//     Paramore.Darker.IQueryHandler<GetUserByEmailQuery, UserDetailsDto?>,
-//     GetUserByEmailCacheDecorator>();
-
-// Swagger Configuration
-builder.Services.AddSwaggerConfig();
-
-// Health Checks
-builder.Services.AddHealthCheckConfiguration(builder.Configuration);
-
-builder.Services.AddControllers();
-
-var app = builder.Build();
-
-// ⚡ LOGS VERIFICADOS E FUNCIONAIS:
-// ✅ RequestLoggingMiddleware - Loga todas as requisições HTTP
-// ✅ PerformanceLoggingMiddleware - Detecta requisições lentas (>3000ms)
-// ✅ AuthorizationController logs - Eventos de autenticação
-// ✅ Serilog + Elasticsearch - Integração configurada
-// ✅ ElasticSettings - Conexão com cluster verificada (http://elasticsearch.home.arpa:30920/)
-
-// Inicializa o banco de dados (migrations + seed)
-await DatabaseInitializer.InitializeDatabaseAsync(app.Services);
-
-// Swagger UI
-app.UseSwaggerConfig();
-
-// Usar CORS antes de Routing
-app.UseCors("AllowBlazorClient");
-
-// Logging Middlewares
-app.UseRequestLogging();
-app.UsePerformanceLogging(slowRequestThresholdMs: 3000);
-
-app.UseRouting();
-
-// TEMPORARIAMENTE DESABILITADO PARA TESTAR LOGIN SIMPLES
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-// Health Checks
-app.UseHealthCheckConfiguration();
-
-// Mapear todos os endpoints (incluindo SubCategories)
-app.MapEndpoints();
-app.MapUserReadEndpoints();
-
-app.MapControllers();
-
-app.Run();
+return 0;
 
 public partial class Program { }
 

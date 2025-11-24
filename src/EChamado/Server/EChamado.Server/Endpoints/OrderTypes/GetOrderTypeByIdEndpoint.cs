@@ -16,15 +16,24 @@ public class GetOrderTypeByIdEndpoint : IEndpoint
             .Produces<BaseResult<OrderTypeViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        [FromServices] IAmACommandProcessor commandProcessor,
-        Guid id)
+        Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var query = new GetOrderTypeByIdQuery(id);
-        var result = await commandProcessor.SendWithResultAsync(query);
+        try
+        {
+            var query = new GetOrderTypeByIdQuery(id);
+            await commandProcessor.SendAsync(query);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
-
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.NotFound(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<OrderTypeViewModel>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

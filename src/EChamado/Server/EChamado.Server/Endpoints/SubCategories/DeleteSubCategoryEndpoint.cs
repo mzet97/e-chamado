@@ -11,7 +11,7 @@ namespace EChamado.Server.Endpoints.SubCategories;
 public class DeleteSubCategoryEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapDelete("/{id}", HandleAsync)
+        => app.MapDelete("/{id:guid}", HandleAsync)
             .WithName("Deletar uma subcategoria")
             .Produces<BaseResult>();
 
@@ -21,7 +21,8 @@ public class DeleteSubCategoryEndpoint : IEndpoint
     {
         try
         {
-            var command = new DeleteSubCategoryCommand(id);
+            var request = new DeleteSubCategoryRequest { Id = id };
+            var command = request.ToCommand();
             await commandProcessor.SendAsync(command);
 
             var result = command.Result;

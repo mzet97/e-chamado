@@ -16,15 +16,25 @@ public class GetCommentsByOrderIdEndpoint : IEndpoint
             .Produces<BaseResultList<CommentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        [FromServices] IAmACommandProcessor commandProcessor,
-        Guid orderId)
+        Guid orderId,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var query = new GetCommentsByOrderIdQuery(orderId);
-        var result = await commandProcessor.SendWithResultAsync(query);
+        try
+        {
+            var query = new GetCommentsByOrderIdQuery(orderId);
+            await commandProcessor.SendAsync(query);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
-
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.BadRequest(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResultList<CommentViewModel>(
+                new List<CommentViewModel>(),
+                null,
+                false,
+                $"Erro interno: {ex.Message}"));
+        }
     }
 }

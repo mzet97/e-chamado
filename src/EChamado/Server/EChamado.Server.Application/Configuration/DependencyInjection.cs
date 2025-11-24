@@ -1,7 +1,6 @@
-﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.Services;
 using EChamado.Server.Domain.Services.Interface;
-using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Paramore.Brighter;
 using Paramore.Brighter.Extensions.DependencyInjection;
@@ -15,15 +14,16 @@ public static class DependencyInjection
     {
         services.AddHttpClient();
 
-        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
-
-        // Configure Paramore.Brighter
-        services.AddBrighter(options =>
+        // Configure Paramore.Brighter with explicit assembly scanning
+        var currentAssembly = Assembly.GetAssembly(typeof(DependencyInjection));
+        if (currentAssembly != null)
         {
-            // Register all handlers from this assembly
-            options.HandlerLifetime = ServiceLifetime.Scoped;
-        })
-        .AutoFromAssemblies(new[] { typeof(DependencyInjection).Assembly });
+            services.AddBrighter(options =>
+            {
+                options.HandlerLifetime = ServiceLifetime.Scoped;
+            })
+            .AutoFromAssemblies(new[] { currentAssembly });
+        }
 
         // Register the generic validation and exception handlers
         services.AddTransient(typeof(ValidationHandler<>));
@@ -45,4 +45,3 @@ public static class DependencyInjection
         return services;
     }
 }
-

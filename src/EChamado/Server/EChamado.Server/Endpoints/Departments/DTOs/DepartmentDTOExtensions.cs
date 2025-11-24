@@ -23,6 +23,6 @@ public static class DepartmentDTOExtensions
 
     public static DeletesDepartmentCommand ToCommand(this DeleteDepartmentRequest request)
     {
-        return new DeletesDepartmentCommand(request.Ids);
+        return new DeletesDepartmentCommand(new[] { request.Id });
     }
 }
