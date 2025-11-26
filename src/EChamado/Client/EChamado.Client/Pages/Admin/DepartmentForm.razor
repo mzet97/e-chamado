@@ -1,0 +1,139 @@
+@page "/admin/departments/create"
+@page "/admin/departments/{Id:guid}/edit"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject DepartmentService DepartmentService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>@(IsEdit ? "Editar Departamento" : "Novo Departamento") - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Class="pa-6" Elevation="2">
+        <MudText Typo="Typo.h5" Class="mb-4">@(IsEdit ? "Editar Departamento" : "Novo Departamento")</MudText>
+
+        @if (Loading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+        }
+        else
+        {
+            <MudForm @ref="Form" @bind-IsValid="IsValid">
+                <MudTextField @bind-Value="Model.Name"
+                              Label="Nome"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="Nome é obrigatório"
+                              Class="mb-3" />
+
+                <MudTextField @bind-Value="Model.Description"
+                              Label="Descrição"
+                              Variant="Variant.Outlined"
+                              Lines="3" />
+
+                <div class="d-flex justify-space-between mt-4">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="GoBack">Cancelar</MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="!IsValid || Saving"
+                               OnClick="Submit">
+                        @if (Saving)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Salvando...</span>
+                        }
+                        else
+                        {
+                            <span>@(IsEdit ? "Salvar" : "Criar")</span>
+                        }
+                    </MudButton>
+                </div>
+            </MudForm>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsEdit => Id.HasValue;
+    private DepartmentRequest Model { get; set; } = new(string.Empty, string.Empty);
+    private MudForm Form = null!;
+    private bool IsValid;
+    private bool Loading = true;
+    private bool Saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEdit)
+        {
+            try
+            {
+                var dept = await DepartmentService.GetByIdAsync(Id!.Value);
+                if (dept == null)
+                {
+                    Snackbar.Add("Departamento não encontrado", Severity.Error);
+                    GoBack();
+                    return;
+                }
+
+                Model = new DepartmentRequest(dept.Name ?? string.Empty, dept.Description ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao carregar departamento: {ex.Message}", Severity.Error);
+                GoBack();
+                return;
+            }
+        }
+
+        Loading = false;
+    }
+
+    private async Task Submit()
+    {
+        await Form.Validate();
+        if (!IsValid)
+            return;
+
+        Saving = true;
+        try
+        {
+            if (IsEdit)
+            {
+                await DepartmentService.UpdateAsync(Id!.Value, new UpdateDepartmentRequest(Model.Name, Model.Description));
+                Snackbar.Add("Departamento atualizado com sucesso!", Severity.Success);
+            }
+            else
+            {
+                await DepartmentService.CreateAsync(new CreateDepartmentRequest(Model.Name, Model.Description));
+                Snackbar.Add("Departamento criado com sucesso!", Severity.Success);
+            }
+
+            GoBack();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar departamento: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            Saving = false;
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/admin/departments");
+
+    private class DepartmentRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+
+        public DepartmentRequest(string name, string description)
+        {
+            Name = name;
+            Description = description;
+        }
+    }
+}

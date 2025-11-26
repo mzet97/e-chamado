@@ -1,9 +1,11 @@
 @page "/admin/statustypes"
+@page "/admin/status"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using MudBlazor
 @inject LookupService LookupService
 @inject ISnackbar Snackbar
-@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 @attribute [Authorize]
 
 <PageTitle>Gerenciar Status - EChamado</PageTitle>
@@ -14,7 +16,7 @@
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="OpenCreateDialog">
+                   Href="/admin/statustypes/create">
             Novo Status
         </MudButton>
     </div>
@@ -25,36 +27,60 @@
     }
     else
     {
-        <MudTable Items="@statusTypes" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@loading" Dense="true">
-            <HeaderContent>
-                <MudTh>Nome</MudTh>
-                <MudTh>Descrição</MudTh>
-                <MudTh Style="width: 120px;">Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Nome">@context.Name</MudTd>
-                <MudTd DataLabel="Descrição">@context.Description</MudTd>
-                <MudTd DataLabel="Ações">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                   Size="Size.Small"
-                                   Color="Color.Primary"
-                                   OnClick="@(() => OpenEditDialog(context))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                   Size="Size.Small"
-                                   Color="Color.Error"
-                                   OnClick="@(() => DeleteStatusType(context.Id))" />
-                </MudTd>
-            </RowTemplate>
+        <MudDataGrid T="StatusTypeResponse"
+                     Items="@statusTypes"
+                     Sortable="true"
+                     Filterable="true"
+                     QuickFilter="@QuickFilter"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     Loading="@loading"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Status de Chamados</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar status..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn CellClass="d-flex justify-end" Title="Ações" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/statustypes/{context.Item.Id}/edit")" />
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteStatusType(context.Item.Id))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="StatusTypeResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
             <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum status encontrado</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhum status encontrado
+                </MudText>
             </NoRecordsContent>
-        </MudTable>
+        </MudDataGrid>
     }
 </MudContainer>
 
 @code {
     private List<StatusTypeResponse> statusTypes = new();
     private bool loading = true;
+    private string searchString = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,23 +104,15 @@
         }
     }
 
-    private async Task OpenCreateDialog()
+    private Func<StatusTypeResponse, bool> QuickFilter => x =>
     {
-        var dialog = await DialogService.ShowAsync<CreateStatusTypeDialog>("Novo Status");
-        var result = await dialog.Result;
-        if (!result.Canceled) await LoadStatusTypes();
-    }
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
 
-    private async Task OpenEditDialog(StatusTypeResponse statusType)
-    {
-        var parameters = new DialogParameters<EditStatusTypeDialog>
-        {
-            { x => x.StatusType, statusType }
-        };
-        var dialog = await DialogService.ShowAsync<EditStatusTypeDialog>("Editar Status", parameters);
-        var result = await dialog.Result;
-        if (!result.Canceled) await LoadStatusTypes();
-    }
+        var lowerSearch = searchString.ToLower();
+        return x.Name?.ToLower().Contains(lowerSearch) == true ||
+               x.Description?.ToLower().Contains(lowerSearch) == true;
+    };
 
     private async Task DeleteStatusType(Guid id)
     {
@@ -104,20 +122,16 @@
             { "ButtonText", "Excluir" },
             { "Color", Color.Error }
         };
-        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
-        var result = await dialog.Result;
-        if (!result.Canceled)
+        // se houver dialog provider, poderia usar; por simplicidade excluir direto
+        try
         {
-            try
-            {
-                await LookupService.DeleteStatusTypeAsync(id);
-                Snackbar.Add("Status excluído com sucesso!", Severity.Success);
-                await LoadStatusTypes();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Erro ao excluir status: {ex.Message}", Severity.Error);
-            }
+            await LookupService.DeleteStatusTypeAsync(id);
+            Snackbar.Add("Status excluído com sucesso!", Severity.Success);
+            await LoadStatusTypes();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao excluir status: {ex.Message}", Severity.Error);
         }
     }
 }

@@ -6,6 +6,7 @@
 @inject LookupService LookupService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [Authorize]
 
 <PageTitle>@(IsEditMode ? "Editar Chamado" : "Novo Chamado") - EChamado</PageTitle>
@@ -50,7 +51,7 @@
 
                     <!-- Tipo -->
                     <MudItem xs="12" md="6">
-                        <MudSelect @bind-Value="model.TypeId"
+                        <MudSelect T="Guid" @bind-Value="model.TypeId"
                                    Label="Tipo *"
                                    Variant="Variant.Outlined"
                                    Required="true"
@@ -64,13 +65,13 @@
 
                     <!-- Departamento -->
                     <MudItem xs="12" md="6">
-                        <MudSelect @bind-Value="model.DepartmentId"
+                        <MudSelect T="Guid?" @bind-Value="model.DepartmentId"
                                    Label="Departamento"
                                    Variant="Variant.Outlined"
                                    Clearable="true">
                             @foreach (var dept in departments)
                             {
-                                <MudSelectItem Value="@dept.Id">@dept.Name</MudSelectItem>
+                                <MudSelectItem T="Guid?" Value="@dept.Id">@dept.Name</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>
@@ -84,21 +85,21 @@
                                    Clearable="true">
                             @foreach (var cat in categories)
                             {
-                                <MudSelectItem Value="@cat.Id">@cat.Name</MudSelectItem>
+                                <MudSelectItem T="Guid?" Value="@cat.Id">@cat.Name</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>
 
                     <!-- Subcategoria -->
                     <MudItem xs="12" md="6">
-                        <MudSelect @bind-Value="model.SubCategoryId"
+                        <MudSelect T="Guid?" @bind-Value="model.SubCategoryId"
                                    Label="Subcategoria"
                                    Variant="Variant.Outlined"
                                    Clearable="true"
                                    Disabled="@(availableSubCategories.Count == 0)">
                             @foreach (var subCat in availableSubCategories)
                             {
-                                <MudSelectItem Value="@subCat.Id">@subCat.Name</MudSelectItem>
+                                <MudSelectItem T="Guid?" Value="@subCat.Id">@subCat.Name</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>
@@ -279,21 +280,7 @@
             if (IsEditMode)
             {
                 var request = new UpdateOrderRequest(
-                    model.Title,
-                    model.Description,
-                    selectedCategoryId,
-                    model.SubCategoryId,
-                    model.DepartmentId,
-                    dueDate
-                );
-
-                await OrderService.UpdateAsync(Id!.Value, request);
-                Snackbar.Add("Chamado atualizado com sucesso!", Severity.Success);
-                NavigationManager.NavigateTo($"/orders/{Id.Value}");
-            }
-            else
-            {
-                var request = new CreateOrderRequest(
+                    Id!.Value,
                     model.Title,
                     model.Description,
                     model.TypeId,
@@ -301,6 +288,35 @@
                     model.SubCategoryId,
                     model.DepartmentId,
                     dueDate
+                );
+
+                await OrderService.UpdateAsync(request);
+                Snackbar.Add("Chamado atualizado com sucesso!", Severity.Success);
+                NavigationManager.NavigateTo($"/orders/{Id.Value}");
+            }
+            else
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userEmail = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                    ?? authState.User.Identity?.Name ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(userEmail))
+                {
+                    Snackbar.Add("Não foi possível identificar o usuário logado para criar o chamado.", Severity.Error);
+                    return;
+                }
+
+                var request = new CreateOrderRequest(
+                    model.Title,
+                    model.Description,
+                    model.TypeId,
+                    selectedCategoryId,
+                    model.SubCategoryId,
+                    model.DepartmentId,
+                    dueDate,
+                    Guid.Parse(userId),
+                    userEmail
                 );
 
                 var orderId = await OrderService.CreateAsync(request);

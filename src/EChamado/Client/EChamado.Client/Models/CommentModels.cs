@@ -10,7 +10,8 @@ public record CommentResponse(
 );
 
 public record CreateCommentRequest(
-    string Text,
+    Guid OrderId,
+    string Description,
     Guid UserId,
     string UserEmail
 );

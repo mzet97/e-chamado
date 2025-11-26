@@ -64,14 +64,18 @@ public class AccountController : Controller
         var principal = await _signInManager.CreateUserPrincipalAsync(user);
         await HttpContext.SignInAsync("External", principal);
 
+        _logger.LogInformation("✅ External cookie created for user {Email}", email);
+
         // Com OpenIddict configurado, o redirecionamento para returnUrl
         // permitirá que o OpenIddict complete o fluxo e gere o token JWT
         if (!string.IsNullOrEmpty(returnUrl))
         {
             _logger.LogInformation("📍 Redirecting to returnUrl: {ReturnUrl}", returnUrl);
+            _logger.LogInformation("🔍 returnUrl should be /connect/authorize with OAuth params");
             return Redirect(returnUrl);
         }
 
+        _logger.LogWarning("⚠️ No returnUrl provided, redirecting to root");
         // Se não há returnUrl, redireciona para root
         return Redirect("/");
     }
@@ -89,5 +93,48 @@ public class AccountController : Controller
         }
 
         return Redirect("/");
+    }
+
+    [HttpGet("User")]
+    public async Task<IActionResult> GetUser()
+    {
+        try
+        {
+            // Verifica se o usuário está autenticado
+            if (User?.Identity?.IsAuthenticated != true)
+            {
+                return Json(new 
+                { 
+                    IsAuthenticated = false 
+                });
+            }
+
+            // Pega informações do usuário atual
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+            var userName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            
+            // Pega roles
+            var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value)
+                .ToArray();
+
+            return Json(new 
+            { 
+                IsAuthenticated = true,
+                UserId = userId,
+                UserName = userName ?? email,
+                Email = email,
+                Roles = roles
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user info");
+            return Json(new 
+            { 
+                IsAuthenticated = false 
+            });
+        }
     }
 }

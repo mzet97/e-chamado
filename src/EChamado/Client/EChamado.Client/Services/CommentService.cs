@@ -20,7 +20,7 @@ public class CommentService
     {
         try
         {
-            var result = await _httpClient.GetFromJsonAsync<BaseResultList<CommentResponse>>($"v1/order/{orderId}/comments");
+            var result = await _httpClient.GetFromJsonAsync<BaseResultList<CommentResponse>>($"v1/comments/{orderId}/comments");
             return result?.Data?.ToList() ?? new List<CommentResponse>();
         }
         catch (HttpRequestException)
@@ -34,7 +34,8 @@ public class CommentService
     /// </summary>
     public async Task<Guid> CreateAsync(Guid orderId, CreateCommentRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync($"v1/order/{orderId}/comments", request);
+        var payload = request with { OrderId = orderId };
+        var response = await _httpClient.PostAsJsonAsync("v1/comments", payload);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
         return result?.Data ?? Guid.Empty;

@@ -25,17 +25,20 @@ public class AuthorizationController(
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Authorize()
     {
+        logger.LogInformation("🔵 /connect/authorize CALLED - Method: {Method}, QueryString: {Query}",
+            Request.Method, Request.QueryString.Value);
+
         var request = HttpContext.GetOpenIddictServerRequest()
                               ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-        logger.LogInformation("Authorization request received. Client: {ClientId}, RedirectUri: {RedirectUri}, Scope: {Scope}, ResponseType: {ResponseType}, State: {State}, CodeChallenge: {CodeChallenge}",
-            request.ClientId, request.RedirectUri, request.Scope, request.ResponseType, request.State, request.CodeChallenge);
+        logger.LogInformation("✅ OpenIddict request parsed. Client: {ClientId}, RedirectUri: {RedirectUri}, Scope: {Scope}, ResponseType: {ResponseType}, State: {State}, CodeChallenge: {CodeChallenge}, CodeChallengeMethod: {CodeChallengeMethod}",
+            request.ClientId, request.RedirectUri, request.Scope, request.ResponseType, request.State, request.CodeChallenge, request.CodeChallengeMethod);
 
         // Tenta obter o usuário autenticado via cookie "External"
         var result = await HttpContext.AuthenticateAsync("External");
         if (!result.Succeeded)
         {
-            logger.LogInformation("User not authenticated via External cookie. Redirecting to login.");
+            logger.LogInformation("❌ User NOT authenticated via External cookie. Redirecting to login.");
 
             // Se não estiver autenticado, redireciona para a aplicação externa de login
             var redirectUri = Request.PathBase + Request.Path +
@@ -43,7 +46,7 @@ public class AuthorizationController(
                                   ? Request.Form.ToList()
                                   : Request.Query.ToList());
 
-            logger.LogInformation("Redirect URI for login: {RedirectUri}", redirectUri);
+            logger.LogInformation("🔀 Redirect URI for login: {RedirectUri}", redirectUri);
 
             return Challenge(
                 authenticationSchemes: new[] { "External" },
@@ -53,24 +56,29 @@ public class AuthorizationController(
                 });
         }
 
-        logger.LogInformation("User authenticated via External cookie. UserId: {UserId}",
+        logger.LogInformation("✅ User authenticated via External cookie. UserId: {UserId}",
             result.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
         // Busca o usuário completo do Identity
         var userId = result.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
+            logger.LogWarning("❌ UserId not found in External cookie claims");
             return Challenge(authenticationSchemes: new[] { "External" });
         }
 
         var user = await userManager.FindByIdAsync(userId);
         if (user == null)
         {
+            logger.LogWarning("❌ User not found in database: {UserId}", userId);
             return Challenge(authenticationSchemes: new[] { "External" });
         }
 
+        logger.LogInformation("✅ User found: {Email}", user.Email);
+
         // Busca roles do usuário
         var roles = await userManager.GetRolesAsync(user);
+        logger.LogInformation("✅ User roles: {Roles}", string.Join(", ", roles));
 
         // Cria claims principal para gerar authorization code
         var claims = new List<Claim>
@@ -110,7 +118,12 @@ public class AuthorizationController(
         // Seta os escopos solicitados
         claimsPrincipal.SetScopes(request.GetScopes());
 
-        logger.LogInformation("Generating authorization code. Will redirect to: {RedirectUri}", request.RedirectUri);
+        logger.LogInformation("🎯 Generating authorization CODE. Will redirect to: {RedirectUri} with code in URL",
+            request.RedirectUri);
+        logger.LogInformation("📋 Claims count: {Count}, Scopes: {Scopes}",
+            claims.Count, string.Join(", ", request.GetScopes()));
+
+        logger.LogInformation("✅ About to call SignIn to generate authorization code...");
 
         // SignIn retorna um código de autorização e redireciona automaticamente para request.RedirectUri
         return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -180,10 +193,15 @@ public class AuthorizationController(
 
         if (request.IsAuthorizationCodeGrantType())
         {
+            logger.LogInformation("🔄 Processing Authorization Code grant. Code: {Code}, CodeVerifier: {Verifier}",
+                request.Code?.Length > 0 ? $"{request.Code.Substring(0, Math.Min(10, request.Code.Length))}..." : "MISSING",
+                request.CodeVerifier?.Length > 0 ? $"{request.CodeVerifier.Substring(0, Math.Min(10, request.CodeVerifier.Length))}..." : "MISSING");
+
             var authenticateResult = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
             {
+                logger.LogWarning("❌ Authorization code authentication FAILED");
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                     properties: new AuthenticationProperties(new Dictionary<string, string>
@@ -192,6 +210,8 @@ public class AuthorizationController(
                         [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The authorization code is no longer valid."
                     }));
             }
+
+            logger.LogInformation("✅ Authorization code validated successfully");
 
             var principal = authenticateResult.Principal;
 

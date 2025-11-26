@@ -131,7 +131,7 @@
                 return;
             }
 
-            var request = new CreateCommentRequest(newCommentText, Guid.Parse(userId), userEmail);
+            var request = new CreateCommentRequest(OrderId, newCommentText, Guid.Parse(userId), userEmail);
             await CommentService.CreateAsync(OrderId, request);
 
             Snackbar.Add("Comentário adicionado com sucesso!", Severity.Success);

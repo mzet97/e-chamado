@@ -1,6 +1,7 @@
 @page "/orders"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using System.Reflection
 @inject OrderService OrderService
 @inject LookupService LookupService
 @inject NavigationManager NavigationManager
@@ -35,37 +36,37 @@
             </MudItem>
 
             <MudItem xs="12" md="3">
-                <MudSelect @bind-Value="selectedStatus"
+                <MudSelect T="Guid?" @bind-Value="selectedStatus"
                            Label="Status"
                            Variant="Variant.Outlined"
                            Clearable="true">
                     @foreach (var status in statuses)
                     {
-                        <MudSelectItem Value="@status.Id">@status.Name</MudSelectItem>
+                        <MudSelectItem T="Guid?" Value="@status.Id">@status.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
 
             <MudItem xs="12" md="3">
-                <MudSelect @bind-Value="selectedDepartment"
+                <MudSelect T="Guid?" @bind-Value="selectedDepartment"
                            Label="Departamento"
                            Variant="Variant.Outlined"
                            Clearable="true">
                     @foreach (var dept in departments)
                     {
-                        <MudSelectItem Value="@dept.Id">@dept.Name</MudSelectItem>
+                        <MudSelectItem T="Guid?" Value="@dept.Id">@dept.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
 
             <MudItem xs="12" md="3">
-                <MudSelect @bind-Value="selectedType"
+                <MudSelect T="Guid?" @bind-Value="selectedType"
                            Label="Tipo"
                            Variant="Variant.Outlined"
                            Clearable="true">
                     @foreach (var type in types)
                     {
-                        <MudSelectItem Value="@type.Id">@type.Name</MudSelectItem>
+                        <MudSelectItem T="Guid?" Value="@type.Id">@type.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
@@ -95,85 +96,86 @@
     </MudPaper>
 
     <!-- Tabela -->
-    <MudTable T="OrderListViewModel" ServerData="@(new Func<TableState, CancellationToken, Task<TableData<OrderListViewModel>>>(ServerReload))"
-              Dense="false"
-              Hover="true"
-              @ref="table"
-              Loading="@isLoading"
-              LoadingProgressColor="Color.Primary">
+    <MudDataGrid T="OrderListViewModel"
+                 ServerData="LoadOrders"
+                 Filterable="true"
+                 Sortable="true"
+                 Hover="true"
+                 Dense="false"
+                 Striped="true"
+                 Bordered="true"
+                 @ref="grid"
+                 Loading="@isLoading"
+                 QuickFilter="@QuickFilter"
+                 PageSizeOptions="@(new int[] { 10, 20, 50 })">
         <ToolBarContent>
             <MudText Typo="Typo.h6">Lista de Chamados</MudText>
             <MudSpacer />
             <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                            Color="Color.Primary"
-                           OnClick="@(() => table.ReloadServerData())" />
+                           OnClick="@(() => grid.ReloadServerData())" />
         </ToolBarContent>
-        <HeaderContent>
-            <MudTh>Título</MudTh>
-            <MudTh>Status</MudTh>
-            <MudTh>Tipo</MudTh>
-            <MudTh>Departamento</MudTh>
-            <MudTh>Solicitante</MudTh>
-            <MudTh>Data Abertura</MudTh>
-            <MudTh>Prazo</MudTh>
-            <MudTh>Ações</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="Título">
-                <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Title</MudText>
-            </MudTd>
-            <MudTd DataLabel="Status">
-                <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.StatusName)">
-                    @context.StatusName
-                </MudChip>
-            </MudTd>
-            <MudTd DataLabel="Tipo">@context.TypeName</MudTd>
-            <MudTd DataLabel="Departamento">@(context.DepartmentName ?? "-")</MudTd>
-            <MudTd DataLabel="Solicitante">@context.RequestingUserEmail</MudTd>
-            <MudTd DataLabel="Data">@context.OpeningDate.ToString("dd/MM/yyyy")</MudTd>
-            <MudTd DataLabel="Prazo">
-                @if (context.IsOverdue)
-                {
-                    <MudChip T="string" Size="Size.Small" Color="Color.Error">Vencido</MudChip>
-                }
-                else if (context.DueDate.HasValue)
-                {
-                    <MudText>@context.DueDate.Value.ToString("dd/MM/yyyy")</MudText>
-                }
-                else
-                {
-                    <MudText>-</MudText>
-                }
-            </MudTd>
-            <MudTd DataLabel="Ações">
-                <MudTooltip Text="Ver Detalhes">
-                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                   Size="Size.Small"
-                                   Color="Color.Primary"
-                                   Href="@($"/orders/{context.Id}")" />
-                </MudTooltip>
-                <MudTooltip Text="Editar">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                   Size="Size.Small"
-                                   Color="Color.Info"
-                                   Href="@($"/orders/{context.Id}/edit")" />
-                </MudTooltip>
-            </MudTd>
-        </RowTemplate>
+        <Columns>
+            <PropertyColumn Property="x => x.Title" Title="Título" Sortable="true" Filterable="true" />
+            <TemplateColumn Title="Status" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.Item.StatusName)">
+                        @context.Item.StatusName
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="x => x.TypeName" Title="Tipo" Sortable="true" Filterable="true" />
+            <PropertyColumn Property="x => x.DepartmentName" Title="Departamento" Sortable="true" Filterable="true" />
+            <PropertyColumn Property="x => x.RequestingUserEmail" Title="Solicitante" Sortable="true" Filterable="true" />
+            <TemplateColumn Title="Data Abertura" Sortable="true" Filterable="true" Property="x => x.OpeningDate">
+                <CellTemplate>
+                    <MudText>@context.Item.OpeningDate.ToString("dd/MM/yyyy")</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Prazo" Sortable="true" Filterable="true" Property="x => x.DueDate">
+                <CellTemplate>
+                    @if (context.Item.IsOverdue)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Error">Vencido</MudChip>
+                    }
+                    else if (context.Item.DueDate.HasValue)
+                    {
+                        <MudText>@context.Item.DueDate.Value.ToString("dd/MM/yyyy")</MudText>
+                    }
+                    else
+                    {
+                        <MudText>-</MudText>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Ações" CellClass="d-flex align-center" Align="MudBlazor.Align.Right" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <MudTooltip Text="Ver Detalhes">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Size="Size.Small"
+                                       Color="Color.Primary"
+                                       Href="@($"/orders/{context.Item.Id}")" />
+                    </MudTooltip>
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       Color="Color.Info"
+                                       Href="@($"/orders/{context.Item.Id}/edit")" />
+                    </MudTooltip>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="OrderListViewModel" />
+        </PagerContent>
         <NoRecordsContent>
             <MudText>Nenhum chamado encontrado</MudText>
         </NoRecordsContent>
-        <LoadingContent>
-            <MudText>Carregando...</MudText>
-        </LoadingContent>
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
+    </MudDataGrid>
 </MudContainer>
 
 @code {
-    private MudTable<OrderListViewModel> table = null!;
+    private MudDataGrid<OrderListViewModel> grid = null!;
     private bool isLoading;
 
     // Filtros
@@ -210,37 +212,45 @@
         }
     }
 
-    private async Task<TableData<OrderListViewModel>> ServerReload(TableState state, CancellationToken cancellationToken)
+    private async Task<GridData<OrderListViewModel>> LoadOrders(GridState<OrderListViewModel> state)
     {
         isLoading = true;
 
         try
         {
+            DateTime? startDate = dateRange?.Start?.Date;
+            DateTime? endDate = dateRange?.End?.Date;
+
+            if (endDate.HasValue)
+                endDate = endDate.Value.AddDays(1).AddTicks(-1);
+
             var parameters = new SearchOrdersParameters
             {
-                PageNumber = state.Page + 1,
+                PageIndex = state.Page + 1,
                 PageSize = state.PageSize,
-                SearchText = string.IsNullOrWhiteSpace(searchText) ? null : searchText,
-                StatusId = selectedStatus,
+                Title = string.IsNullOrWhiteSpace(searchText) ? null : searchText,
+                StatusTypeId = selectedStatus,
                 DepartmentId = selectedDepartment,
                 TypeId = selectedType,
-                StartDate = dateRange?.Start,
-                EndDate = dateRange?.End,
+                StartDate = startDate,
+                EndDate = endDate,
                 IsOverdue = showOnlyOverdue ? true : null
             };
 
             var result = await OrderService.SearchAsync(parameters);
 
-            return new TableData<OrderListViewModel>
+            var ordered = ApplySorting(result.Items, state);
+
+            return new GridData<OrderListViewModel>
             {
                 TotalItems = result.TotalCount,
-                Items = result.Items
+                Items = ordered.ToList()
             };
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Erro ao carregar chamados: {ex.Message}", Severity.Error);
-            return new TableData<OrderListViewModel> { TotalItems = 0, Items = new List<OrderListViewModel>() };
+            return new GridData<OrderListViewModel> { TotalItems = 0, Items = new List<OrderListViewModel>() };
         }
         finally
         {
@@ -250,8 +260,48 @@
 
     private void ApplyFilters()
     {
-        table.ReloadServerData();
+        grid?.ReloadServerData();
     }
+
+    private IEnumerable<OrderListViewModel> ApplySorting(IEnumerable<OrderListViewModel> items, GridState<OrderListViewModel> state)
+    {
+        if (state.SortDefinitions == null || state.SortDefinitions.Count == 0)
+            return items;
+
+        IOrderedEnumerable<OrderListViewModel>? orderedItems = null;
+
+        foreach (var sort in state.SortDefinitions)
+        {
+            var propertyName = sort.SortBy;
+            if (string.IsNullOrWhiteSpace(propertyName))
+                continue;
+
+            var prop = typeof(OrderListViewModel).GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            if (prop is null)
+                continue;
+
+            Func<OrderListViewModel, object?> keySelector = item => prop.GetValue(item);
+
+            orderedItems = sort.Descending
+                ? (orderedItems == null ? items.OrderByDescending(keySelector) : orderedItems.ThenByDescending(keySelector))
+                : (orderedItems == null ? items.OrderBy(keySelector) : orderedItems.ThenBy(keySelector));
+        }
+
+        return orderedItems ?? items;
+    }
+
+    private Func<OrderListViewModel, bool> QuickFilter => order =>
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return true;
+
+        var term = searchText.ToLower();
+        return order.Title.ToLower().Contains(term)
+               || order.StatusName.ToLower().Contains(term)
+               || order.TypeName.ToLower().Contains(term)
+               || (order.DepartmentName?.ToLower().Contains(term) ?? false)
+               || order.RequestingUserEmail.ToLower().Contains(term);
+    };
 
     private Color GetStatusColor(string status) => status.ToLower() switch
     {

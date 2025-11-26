@@ -25,12 +25,12 @@ public class SearchStatusTypesEndpoint : IEndpoint
             {
                 Name = parameters.Name ?? string.Empty,
                 Description = parameters.Description ?? string.Empty,
-                CreatedAt = parameters.CreatedAt,
-                UpdatedAt = parameters.UpdatedAt,
-                DeletedAt = parameters.DeletedAt,
-                Order = parameters.Order,
-                PageIndex = parameters.PageIndex,
-                PageSize = parameters.PageSize
+                CreatedAt = parameters.CreatedAt ?? default,
+                UpdatedAt = parameters.UpdatedAt ?? default,
+                DeletedAt = parameters.DeletedAt ?? default,
+                Order = parameters.Order ?? string.Empty,
+                PageIndex = parameters.PageIndex ?? 1,
+                PageSize = parameters.PageSize ?? 10
             };
 
             await commandProcessor.SendAsync(query);
@@ -52,13 +52,13 @@ public class SearchStatusTypesEndpoint : IEndpoint
 
 public class SearchStatusTypesParameters
 {
-    [FromQuery] public Guid Id { get; set; }
+    [FromQuery] public Guid? Id { get; set; }
     [FromQuery] public string? Name { get; set; }
     [FromQuery] public string? Description { get; set; }
-    [FromQuery] public DateTime CreatedAt { get; set; }
-    [FromQuery] public DateTime UpdatedAt { get; set; }
+    [FromQuery] public DateTime? CreatedAt { get; set; }
+    [FromQuery] public DateTime? UpdatedAt { get; set; }
     [FromQuery] public DateTime? DeletedAt { get; set; }
     [FromQuery] public string? Order { get; set; }
-    [FromQuery] public int PageIndex { get; set; } = 1;
-    [FromQuery] public int PageSize { get; set; } = 10;
+    [FromQuery] public int? PageIndex { get; set; } = 1;
+    [FromQuery] public int? PageSize { get; set; } = 10;
 }

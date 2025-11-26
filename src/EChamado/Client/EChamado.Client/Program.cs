@@ -30,47 +30,61 @@ namespace EChamado.Client
                 Console.WriteLine($"Auth Server URL: {authServerUrl}");
                 Console.WriteLine($"Backend URL: {backendUrl}");
 
-                // HTTP Clients
+                // Register AuthTokenHandler first
+                builder.Services.AddScoped<AuthTokenHandler>();
+
+                // HTTP Clients - Auth Server
                 builder.Services.AddScoped(sp => new HttpClient
                 {
                     BaseAddress = new Uri(authServerUrl),
                     Timeout = TimeSpan.FromSeconds(30)
                 });
 
-                // Authentication
-                builder.Services.AddAuthorizationCore();
-                builder.Services.AddScoped<AuthenticationStateProvider, CookieAuthenticationStateProvider>();
-
-                // API Clients
+                // HTTP Clients - API Server (with automatic token)
                 builder.Services.AddHttpClient<OrderService>(client =>
                 {
                     client.BaseAddress = new Uri(backendUrl);
                     client.Timeout = TimeSpan.FromSeconds(30);
-                });
+                }).AddHttpMessageHandler<AuthTokenHandler>();
 
                 builder.Services.AddHttpClient<CategoryService>(client =>
                 {
                     client.BaseAddress = new Uri(backendUrl);
                     client.Timeout = TimeSpan.FromSeconds(30);
-                });
+                }).AddHttpMessageHandler<AuthTokenHandler>();
 
                 builder.Services.AddHttpClient<DepartmentService>(client =>
                 {
                     client.BaseAddress = new Uri(backendUrl);
                     client.Timeout = TimeSpan.FromSeconds(30);
-                });
+                }).AddHttpMessageHandler<AuthTokenHandler>();
 
                 builder.Services.AddHttpClient<LookupService>(client =>
                 {
                     client.BaseAddress = new Uri(backendUrl);
                     client.Timeout = TimeSpan.FromSeconds(30);
-                });
+                }).AddHttpMessageHandler<AuthTokenHandler>();
 
                 builder.Services.AddHttpClient<CommentService>(client =>
                 {
                     client.BaseAddress = new Uri(backendUrl);
                     client.Timeout = TimeSpan.FromSeconds(30);
-                });
+                }).AddHttpMessageHandler<AuthTokenHandler>();
+
+                builder.Services.AddHttpClient<SubCategoryService>(client =>
+                {
+                    client.BaseAddress = new Uri(backendUrl);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                }).AddHttpMessageHandler<AuthTokenHandler>();
+
+                // Authentication - Updated to use AuthService
+                builder.Services.AddAuthorizationCore();
+                builder.Services.AddScoped<AuthenticationStateProvider, CookieAuthenticationStateProvider>();
+                builder.Services.AddScoped<AuthService>();
+
+                // Persistent Logger for debugging OAuth redirects
+                builder.Services.AddScoped<PersistentLogger>();
+                builder.Services.AddScoped<FileLogger>();
 
                 Console.WriteLine("Building client host...");
                 var host = builder.Build();

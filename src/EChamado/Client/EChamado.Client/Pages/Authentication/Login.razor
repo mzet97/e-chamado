@@ -1,16 +1,82 @@
 @page "/authentication/login"
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject ILogger<Login> Logger
 
 <PageTitle>Login</PageTitle>
 
-@code {
-    protected override void OnInitialized()
-    {
-        // Fluxo simples: Redireciona direto para o Auth Server com returnUrl para o callback do cliente
-        var callbackUrl = "https://localhost:7274/authentication/login-callback";
-        var encodedCallback = Uri.EscapeDataString(callbackUrl);
-        var authUrl = $"https://localhost:7133/Account/Login?returnUrl={encodedCallback}";
+<div style="text-align: center; padding: 50px;">
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    <p>Iniciando processo de autenticação...</p>
+</div>
 
-        Navigation.NavigateTo(authUrl, forceLoad: true);
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Logger.LogInformation("Starting PKCE authentication flow");
+
+            // Gera código PKCE
+            var codeVerifier = GenerateCodeVerifier();
+            var codeChallenge = await GenerateCodeChallengeAsync(codeVerifier);
+
+            // Armazena code verifier no localStorage
+            await JS.InvokeVoidAsync("localStorage.setItem", "pkce_code_verifier", codeVerifier);
+
+            // Gera state para proteção contra CSRF
+            var state = Guid.NewGuid().ToString("N");
+
+            // Monta URL de autorização - DEVE usar /connect/authorize do OpenIddict
+            var callbackUrl = "https://localhost:7274/authentication/login-callback";
+            var encodedCallback = Uri.EscapeDataString(callbackUrl);
+            var encodedState = Uri.EscapeDataString(state);
+            var encodedChallenge = Uri.EscapeDataString(codeChallenge);
+
+            // CORREÇÃO: Usar endpoint correto do OpenIddict /connect/authorize
+            var authUrl = $"https://localhost:7133/connect/authorize?" +
+                         $"client_id=bwa-client&" +
+                         $"response_type=code&" +
+                         $"redirect_uri={encodedCallback}&" +
+                         $"scope=openid%20profile%20email%20roles%20api%20chamados&" +
+                         $"state={encodedState}&" +
+                         $"code_challenge={encodedChallenge}&" +
+                         $"code_challenge_method=S256";
+
+            Logger.LogInformation("Redirecting to auth server");
+            Navigation.NavigateTo(authUrl, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error initiating login flow");
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+    }
+
+    private string GenerateCodeVerifier()
+    {
+        // Gera um code verifier aleatório de 43-128 caracteres
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+        var random = new Random();
+        var length = random.Next(43, 129);
+        var verifier = new char[length];
+        
+        for (int i = 0; i < length; i++)
+        {
+            verifier[i] = chars[random.Next(chars.Length)];
+        }
+        
+        return new string(verifier);
+    }
+
+    private async Task<string> GenerateCodeChallengeAsync(string codeVerifier)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var data = System.Text.Encoding.UTF8.GetBytes(codeVerifier);
+        var hash = sha256.ComputeHash(data);
+        return Convert.ToBase64String(hash)
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .Replace("=", "");
     }
 }

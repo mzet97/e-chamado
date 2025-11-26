@@ -1,0 +1,159 @@
+@page "/admin/subcategories"
+@page "/admin/sub-categories"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using MudBlazor
+@inject SubCategoryService SubCategoryService
+@inject CategoryService CategoryService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@attribute [Authorize]
+
+<PageTitle>Gerenciar Subcategorias - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Gerenciar Subcategorias</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/admin/subcategories/create">
+            Nova Subcategoria
+        </MudButton>
+    </div>
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+        <MudDataGrid T="SubCategoryResponse"
+                     Items="@subcategories"
+                     Sortable="true"
+                     Filterable="true"
+                     QuickFilter="@QuickFilter"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     Loading="@loading"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Subcategorias</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar subcategorias..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.CategoryName" Title="Categoria" Sortable="true" Filterable="true" />
+                <TemplateColumn CellClass="d-flex justify-end" Title="Ações" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/subcategories/{context.Item.Id}/edit")" />
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteSubCategory(context.Item.Id))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="SubCategoryResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhuma subcategoria encontrada
+                </MudText>
+            </NoRecordsContent>
+        </MudDataGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<SubCategoryResponse> subcategories = new();
+    private List<CategoryResponse> categories = new();
+    private bool loading = true;
+    private string searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            var subcategoriesTask = SubCategoryService.GetAllAsync();
+            var categoriesTask = CategoryService.GetAllAsync();
+
+            await Task.WhenAll(subcategoriesTask, categoriesTask);
+
+            subcategories = await subcategoriesTask;
+            categories = await categoriesTask;
+
+            // Enrich subcategories with category names
+            foreach (var subcategory in subcategories)
+            {
+                var category = categories.FirstOrDefault(c => c.Id == subcategory.CategoryId);
+                subcategory.CategoryName = category?.Name ?? "Categoria não encontrada";
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar dados: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private Func<SubCategoryResponse, bool> QuickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        var lowerSearch = searchString.ToLower();
+        return x.Name?.ToLower().Contains(lowerSearch) == true ||
+               x.Description?.ToLower().Contains(lowerSearch) == true ||
+               x.CategoryName?.ToLower().Contains(lowerSearch) == true;
+    };
+
+    private async Task DeleteSubCategory(Guid id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Tem certeza que deseja excluir esta subcategoria?" },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            try
+            {
+                await SubCategoryService.DeleteAsync(id);
+                Snackbar.Add("Subcategoria excluída com sucesso!", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir subcategoria: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

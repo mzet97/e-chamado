@@ -63,16 +63,23 @@ public record CreateOrderRequest(
     Guid? CategoryId,
     Guid? SubCategoryId,
     Guid? DepartmentId,
-    DateTime? DueDate
+    DateTime? DueDate,
+    Guid RequestingUserId,
+    string RequestingUserEmail
 );
 
 public record UpdateOrderRequest(
+    Guid Id,
     string Title,
     string Description,
+    Guid TypeId,
     Guid? CategoryId,
     Guid? SubCategoryId,
     Guid? DepartmentId,
     DateTime? DueDate
 );
 
-public record CloseOrderRequest(int Evaluation);
+public record CloseOrderRequest(Guid OrderId, int? Evaluation);
+public record ChangeStatusRequest(Guid OrderId, Guid StatusTypeId);
+public record AssignOrderRequest(Guid OrderId, Guid AssignedToUserId);
+public record AddCommentRequest(Guid OrderId, string Description, Guid UserId, string UserEmail);

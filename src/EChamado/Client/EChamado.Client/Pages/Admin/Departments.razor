@@ -1,8 +1,10 @@
 @page "/admin/departments"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using MudBlazor
 @inject DepartmentService DepartmentService
 @inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 @attribute [Authorize]
 
@@ -14,7 +16,7 @@
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="OpenCreateDialog">
+                   Href="/admin/departments/create">
             Novo Departamento
         </MudButton>
     </div>
@@ -25,36 +27,60 @@
     }
     else
     {
-        <MudTable Items="@departments" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@loading" Dense="true">
-            <HeaderContent>
-                <MudTh>Nome</MudTh>
-                <MudTh>Descrição</MudTh>
-                <MudTh Style="width: 120px;">Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Nome">@context.Name</MudTd>
-                <MudTd DataLabel="Descrição">@context.Description</MudTd>
-                <MudTd DataLabel="Ações">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                   Size="Size.Small"
-                                   Color="Color.Primary"
-                                   OnClick="@(() => OpenEditDialog(context))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                   Size="Size.Small"
-                                   Color="Color.Error"
-                                   OnClick="@(() => DeleteDepartment(context.Id))" />
-                </MudTd>
-            </RowTemplate>
+        <MudDataGrid T="DepartmentResponse"
+                     Items="@departments"
+                     Sortable="true"
+                     Filterable="true"
+                     QuickFilter="@QuickFilter"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     Loading="@loading"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Departamentos</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar departamentos..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn CellClass="d-flex justify-end" Title="Ações" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/departments/{context.Item.Id}/edit")" />
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteDepartment(context.Item.Id))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="DepartmentResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
             <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum departamento encontrado</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhum departamento encontrado
+                </MudText>
             </NoRecordsContent>
-        </MudTable>
+        </MudDataGrid>
     }
 </MudContainer>
 
 @code {
     private List<DepartmentResponse> departments = new();
     private bool loading = true;
+    private string searchString = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,23 +104,16 @@
         }
     }
 
-    private async Task OpenCreateDialog()
+    private Func<DepartmentResponse, bool> QuickFilter => x =>
     {
-        var dialog = await DialogService.ShowAsync<CreateDepartmentDialog>("Novo Departamento");
-        var result = await dialog.Result;
-        if (!result.Canceled) await LoadDepartments();
-    }
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
 
-    private async Task OpenEditDialog(DepartmentResponse department)
-    {
-        var parameters = new DialogParameters<EditDepartmentDialog>
-        {
-            { x => x.Department, department }
-        };
-        var dialog = await DialogService.ShowAsync<EditDepartmentDialog>("Editar Departamento", parameters);
-        var result = await dialog.Result;
-        if (!result.Canceled) await LoadDepartments();
-    }
+        var lowerSearch = searchString.ToLower();
+        return x.Name?.ToLower().Contains(lowerSearch) == true ||
+               x.Description?.ToLower().Contains(lowerSearch) == true;
+    };
+
 
     private async Task DeleteDepartment(Guid id)
     {

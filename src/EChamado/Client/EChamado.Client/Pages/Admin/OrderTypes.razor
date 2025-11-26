@@ -1,8 +1,11 @@
 @page "/admin/ordertypes"
+@page "/admin/types"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using MudBlazor
 @inject LookupService LookupService
 @inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 @attribute [Authorize]
 
@@ -14,7 +17,7 @@
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="OpenCreateDialog">
+                   Href="/admin/ordertypes/create">
             Novo Tipo
         </MudButton>
     </div>
@@ -25,36 +28,60 @@
     }
     else
     {
-        <MudTable Items="@orderTypes" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@loading" Dense="true">
-            <HeaderContent>
-                <MudTh>Nome</MudTh>
-                <MudTh>Descrição</MudTh>
-                <MudTh Style="width: 120px;">Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Nome">@context.Name</MudTd>
-                <MudTd DataLabel="Descrição">@context.Description</MudTd>
-                <MudTd DataLabel="Ações">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                   Size="Size.Small"
-                                   Color="Color.Primary"
-                                   OnClick="@(() => OpenEditDialog(context))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                   Size="Size.Small"
-                                   Color="Color.Error"
-                                   OnClick="@(() => DeleteOrderType(context.Id))" />
-                </MudTd>
-            </RowTemplate>
+        <MudDataGrid T="OrderTypeResponse"
+                     Items="@orderTypes"
+                     Sortable="true"
+                     Filterable="true"
+                     QuickFilter="@QuickFilter"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     Loading="@loading"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Tipos de Chamado</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar tipos..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn CellClass="d-flex justify-end" Title="Ações" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/ordertypes/{context.Item.Id}/edit")" />
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteOrderType(context.Item.Id))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="OrderTypeResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
             <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum tipo de chamado encontrado</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhum tipo de chamado encontrado
+                </MudText>
             </NoRecordsContent>
-        </MudTable>
+        </MudDataGrid>
     }
 </MudContainer>
 
 @code {
     private List<OrderTypeResponse> orderTypes = new();
     private bool loading = true;
+    private string searchString = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,23 +105,15 @@
         }
     }
 
-    private async Task OpenCreateDialog()
+    private Func<OrderTypeResponse, bool> QuickFilter => x =>
     {
-        var dialog = await DialogService.ShowAsync<CreateOrderTypeDialog>("Novo Tipo de Chamado");
-        var result = await dialog.Result;
-        if (!result.Canceled) await LoadOrderTypes();
-    }
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
 
-    private async Task OpenEditDialog(OrderTypeResponse orderType)
-    {
-        var parameters = new DialogParameters<EditOrderTypeDialog>
-        {
-            { x => x.OrderType, orderType }
-        };
-        var dialog = await DialogService.ShowAsync<EditOrderTypeDialog>("Editar Tipo de Chamado", parameters);
-        var result = await dialog.Result;
-        if (!result.Canceled) await LoadOrderTypes();
-    }
+        var lowerSearch = searchString.ToLower();
+        return x.Name?.ToLower().Contains(lowerSearch) == true ||
+               x.Description?.ToLower().Contains(lowerSearch) == true;
+    };
 
     private async Task DeleteOrderType(Guid id)
     {

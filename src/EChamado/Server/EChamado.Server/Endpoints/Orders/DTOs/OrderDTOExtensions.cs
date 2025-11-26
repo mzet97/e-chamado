@@ -62,12 +62,15 @@ public static class OrderDTOExtensions
             TypeId = request.TypeId,
             CategoryId = request.CategoryId,
             DepartmentId = request.DepartmentId,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
             RequestingUserId = string.IsNullOrWhiteSpace(request.CreatedByUserId)
                 ? null
                 : Guid.Parse(request.CreatedByUserId),
             AssignedToUserId = string.IsNullOrWhiteSpace(request.AssignedToUserId)
                 ? null
-                : Guid.Parse(request.AssignedToUserId)
+                : Guid.Parse(request.AssignedToUserId),
+            IsOverdue = request.IsOverdue
         };
     }
 }

@@ -3,7 +3,7 @@
 @using EChamado.Client.Models
 @inject CategoryService CategoryService
 @inject ISnackbar Snackbar
-@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 @attribute [Authorize]
 
 <PageTitle>Gerenciar Categorias - EChamado</PageTitle>
@@ -14,7 +14,7 @@
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="OpenCreateCategoryDialog">
+                   Href="/admin/categories/create">
             Nova Categoria
         </MudButton>
     </div>
@@ -23,97 +23,105 @@
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
     }
-    else if (categories == null || !categories.Any())
-    {
-        <MudPaper Class="pa-8 text-center">
-            <MudText Typo="Typo.h6" Color="Color.Secondary">
-                Nenhuma categoria encontrada
-            </MudText>
-            <MudText Typo="Typo.body2" Class="mt-2">
-                Crie a primeira categoria clicando no botão acima
-            </MudText>
-        </MudPaper>
-    }
     else
     {
-        <MudPaper Elevation="2">
-            @foreach (var category in categories)
-            {
-                <MudExpansionPanel Class="mb-2">
-                    <TitleContent>
-                        <div class="d-flex justify-space-between align-center" style="width: 100%;">
-                            <div>
-                                <MudText Typo="Typo.h6">@category.Name</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@category.Description</MudText>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Size="Size.Small"
-                                               Color="Color.Primary"
-                                               OnClick="@(() => OpenEditCategoryDialog(category))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               Size="Size.Small"
-                                               Color="Color.Error"
-                                               OnClick="@(() => DeleteCategory(category.Id))" />
-                            </div>
-                        </div>
-                    </TitleContent>
-                    <ChildContent>
-                        <div class="pa-4">
-                            <div class="d-flex justify-space-between align-center mb-3">
-                                <MudText Typo="Typo.subtitle1">Subcategorias</MudText>
-                                <MudButton Variant="Variant.Text"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Add"
-                                           OnClick="@(() => OpenCreateSubCategoryDialog(category.Id))">
-                                    Nova Subcategoria
-                                </MudButton>
-                            </div>
+        <MudDataGrid T="CategoryResponse"
+                     Items="@categories"
+                     Filterable="true"
+                     Sortable="true"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     QuickFilter="@QuickFilter"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Categorias</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar categorias..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn Title="Subcategorias" Sortable="false" Filterable="true">
+                    <CellTemplate>
+                        <MudChip T="int" Size="Size.Small" Color="Color.Info">
+                            @((context.Item.SubCategories?.Count ?? 0)) sub
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="MudBlazor.Align.Right" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/categories/{context.Item.Id}/edit")"
+                                       Title="Editar" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Small"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteCategory(context.Item.Id))"
+                                       Title="Excluir" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <ChildRowContent Context="category">
+                <MudPaper Class="pa-3" Outlined="true">
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.subtitle2">Subcategorias de @category.Item.Name</MudText>
+                    </div>
 
-                            @if (category.SubCategories == null || !category.SubCategories.Any())
-                            {
-                                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-2">
-                                    Nenhuma subcategoria cadastrada
-                                </MudText>
-                            }
-                            else
-                            {
-                                <MudList T="string" Dense="true">
-                                    @foreach (var subCategory in category.SubCategories)
-                                    {
-                                        <MudListItem T="string">
-                                            <div class="d-flex justify-space-between align-center" style="width: 100%;">
-                                                <div>
-                                                    <MudText>@subCategory.Name</MudText>
-                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@subCategory.Description</MudText>
-                                                </div>
-                                                <div class="d-flex gap-2">
-                                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                                   Size="Size.Small"
-                                                                   Color="Color.Primary"
-                                                                   OnClick="@(() => OpenEditSubCategoryDialog(subCategory, category.Id))" />
-                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                                   Size="Size.Small"
-                                                                   Color="Color.Error"
-                                                                   OnClick="@(() => DeleteSubCategory(subCategory.Id))" />
-                                                </div>
-                                            </div>
-                                        </MudListItem>
-                                    }
-                                </MudList>
-                            }
-                        </div>
-                    </ChildContent>
-                </MudExpansionPanel>
-            }
-        </MudPaper>
+                    @if (category.Item.SubCategories == null || !category.Item.SubCategories.Any())
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhuma subcategoria cadastrada</MudText>
+                    }
+                    else
+                    {
+                        <MudDataGrid T="SubCategoryResponse"
+                                     Items="category.Item.SubCategories"
+                                     Dense="true"
+                                     Hover="true"
+                                     Bordered="true"
+                                     Striped="true"
+                                     Filterable="true"
+                                     Sortable="true"
+                                     PageSize="5"
+                                     PageSizeOptions="@(new int[] { 5, 10, 20 })">
+                            <Columns>
+                                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                                <TemplateColumn Title="Ações" Align="MudBlazor.Align.Right" Sortable="false" Filterable="false" Context="subCtx">
+                                    <CellTemplate>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Somente leitura</MudText>
+                                    </CellTemplate>
+                                </TemplateColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    }
+                </MudPaper>
+            </ChildRowContent>
+            <PagerContent>
+                <MudDataGridPager T="CategoryResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhuma categoria encontrada
+                </MudText>
+            </NoRecordsContent>
+        </MudDataGrid>
     }
 </MudContainer>
 
 @code {
     private List<CategoryResponse> categories = new();
     private bool loading = true;
+    private string searchString = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,115 +145,32 @@
         }
     }
 
-    private async Task OpenCreateCategoryDialog()
+    private Func<CategoryResponse, bool> QuickFilter => x =>
     {
-        var parameters = new DialogParameters<CreateCategoryDialog>();
-        var dialog = await DialogService.ShowAsync<CreateCategoryDialog>("Nova Categoria", parameters);
-        var result = await dialog.Result;
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
 
-        if (!result.Canceled)
-        {
-            await LoadCategories();
-        }
-    }
+        var term = searchString.ToLowerInvariant();
+        var subCats = x.SubCategories?.Any(sc =>
+            sc.Name?.ToLowerInvariant().Contains(term) == true ||
+            sc.Description?.ToLowerInvariant().Contains(term) == true) == true;
 
-    private async Task OpenEditCategoryDialog(CategoryResponse category)
-    {
-        var parameters = new DialogParameters<EditCategoryDialog>
-        {
-            { x => x.Category, category }
-        };
-        var dialog = await DialogService.ShowAsync<EditCategoryDialog>("Editar Categoria", parameters);
-        var result = await dialog.Result;
-
-        if (!result.Canceled)
-        {
-            await LoadCategories();
-        }
-    }
+        return x.Name?.ToLowerInvariant().Contains(term) == true
+               || x.Description?.ToLowerInvariant().Contains(term) == true
+               || subCats;
+    };
 
     private async Task DeleteCategory(Guid id)
     {
-        var parameters = new DialogParameters
+        try
         {
-            { "ContentText", "Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita." },
-            { "ButtonText", "Excluir" },
-            { "Color", Color.Error }
-        };
-
-        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
-        var result = await dialog.Result;
-
-        if (!result.Canceled)
-        {
-            try
-            {
-                await CategoryService.DeleteAsync(id);
-                Snackbar.Add("Categoria excluída com sucesso!", Severity.Success);
-                await LoadCategories();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Erro ao excluir categoria: {ex.Message}", Severity.Error);
-            }
-        }
-    }
-
-    private async Task OpenCreateSubCategoryDialog(Guid categoryId)
-    {
-        var parameters = new DialogParameters<CreateSubCategoryDialog>
-        {
-            { x => x.CategoryId, categoryId }
-        };
-        var dialog = await DialogService.ShowAsync<CreateSubCategoryDialog>("Nova Subcategoria", parameters);
-        var result = await dialog.Result;
-
-        if (!result.Canceled)
-        {
+            await CategoryService.DeleteAsync(id);
+            Snackbar.Add("Categoria excluída com sucesso!", Severity.Success);
             await LoadCategories();
         }
-    }
-
-    private async Task OpenEditSubCategoryDialog(SubCategoryResponse subCategory, Guid categoryId)
-    {
-        var parameters = new DialogParameters<EditSubCategoryDialog>
+        catch (Exception ex)
         {
-            { x => x.SubCategory, subCategory },
-            { x => x.CategoryId, categoryId }
-        };
-        var dialog = await DialogService.ShowAsync<EditSubCategoryDialog>("Editar Subcategoria", parameters);
-        var result = await dialog.Result;
-
-        if (!result.Canceled)
-        {
-            await LoadCategories();
-        }
-    }
-
-    private async Task DeleteSubCategory(Guid id)
-    {
-        var parameters = new DialogParameters
-        {
-            { "ContentText", "Tem certeza que deseja excluir esta subcategoria? Esta ação não pode ser desfeita." },
-            { "ButtonText", "Excluir" },
-            { "Color", Color.Error }
-        };
-
-        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
-        var result = await dialog.Result;
-
-        if (!result.Canceled)
-        {
-            try
-            {
-                await CategoryService.DeleteSubCategoryAsync(id);
-                Snackbar.Add("Subcategoria excluída com sucesso!", Severity.Success);
-                await LoadCategories();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Erro ao excluir subcategoria: {ex.Message}", Severity.Error);
-            }
+            Snackbar.Add($"Erro ao excluir categoria: {ex.Message}", Severity.Error);
         }
     }
 }

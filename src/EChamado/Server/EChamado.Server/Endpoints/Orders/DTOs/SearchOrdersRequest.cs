@@ -15,8 +15,11 @@ public class SearchOrdersRequest
     public Guid? CategoryId { get; set; }
     public Guid? SubCategoryId { get; set; }
     public Guid? DepartmentId { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
     public string? AssignedToUserId { get; set; }
     public string? CreatedByUserId { get; set; }
+    public bool? IsOverdue { get; set; }
 
     [Range(1, int.MaxValue, ErrorMessage = "A página deve ser maior que zero")]
     public int PageIndex { get; set; } = 1;

@@ -1,15 +1,90 @@
 @page "/"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using EChamado.Client.Authentication
 @inject OrderService OrderService
 @inject LookupService LookupService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize]
 
 <PageTitle>Dashboard - EChamado</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
+
+    <!-- Debug Panel (Hidden by default, can be toggled) -->
+    <MudCard Class="mb-4" Color="Color.Warning" Style="@((showDebug ? "" : "display: none;"))">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">🔧 Debug - Estado de Autenticação</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                               Color="Color.Default" 
+                               OnClick="() => showDebug = false" />
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudStack>
+                <MudText><strong>Estado de Autenticação:</strong> @authState</MudText>
+                <MudText><strong>Token Encontrado:</strong> @(!string.IsNullOrEmpty(testToken) ? "✅ Sim" : "❌ Não")</MudText>
+                @if (!string.IsNullOrEmpty(testToken))
+                {
+                    <MudText><strong>Token Preview:</strong> @testToken.Substring(0, Math.Min(50, testToken.Length))...</MudText>
+                }
+                <MudText><strong>Claims Count:</strong> @claimsCount</MudText>
+                <MudText><strong>User Identity:</strong> @userIdentity</MudText>
+                
+                <MudStack Row="true">
+                    <MudButton Size="Size.Small" 
+                               Variant="Variant.Outlined" 
+                               Color="Color.Primary" 
+                               OnClick="TestAuthState">
+                        🔄 Testar Estado
+                    </MudButton>
+                    <MudButton Size="Size.Small" 
+                               Variant="Variant.Outlined" 
+                               Color="Color.Secondary" 
+                               OnClick="ForceLogout">
+                        🚪 Logout
+                    </MudButton>
+                    <MudButton Size="Size.Small" 
+                               Variant="Variant.Outlined" 
+                               Color="Color.Success" 
+                               OnClick="TestLogin">
+                        🔐 Login Teste
+                    </MudButton>
+                    <MudButton Size="Size.Small" 
+                               Variant="Variant.Outlined" 
+                               Color="Color.Info" 
+                               OnClick="DownloadLogs">
+                        📥 Baixar Logs
+                    </MudButton>
+                    <MudButton Size="Size.Small" 
+                               Variant="Variant.Outlined" 
+                               Color="Color.Warning" 
+                               OnClick="ClearLogs">
+                        🗑️ Limpar Logs
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Show debug button when not visible -->
+    @if (!showDebug)
+    {
+        <MudButton Size="Size.Small" 
+                   Variant="Variant.Text" 
+                   Color="Color.Warning" 
+                   StartIcon="@Icons.Material.Filled.BugReport"
+                   OnClick="() => showDebug = true"
+                   Class="mb-2">
+            Mostrar Debug
+        </MudButton>
+    }
 
     @if (isLoading)
     {
@@ -140,31 +215,53 @@
 
             @if (recentTickets.Any())
             {
-                <MudTable Items="@recentTickets" Hover="true" Dense="true" Elevation="0">
-                    <HeaderContent>
-                        <MudTh>Título</MudTh>
-                        <MudTh>Status</MudTh>
-                        <MudTh>Departamento</MudTh>
-                        <MudTh>Data</MudTh>
-                        <MudTh>Ações</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Título">@context.Title</MudTd>
-                        <MudTd DataLabel="Status">
-                            <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.StatusName)">
-                                @context.StatusName
-                            </MudChip>
-                        </MudTd>
-                        <MudTd DataLabel="Departamento">@context.DepartmentName</MudTd>
-                        <MudTd DataLabel="Data">@context.OpeningDate.ToString("dd/MM/yyyy")</MudTd>
-                        <MudTd DataLabel="Ações">
-                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Href="@($"/orders/{context.Id}")" />
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
+                <MudDataGrid T="OrderListViewModel"
+                             Items="@recentTickets"
+                             QuickFilter="@RecentQuickFilter"
+                             Filterable="true"
+                             Sortable="true"
+                             Dense="true"
+                             Hover="true"
+                             Striped="true"
+                             Bordered="true"
+                             PageSize="10"
+                             PageSizeOptions="@(new int[] { 5, 10, 20 })">
+                    <ToolBarContent>
+                        <MudTextField @bind-Value="recentSearch"
+                                      Placeholder="Buscar chamados..."
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      IconSize="Size.Medium"
+                                      Class="mt-0" />
+                    </ToolBarContent>
+                    <Columns>
+                        <PropertyColumn Property="x => x.Title" Title="Título" Sortable="true" Filterable="true" />
+                        <TemplateColumn Title="Status" Sortable="true" Filterable="true">
+                            <CellTemplate>
+                                <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.Item.StatusName)">
+                                    @context.Item.StatusName
+                                </MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn Property="x => x.DepartmentName" Title="Departamento" Sortable="true" Filterable="true" />
+                        <TemplateColumn Title="Data" Property="x => x.OpeningDate" Sortable="true">
+                            <CellTemplate>
+                                <MudText>@context.Item.OpeningDate.ToString("dd/MM/yyyy")</MudText>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Ações" Align="MudBlazor.Align.Right" Sortable="false" Filterable="false">
+                            <CellTemplate>
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                               Size="Size.Small"
+                                               Color="Color.Primary"
+                                               Href="@($"/orders/{context.Item.Id}")" />
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <PagerContent>
+                        <MudDataGridPager T="OrderListViewModel" PageSizeOptions="@(new int[] { 5, 10, 20 })" />
+                    </PagerContent>
+                </MudDataGrid>
             }
             else
             {
@@ -211,9 +308,17 @@
 @code {
     private bool isLoading = true;
     private string? errorMessage;
+    private bool showDebug = false;
+
+    // Debug properties
+    private string authState = "Checking...";
+    private string? testToken = null;
+    private int claimsCount = 0;
+    private string userIdentity = "Unknown";
 
     private DashboardStats stats = new();
     private List<OrderListViewModel> recentTickets = new();
+    private string recentSearch = string.Empty;
 
     // Dados para gráficos
     private double[] chartDataByStatus = Array.Empty<double>();
@@ -228,18 +333,19 @@
         {
             isLoading = true;
 
+            // Inicializa debug state
+            await TestAuthState();
+
             // Carrega estatísticas em paralelo
             var allTicketsTask = OrderService.SearchAsync(new SearchOrdersParameters { PageSize = 100 });
-            var myTicketsTask = OrderService.GetMyTicketsAsync(pageSize: 100);
-            var assignedTask = OrderService.GetAssignedToMeAsync(pageSize: 100);
+            // Removido chamadas para endpoints inexistentes: my-tickets e assigned-to-me
+            // TODO: Implementar endpoints no Server ou usar filtros apropriados
             var overdueTask = OrderService.SearchAsync(new SearchOrdersParameters { IsOverdue = true, PageSize = 100 });
             var statusesTask = LookupService.GetStatusTypesAsync();
 
-            await Task.WhenAll(allTicketsTask, myTicketsTask, assignedTask, overdueTask, statusesTask);
+            await Task.WhenAll(allTicketsTask, overdueTask, statusesTask);
 
             var allTickets = await allTicketsTask;
-            var myTickets = await myTicketsTask;
-            var assigned = await assignedTask;
             var overdue = await overdueTask;
             var statuses = await statusesTask;
 
@@ -247,13 +353,13 @@
             stats = new DashboardStats
             {
                 TotalTickets = allTickets.TotalCount,
-                MyTickets = myTickets.TotalCount,
-                AssignedToMe = assigned.TotalCount,
+                MyTickets = 0, // TODO: Implementar endpoint /v1/orders/my-tickets
+                AssignedToMe = 0, // TODO: Implementar endpoint /v1/orders/assigned-to-me
                 OverdueTickets = overdue.TotalCount
             };
 
             // Últimos chamados
-            recentTickets = allTickets.Items.Take(5).ToList();
+            recentTickets = allTickets.Items.Take(25).ToList();
 
             // Dados para gráfico de status
             var groupedByStatus = allTickets.Items
@@ -289,6 +395,18 @@
         }
     }
 
+    private Func<OrderListViewModel, bool> RecentQuickFilter => order =>
+    {
+        if (string.IsNullOrWhiteSpace(recentSearch))
+            return true;
+
+        var term = recentSearch.ToLowerInvariant();
+        return (order.Title?.ToLowerInvariant().Contains(term) ?? false)
+            || (order.StatusName?.ToLowerInvariant().Contains(term) ?? false)
+            || (order.DepartmentName?.ToLowerInvariant().Contains(term) ?? false)
+            || (order.RequestingUserEmail?.ToLowerInvariant().Contains(term) ?? false);
+    };
+
     private Color GetStatusColor(string status) => status.ToLower() switch
     {
         var s when s.Contains("aberto") || s.Contains("open") => Color.Info,
@@ -296,6 +414,124 @@
         var s when s.Contains("fechado") || s.Contains("closed") || s.Contains("resolvido") => Color.Success,
         _ => Color.Default
     };
+
+    #region Debug Methods
+    private async Task TestAuthState()
+    {
+        try
+        {
+            // Testa token no localStorage
+            testToken = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            
+            // Testa estado de autenticação do provider
+            var authStateResult = await AuthStateProvider.GetAuthenticationStateAsync();
+            authState = authStateResult.User?.Identity?.IsAuthenticated == true ? "✅ Authenticated" : "❌ Not Authenticated";
+            
+            // Conta claims
+            claimsCount = authStateResult.User?.Claims?.Count() ?? 0;
+            
+            // Pega identity do usuário
+            userIdentity = authStateResult.User?.Identity?.Name ?? "None";
+            
+            Console.WriteLine($"🔍 Debug - Auth State: {authState}");
+            Console.WriteLine($"🔍 Debug - Token: {testToken?.Substring(0, Math.Min(20, testToken.Length))}...");
+            Console.WriteLine($"🔍 Debug - Claims: {claimsCount}");
+            Console.WriteLine($"🔍 Debug - Identity: {userIdentity}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Debug error: {ex.Message}");
+            authState = $"❌ Error: {ex.Message}";
+        }
+    }
+
+    private async Task ForceLogout()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "refreshToken");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_code_verifier");
+            
+            testToken = null;
+            authState = "❌ Not Authenticated (Logged Out)";
+            claimsCount = 0;
+            userIdentity = "None";
+            
+            Console.WriteLine("🚪 Forced logout completed");
+            
+            // Redireciona para login
+            NavigationManager.NavigateTo("/authentication/login", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Logout error: {ex.Message}");
+        }
+    }
+
+    private async Task TestLogin()
+    {
+        try
+        {
+            Console.WriteLine("🔐 Starting test login...");
+
+            // Cast para CookieAuthenticationStateProvider se necessário
+            if (AuthStateProvider is CookieAuthenticationStateProvider cookieProvider)
+            {
+                var success = await cookieProvider.LoginAsync("admin@admin.com", "Admin@123");
+
+                if (success)
+                {
+                    await TestAuthState(); // Atualiza debug info
+                    Console.WriteLine("✅ Test login successful");
+                }
+                else
+                {
+                    Console.WriteLine("❌ Test login failed");
+                    authState = "❌ Login Failed";
+                }
+            }
+            else
+            {
+                Console.WriteLine("❌ AuthStateProvider is not CookieAuthenticationStateProvider");
+                authState = "❌ Invalid Provider Type";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Test login error: {ex.Message}");
+            authState = $"❌ Login Error: {ex.Message}";
+        }
+    }
+    #endregion
+
+    #region Log Methods
+    private async Task DownloadLogs()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("window.EChamadoLogger.downloadLogs", "echamado-auth-debug.log");
+            await JS.InvokeVoidAsync("window.EChamadoLogger.info", "HOME", "Logs downloaded successfully");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error downloading logs: {ex.Message}");
+        }
+    }
+
+    private async Task ClearLogs()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("window.EChamadoLogger.clearLogs");
+            await JS.InvokeVoidAsync("window.EChamadoLogger.info", "HOME", "Logs cleared successfully");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error clearing logs: {ex.Message}");
+        }
+    }
+    #endregion
 
     private class DashboardStats
     {

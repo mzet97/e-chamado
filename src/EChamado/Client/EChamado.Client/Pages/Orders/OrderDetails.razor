@@ -218,7 +218,7 @@
                     <MudText Typo="Typo.h6" Class="mb-3">Ações</MudText>
 
                     <!-- Alterar Status -->
-                    <MudSelect @bind-Value="selectedStatusId"
+                    <MudSelect T="Guid" @bind-Value="selectedStatusId"
                                Label="Alterar Status"
                                Variant="Variant.Outlined"
                                Class="mb-3">
@@ -292,14 +292,16 @@
             // Carrega o chamado e os status em paralelo
             var orderTask = OrderService.GetByIdAsync(Id);
             var statusTask = LookupService.GetStatusTypesAsync();
+            var commentsTask = CommentService.GetByOrderIdAsync(Id);
 
-            await Task.WhenAll(orderTask, statusTask);
+            await Task.WhenAll(orderTask, statusTask, commentsTask);
 
             order = await orderTask;
             statuses = await statusTask;
 
             if (order != null)
             {
+                order = order with { Comments = await commentsTask };
                 selectedStatusId = order.StatusId;
             }
         }
@@ -333,14 +335,14 @@
                 return;
             }
 
-            var request = new AddCommentRequest(newComment, Guid.Parse(userId), userEmail);
-            await OrderService.AddCommentAsync(Id, request);
+            var request = new AddCommentRequest(Id, newComment, Guid.Parse(userId), userEmail);
+            await OrderService.AddCommentAsync(request);
 
             Snackbar.Add("Comentário adicionado com sucesso!", Severity.Success);
             newComment = string.Empty;
 
             // Recarrega o chamado para mostrar o novo comentário
-            order = await OrderService.GetByIdAsync(Id);
+            await ReloadOrder();
         }
         catch (Exception ex)
         {
@@ -361,17 +363,12 @@
 
         try
         {
-            var request = new ChangeStatusRequest(selectedStatusId);
-            await OrderService.ChangeStatusAsync(Id, request);
+            await OrderService.ChangeStatusAsync(Id, selectedStatusId);
 
             Snackbar.Add("Status atualizado com sucesso!", Severity.Success);
 
             // Recarrega o chamado
-            order = await OrderService.GetByIdAsync(Id);
-            if (order != null)
-            {
-                selectedStatusId = order.StatusId;
-            }
+            await ReloadOrder();
         }
         catch (Exception ex)
         {
@@ -398,13 +395,12 @@
                 return;
             }
 
-            var request = new Services.AssignOrderRequest(Guid.Parse(userId));
-            await OrderService.AssignAsync(Id, request);
+            await OrderService.AssignAsync(Id, Guid.Parse(userId));
 
             Snackbar.Add("Chamado assumido com sucesso!", Severity.Success);
 
             // Recarrega o chamado
-            order = await OrderService.GetByIdAsync(Id);
+            await ReloadOrder();
         }
         catch (Exception ex)
         {
@@ -413,6 +409,21 @@
         finally
         {
             isAssigning = false;
+        }
+    }
+
+    private async Task ReloadOrder()
+    {
+        var orderTask = OrderService.GetByIdAsync(Id);
+        var commentsTask = CommentService.GetByOrderIdAsync(Id);
+
+        await Task.WhenAll(orderTask, commentsTask);
+
+        var loadedOrder = await orderTask;
+        if (loadedOrder != null)
+        {
+            order = loadedOrder with { Comments = await commentsTask };
+            selectedStatusId = order.StatusId;
         }
     }
 

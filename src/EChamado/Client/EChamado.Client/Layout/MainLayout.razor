@@ -1,4 +1,4 @@
-﻿@using EChamado.Client
+@using EChamado.Client
 @inherits LayoutComponentBase
 
 <MudThemeProvider
@@ -6,6 +6,8 @@
     @bind-IsDarkMode="_isDarkMode"
     Theme="Configuration.Theme" />
 <MudSnackbarProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
 
 <MudLayout>
     <MudAppBar Elevation="1">
@@ -62,11 +64,11 @@
                             Icon="@Icons.Material.Filled.Business">
                     Departamentos
                 </MudNavLink>
-                <MudNavLink Href="/admin/types"
+                <MudNavLink Href="/admin/ordertypes"
                             Icon="@Icons.Material.Filled.Label">
                     Tipos de Chamado
                 </MudNavLink>
-                <MudNavLink Href="/admin/status"
+                <MudNavLink Href="/admin/statustypes"
                             Icon="@Icons.Material.Filled.RadioButtonChecked">
                     Status
                 </MudNavLink>

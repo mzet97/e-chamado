@@ -125,11 +125,13 @@ try
         .AddServer(options =>
         {
             // Endpoints habilitados
+            options.SetAuthorizationEndpointUris("/connect/authorize"); // ✅ ADICIONADO para Authorization Code Flow
             options.SetTokenEndpointUris("/connect/token");
             options.SetIntrospectionEndpointUris("/connect/introspect"); // ✅ CRÍTICO para validação de tokens
 
             // Grant types permitidos
-            options.AllowPasswordFlow()
+            options.AllowAuthorizationCodeFlow() // ✅ ADICIONADO para Authorization Code + PKCE
+                   .AllowPasswordFlow()
                    .AllowClientCredentialsFlow()
                    .AllowRefreshTokenFlow();
 
@@ -140,8 +142,13 @@ try
             options.AddDevelopmentSigningCertificate();
             options.AddEphemeralEncryptionKey();
 
+            // IMPORTANTE: Desabilita criptografia do access_token para permitir parse local no cliente
+            // Com isso, o access_token será JWT assinado (não JWE criptografado)
+            options.DisableAccessTokenEncryption();
+
             // Configuração ASP.NET Core
             options.UseAspNetCore()
+                   .EnableAuthorizationEndpointPassthrough() // ✅ ADICIONADO para permitir processamento customizado
                    .EnableTokenEndpointPassthrough()
                    .DisableTransportSecurityRequirement();
         })

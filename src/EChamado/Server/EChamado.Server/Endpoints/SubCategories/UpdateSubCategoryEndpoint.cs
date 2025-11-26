@@ -11,16 +11,20 @@ namespace EChamado.Server.Endpoints.SubCategories;
 public class UpdateSubCategoryEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapPut("/", HandleAsync)
+        => app.MapPut("/{id}", HandleAsync)
             .WithName("Atualizar uma subcategoria")
             .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
+        [FromRoute] Guid id,
         [FromServices] IAmACommandProcessor commandProcessor,
         [FromBody] UpdateSubCategoryRequest request)
     {
         try
         {
+            // Atribui o ID da rota ao request
+            request.Id = id;
+
             var command = request.ToCommand();
             await commandProcessor.SendAsync(command);
 
