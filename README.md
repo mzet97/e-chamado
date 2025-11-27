@@ -55,6 +55,8 @@ Sistema completo de gestão de tickets/chamados com autenticação SSO/OIDC, des
 ### ✅ APIs REST
 - 31+ endpoints RESTful
 - 6+ Controllers (Orders, Categories, Departments, OrderTypes, StatusTypes, Auth, Comments)
+- **Gridify** - Filtros dinâmicos, ordenação e paginação avançada (5 entidades)
+- **OData** - Queries avançadas com suporte completo
 - Paginação, filtros, busca
 - Validação com FluentValidation
 - Responses padronizadas
@@ -110,6 +112,7 @@ Sistema completo de gestão de tickets/chamados com autenticação SSO/OIDC, des
 | Frontend | Blazor WASM, MudBlazor 8.15.0 |
 | Autenticação | OpenIddict 6.1.1, ASP.NET Core Identity |
 | Banco de Dados | PostgreSQL 15, Entity Framework Core 9 |
+| Queries Avançadas | Gridify 2.16.3, OData 9.0 |
 | Cache | Redis 7.x |
 | Mensageria | RabbitMQ 3.x |
 | Logging | Serilog 4.3.0, ELK Stack 8.15.1 |
@@ -273,7 +276,8 @@ Disponíveis scripts automatizados:
 #### **📝 Estilo de Código (1 documento)**
 - **[docs/style-guide/csharp-style.md](docs/style-guide/csharp-style.md)** - 💎 **Guia completo de padrões C#**
 
-### 📖 **Documentação Legada (Para referência)**
+### 📖 **Documentação Técnica Adicional**
+- **[IMPLEMENTACAO-GRIDIFY-ECHAMADO.md](IMPLEMENTACAO-GRIDIFY-ECHAMADO.md)** - 📊 **Guia completo Gridify** (NOVO - Nov/2025)
 - **[src/EChamado/doc/](src/EChamado/doc/)** - 📁 **Relatórios técnicos e status**
   - **[status-fase5-final-vitoria.md](src/EChamado/doc/status-fase5-final-vitoria.md)** - 🏆 Status final da Fase 5
   - **[relatorio-final-correcao-testes.md](src/EChamado/doc/relatorio-final-correcao-testes.md)** - 🧪 Relatório de correções
@@ -311,12 +315,29 @@ No diretório raiz do projeto:
 2. **[docs/architecture/sequence-diagrams.md](docs/architecture/sequence-diagrams.md)** - Fluxos de processos (40 min)
 3. **[docs/INDEX.md](docs/INDEX.md)** - Índice completo (5 min)
 
-### ✅ Correções Recentes Implementadas (Nov/2025)
+### ✅ Funcionalidades Recentes Implementadas (Nov/2025)
+
+#### **🆕 Gridify - Queries Dinâmicas Avançadas (27/11/2025)**
+- **Feature**: Sistema completo de filtros, ordenação e paginação dinâmica
+- **Implementação**:
+  - ✅ 5 entidades com suporte Gridify (Categories, Departments, Orders, OrderTypes, StatusTypes)
+  - ✅ Extension methods otimizados para performance
+  - ✅ Índices de banco de dados para queries rápidas
+  - ✅ Endpoints Minimal API `/v1/{entity}/gridify`
+  - ✅ Documentação completa em [IMPLEMENTACAO-GRIDIFY-ECHAMADO.md](IMPLEMENTACAO-GRIDIFY-ECHAMADO.md)
+- **Exemplos de Uso**:
+  ```bash
+  # Filtrar orders abertas
+  GET /v1/orders/gridify?Filter=closingDate=null&OrderBy=-createdAt&Page=1&PageSize=20
+
+  # Buscar categories por nome
+  GET /v1/categories/gridify?Filter=name=*Hard*&OrderBy=name
+  ```
 
 #### **Correção de Redirecionamento Pós-Login**
 - **Problema**: 404 após login por redirecionamento incorreto
 - **Solução**: Corrigido fluxo de autenticação entre serviços
-- **Arquivos**: 
+- **Arquivos**:
   - `Echamado.Auth/Controllers/AccountController.cs` - Redirecionamento corrigido
   - `Echamado.Auth/Components/Pages/Accounts/Login.razor` - Suporte a ReturnUrl
   - `EChamado.Server.Infrastructure/OpenIddict/OpenIddictWorker.cs` - URIs alinhadas
@@ -343,6 +364,8 @@ No diretório raiz do projeto:
 ### ✅ FASES 1-6 (TODAS CONCLUÍDAS)
 - [x] SSO/OIDC com Authorization Code + PKCE
 - [x] Backend CQRS completo (6+ controllers, 31+ endpoints)
+- [x] **Gridify** - Sistema completo de queries dinâmicas (5 entidades)
+- [x] **OData** - Suporte completo para queries avançadas
 - [x] Frontend - Dashboard, Lista, Criar/Editar, Detalhes
 - [x] Navegação com MudDrawer
 - [x] 8+ serviços HTTP autenticados
