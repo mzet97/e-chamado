@@ -1,5 +1,6 @@
 using AutoFixture;
 using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Shared.Services;
 
 namespace EChamado.Server.UnitTests.Common.Builders;
 
@@ -14,6 +15,7 @@ public class CommentTestBuilder
     private bool _orderIdSet;
     private bool _userIdSet;
     private bool _userEmailSet;
+    private static readonly IDateTimeProvider _dateTimeProvider = new MockDateTimeProvider();
 
     public CommentTestBuilder()
     {
@@ -22,6 +24,14 @@ public class CommentTestBuilder
         _orderId = Guid.NewGuid();
         _userId = Guid.NewGuid();
         _userEmail = _fixture.Create<string>() + "@test.com";
+    }
+
+    private class MockDateTimeProvider : IDateTimeProvider
+    {
+        public DateTime Now => DateTime.Now;
+        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTimeOffset OffsetNow => DateTimeOffset.Now;
+        public DateTimeOffset OffsetUtcNow => DateTimeOffset.UtcNow;
     }
 
     public static CommentTestBuilder Create() => new();
@@ -87,6 +97,6 @@ public class CommentTestBuilder
 
     public Comment Build()
     {
-        return Comment.Create(_text, _orderId, _userId, _userEmail);
+        return Comment.Create(_text, _orderId, _userId, _userEmail, _dateTimeProvider);
     }
 }

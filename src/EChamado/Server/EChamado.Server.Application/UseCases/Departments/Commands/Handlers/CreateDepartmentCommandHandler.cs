@@ -1,9 +1,10 @@
-﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.UseCases.Departments.Notifications;
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -12,6 +13,7 @@ namespace EChamado.Server.Application.UseCases.Departments.Commands.Handlers;
 public class CreateDepartmentCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateDepartmentCommandHandler> logger) :
     RequestHandlerAsync<CreateDepartmentCommand>
 {
@@ -19,7 +21,7 @@ public class CreateDepartmentCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CreateDepartmentCommand> HandleAsync(CreateDepartmentCommand command, CancellationToken cancellationToken = default)
     {
-        var entity = Department.Create(command.Name, command.Description);
+        var entity = Department.Create(command.Name, command.Description, dateTimeProvider);
 
         if (!entity.IsValid())
         {

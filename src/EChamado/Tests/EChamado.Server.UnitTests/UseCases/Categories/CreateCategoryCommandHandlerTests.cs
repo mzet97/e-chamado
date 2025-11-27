@@ -1,8 +1,10 @@
 using EChamado.Server.Application.UseCases.Categories.Commands;
+using EChamado.Shared.Services;
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Server.UnitTests.Common.Base;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -23,14 +25,26 @@ public class CreateCategoryCommandHandlerTests : UnitTestBase
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _commandProcessorMock = new Mock<IAmACommandProcessor>();
         _loggerMock = new Mock<ILogger<CreateCategoryCommandHandler>>();
-        _handler = new CreateCategoryCommandHandler(_unitOfWorkMock.Object, _commandProcessorMock.Object, _loggerMock.Object);
+        _handler = new CreateCategoryCommandHandler(
+            _unitOfWorkMock.Object, 
+            _commandProcessorMock.Object,
+            new MockDateTimeProvider(),
+            _loggerMock.Object);
+    }
+
+    private class MockDateTimeProvider : IDateTimeProvider
+    {
+        public DateTime Now => DateTime.Now;
+        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTimeOffset OffsetNow => DateTimeOffset.Now;
+        public DateTimeOffset OffsetUtcNow => DateTimeOffset.UtcNow;
     }
 
     [Fact]
     public async Task Handle_ValidCommand_ShouldCreateCategory()
     {
         // Arrange
-        var command = new CreateCategoryCommand("Categoria Teste", "Descrição teste");
+        var command = new CreateCategoryCommand("Categoria Teste", "Descriï¿½ï¿½o teste");
 
         _unitOfWorkMock
             .Setup(x => x.BeginTransactionAsync())
@@ -59,9 +73,9 @@ public class CreateCategoryCommandHandlerTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("", "Descrição")]
-    [InlineData("   ", "Descrição")]
-    [InlineData("\t", "Descrição")]
+    [InlineData("", "Descriï¿½ï¿½o")]
+    [InlineData("   ", "Descriï¿½ï¿½o")]
+    [InlineData("\t", "Descriï¿½ï¿½o")]
     public async Task Handle_InvalidName_ShouldThrowValidationException(string name, string description)
     {
         // Arrange
@@ -81,7 +95,7 @@ public class CreateCategoryCommandHandlerTests : UnitTestBase
     public async Task Handle_DatabaseError_ShouldThrowException()
     {
         // Arrange
-        var command = new CreateCategoryCommand("Categoria", "Descrição");
+        var command = new CreateCategoryCommand("Categoria", "Descriï¿½ï¿½o");
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
         _unitOfWorkMock.Setup(x => x.Categories.AddAsync(It.IsAny<Category>()))
@@ -97,9 +111,9 @@ public class CreateCategoryCommandHandlerTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("Categoria Normal", "Descrição normal")]
-    [InlineData("CATEGORIA MAIÚSCULA", "DESCRIÇÃO MAIÚSCULA")]
-    [InlineData("categoria minúscula", "descrição minúscula")]
+    [InlineData("Categoria Normal", "Descriï¿½ï¿½o normal")]
+    [InlineData("CATEGORIA MAIï¿½SCULA", "DESCRIï¿½ï¿½O MAIï¿½SCULA")]
+    [InlineData("categoria minï¿½scula", "descriï¿½ï¿½o minï¿½scula")]
     public async Task Handle_DifferentValidInputs_ShouldCreateCategory(string name, string description)
     {
         // Arrange

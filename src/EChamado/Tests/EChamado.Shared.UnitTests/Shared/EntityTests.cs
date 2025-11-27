@@ -1,4 +1,5 @@
 using EChamado.Shared.Shared;
+using EChamado.Shared.Services;
 using FluentAssertions;
 using Xunit;
 
@@ -6,6 +7,15 @@ namespace EChamado.Shared.UnitTests.Shared;
 
 public class EntityTests
 {
+    private static readonly IDateTimeProvider _dateTimeProvider = new MockDateTimeProvider();
+    
+    private class MockDateTimeProvider : IDateTimeProvider
+    {
+        public DateTime Now => DateTime.Now;
+        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTimeOffset OffsetNow => DateTimeOffset.Now;
+        public DateTimeOffset OffsetUtcNow => DateTimeOffset.UtcNow;
+    }
     private class TestEntity : Entity
     {
         public string Name { get; private set; }
@@ -13,11 +23,11 @@ public class EntityTests
         public TestEntity(string name) : base()
         {
             Name = name;
-            // Simular comportamento padrão de criação
+            // Simular comportamento padrï¿½o de criaï¿½ï¿½o
             var idField = typeof(Entity).GetField("Id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var createdAtField = typeof(Entity).GetField("CreatedAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            // Como as propriedades são private set, vamos usar reflection para testes
+            // Como as propriedades sï¿½o private set, vamos usar reflection para testes
             SetId(Guid.NewGuid());
             SetCreatedAt(DateTime.Now);
             Validate();
@@ -33,7 +43,7 @@ public class EntityTests
         public void UpdateName(string name)
         {
             Name = name;
-            Update();
+            Update(_dateTimeProvider);
         }
 
         private void SetId(Guid id)
@@ -115,7 +125,7 @@ public class EntityTests
         var entity = new TestEntity(Guid.NewGuid(), DateTime.Now, "Test Name");
 
         // Act
-        entity.Disabled();
+        entity.Disabled(_dateTimeProvider);
 
         // Assert
         entity.IsDeleted.Should().BeTrue();
@@ -128,7 +138,7 @@ public class EntityTests
     {
         // Arrange
         var entity = new TestEntity(Guid.NewGuid(), DateTime.Now, "Test Name");
-        entity.Disabled();
+        entity.Disabled(_dateTimeProvider);
 
         // Act
         entity.Activate();

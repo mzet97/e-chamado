@@ -1,22 +1,32 @@
 using AutoFixture;
 using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Shared.Services;
 
 namespace EChamado.Server.UnitTests.Common.Builders;
 
 /// <summary>
-/// Builder para criar instâncias de Category para testes
+/// Builder para criar instï¿½ncias de Category para testes
 /// </summary>
 public class CategoryTestBuilder
 {
     private readonly Fixture _fixture;
     private string _name;
     private string _description;
+    private static readonly IDateTimeProvider _dateTimeProvider = new MockDateTimeProvider();
 
     public CategoryTestBuilder()
     {
         _fixture = new Fixture();
         _name = _fixture.Create<string>();
         _description = _fixture.Create<string>();
+    }
+
+    private class MockDateTimeProvider : IDateTimeProvider
+    {
+        public DateTime Now => DateTime.Now;
+        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTimeOffset OffsetNow => DateTimeOffset.Now;
+        public DateTimeOffset OffsetUtcNow => DateTimeOffset.UtcNow;
     }
 
     public static CategoryTestBuilder Create() => new();
@@ -61,6 +71,6 @@ public class CategoryTestBuilder
 
     public Category Build()
     {
-        return Category.Create(_name, _description);
+        return Category.Create(_name, _description, _dateTimeProvider);
     }
 }

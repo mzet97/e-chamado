@@ -1,5 +1,6 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.OrderTypes;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
@@ -41,14 +42,15 @@ public class OrderType : Entity
 
     public static OrderType Create(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
         var orderType =
             new OrderType(
                 Guid.NewGuid(),
                 name,
                 description,
-                DateTime.Now,
+                dateTimeProvider.UtcNow,
                 null, null, false);
 
         orderType.AddEvent(
@@ -58,13 +60,14 @@ public class OrderType : Entity
 
     public void Update(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
         Name = name;
         Description = description;
-        
-        Update(); // Chama base.Update() que define UpdatedAt
-        
+
+        Update(dateTimeProvider); // Chama base.Update() que define UpdatedAt
+
         AddEvent(
             new OrderTypeUpdated(this));
     }

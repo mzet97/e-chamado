@@ -2,6 +2,7 @@ using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -9,6 +10,7 @@ namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class ChangeStatusOrderCommandHandler(
     IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider,
     ILogger<ChangeStatusOrderCommandHandler> logger) :
     RequestHandlerAsync<ChangeStatusOrderCommand>
 {
@@ -32,7 +34,7 @@ public class ChangeStatusOrderCommandHandler(
             throw new NotFoundException($"Status {command.StatusId} not found");
         }
 
-        order.ChangeStatus(command.StatusId);
+        order.ChangeStatus(command.StatusId, dateTimeProvider);
 
         if (!order.IsValid())
         {

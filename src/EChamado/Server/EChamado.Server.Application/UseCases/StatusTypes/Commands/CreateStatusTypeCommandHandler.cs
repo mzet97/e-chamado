@@ -4,6 +4,7 @@ using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -12,6 +13,7 @@ namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 public class CreateStatusTypeCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateStatusTypeCommandHandler> logger) :
     RequestHandlerAsync<CreateStatusTypeCommand>
 {
@@ -19,7 +21,7 @@ public class CreateStatusTypeCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CreateStatusTypeCommand> HandleAsync(CreateStatusTypeCommand command, CancellationToken cancellationToken = default)
     {
-        var entity = StatusType.Create(command.Name, command.Description);
+        var entity = StatusType.Create(command.Name, command.Description, dateTimeProvider);
 
         if (!entity.IsValid())
         {

@@ -1,9 +1,11 @@
 using EChamado.Server.Application.UseCases.OrderTypes.Commands;
+using EChamado.Shared.Services;
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Server.UnitTests.Common.Base;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -24,14 +26,26 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _commandProcessorMock = new Mock<IAmACommandProcessor>();
         _loggerMock = new Mock<ILogger<CreateOrderTypeCommandHandler>>();
-        _handler = new CreateOrderTypeCommandHandler(_unitOfWorkMock.Object, _commandProcessorMock.Object, _loggerMock.Object);
+        _handler = new CreateOrderTypeCommandHandler(
+            _unitOfWorkMock.Object, 
+            _commandProcessorMock.Object,
+            new MockDateTimeProvider(),
+            _loggerMock.Object);
+    }
+
+    private class MockDateTimeProvider : IDateTimeProvider
+    {
+        public DateTime Now => DateTime.Now;
+        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTimeOffset OffsetNow => DateTimeOffset.Now;
+        public DateTimeOffset OffsetUtcNow => DateTimeOffset.UtcNow;
     }
 
     [Fact]
     public async Task Handle_ValidCommand_ShouldCreateOrderType()
     {
         // Arrange
-        var command = new CreateOrderTypeCommand("Suporte Técnico", "Solicitações de suporte técnico");
+        var command = new CreateOrderTypeCommand("Suporte Tï¿½cnico", "Solicitaï¿½ï¿½es de suporte tï¿½cnico");
 
         _unitOfWorkMock
             .Setup(x => x.BeginTransactionAsync())
@@ -60,9 +74,9 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("", "Descrição válida")]
-    [InlineData("   ", "Descrição válida")]
-    [InlineData("\t", "Descrição válida")]
+    [InlineData("", "Descriï¿½ï¿½o vï¿½lida")]
+    [InlineData("   ", "Descriï¿½ï¿½o vï¿½lida")]
+    [InlineData("\t", "Descriï¿½ï¿½o vï¿½lida")]
     public async Task Handle_InvalidName_ShouldThrowValidationException(string invalidName, string description)
     {
         // Arrange
@@ -79,9 +93,9 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("Nome válido", "")]
-    [InlineData("Nome válido", "   ")]
-    [InlineData("Nome válido", "\t")]
+    [InlineData("Nome vï¿½lido", "")]
+    [InlineData("Nome vï¿½lido", "   ")]
+    [InlineData("Nome vï¿½lido", "\t")]
     public async Task Handle_InvalidDescription_ShouldThrowValidationException(string name, string invalidDescription)
     {
         // Arrange
@@ -101,7 +115,7 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
     public async Task Handle_DatabaseError_ShouldThrowException()
     {
         // Arrange
-        var command = new CreateOrderTypeCommand("Tipo Válido", "Descrição válida");
+        var command = new CreateOrderTypeCommand("Tipo Vï¿½lido", "Descriï¿½ï¿½o vï¿½lida");
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
         _unitOfWorkMock.Setup(x => x.OrderTypes.AddAsync(It.IsAny<OrderType>()))
@@ -120,7 +134,7 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
     public async Task Handle_CommitError_ShouldThrowException()
     {
         // Arrange
-        var command = new CreateOrderTypeCommand("Tipo Válido", "Descrição válida");
+        var command = new CreateOrderTypeCommand("Tipo Vï¿½lido", "Descriï¿½ï¿½o vï¿½lida");
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
         _unitOfWorkMock.Setup(x => x.OrderTypes.AddAsync(It.IsAny<OrderType>())).Returns(Task.CompletedTask);
@@ -137,10 +151,10 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("Suporte Técnico", "Solicitações técnicas")]
-    [InlineData("Recursos Humanos", "Questões de RH")]
-    [InlineData("Financeiro", "Questões financeiras")]
-    [InlineData("Infraestrutura", "Questões de infraestrutura")]
+    [InlineData("Suporte Tï¿½cnico", "Solicitaï¿½ï¿½es tï¿½cnicas")]
+    [InlineData("Recursos Humanos", "Questï¿½es de RH")]
+    [InlineData("Financeiro", "Questï¿½es financeiras")]
+    [InlineData("Infraestrutura", "Questï¿½es de infraestrutura")]
     public async Task Handle_DifferentValidInputs_ShouldCreateOrderType(string name, string description)
     {
         // Arrange
@@ -215,7 +229,7 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
     {
         // Arrange
         var tooLongName = new string('A', 101); // Excede limite
-        var command = new CreateOrderTypeCommand(tooLongName, "Descrição");
+        var command = new CreateOrderTypeCommand(tooLongName, "Descriï¿½ï¿½o");
 
         // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(() => _handler.HandleAsync(command));
@@ -226,8 +240,8 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
     public async Task Handle_ShouldGenerateUniqueIds()
     {
         // Arrange
-        var command1 = new CreateOrderTypeCommand("Tipo 1", "Descrição 1");
-        var command2 = new CreateOrderTypeCommand("Tipo 2", "Descrição 2");
+        var command1 = new CreateOrderTypeCommand("Tipo 1", "Descriï¿½ï¿½o 1");
+        var command2 = new CreateOrderTypeCommand("Tipo 2", "Descriï¿½ï¿½o 2");
         var orderTypeIds = new List<Guid>();
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);

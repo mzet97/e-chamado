@@ -1,5 +1,6 @@
 using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.Comments;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
@@ -52,7 +53,8 @@ public class Comment : Entity
         string text,
         Guid orderId,
         Guid userId,
-        string userEmail)
+        string userEmail,
+        IDateTimeProvider dateTimeProvider)
     {
         var comment = new Comment(
             Guid.NewGuid(),
@@ -60,7 +62,7 @@ public class Comment : Entity
             orderId,
             userId,
             userEmail,
-            DateTime.Now,
+            dateTimeProvider.UtcNow,
             null,
             null,
             false);

@@ -3,6 +3,7 @@ using EChamado.Server.Application.UseCases.OrderTypes.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -11,6 +12,7 @@ namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 public class UpdateOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<UpdateOrderTypeCommandHandler> logger) :
     RequestHandlerAsync<UpdateOrderTypeCommand>
 {
@@ -26,7 +28,7 @@ public class UpdateOrderTypeCommandHandler(
             throw new NotFoundException($"OrderType {command.Id} not found");
         }
 
-        orderType.Update(command.Name, command.Description);
+        orderType.Update(command.Name, command.Description, dateTimeProvider);
 
         if (!orderType.IsValid())
         {

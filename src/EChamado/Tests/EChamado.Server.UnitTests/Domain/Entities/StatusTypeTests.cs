@@ -1,4 +1,5 @@
 using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Shared.Services;
 using EChamado.Server.UnitTests.Common.Base;
 using EChamado.Server.UnitTests.Common.Builders;
 using FluentAssertions;
@@ -8,22 +9,24 @@ namespace EChamado.Server.UnitTests.Domain.Entities;
 
 public class StatusTypeTests : UnitTestBase
 {
+    private static readonly IDateTimeProvider _dateTimeProvider = new SystemDateTimeProvider();
+
     [Fact]
     public void Create_WithValidData_ShouldCreateStatusType()
     {
         // Arrange
         var name = "Em Andamento";
-        var description = "Chamado está em andamento";
+        var description = "Chamado estï¿½ em andamento";
 
         // Act
-        var statusType = StatusType.Create(name, description);
+        var statusType = StatusType.Create(name, description, _dateTimeProvider);
 
         // Assert
         statusType.Should().NotBeNull();
         statusType.Name.Should().Be(name);
         statusType.Description.Should().Be(description);
         statusType.Id.Should().NotBe(Guid.Empty);
-        statusType.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        statusType.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         statusType.IsValid().Should().BeTrue();
     }
 
@@ -31,11 +34,11 @@ public class StatusTypeTests : UnitTestBase
     public void Create_WithInvalidData_ShouldCreateInvalidStatusType()
     {
         // Arrange
-        var name = ""; // Nome inválido
-        var description = "Descrição válida";
+        var name = ""; // Nome invï¿½lido
+        var description = "Descriï¿½ï¿½o vï¿½lida";
 
         // Act
-        var statusType = StatusType.Create(name, description);
+        var statusType = StatusType.Create(name, description, _dateTimeProvider);
 
         // Assert
         statusType.Should().NotBeNull();
@@ -47,29 +50,29 @@ public class StatusTypeTests : UnitTestBase
     public void Update_WithValidData_ShouldUpdateStatusType()
     {
         // Arrange
-        var statusType = StatusType.Create("Status Original", "Descrição Original");
+        var statusType = StatusType.Create("Status Original", "Descriï¿½ï¿½o Original", _dateTimeProvider);
         var newName = "Status Atualizado";
-        var newDescription = "Descrição Atualizada";
+        var newDescription = "Descriï¿½ï¿½o Atualizada";
 
         // Act
-        statusType.Update(newName, newDescription);
+        statusType.Update(newName, newDescription, _dateTimeProvider);
 
         // Assert
         statusType.Name.Should().Be(newName);
         statusType.Description.Should().Be(newDescription);
         statusType.UpdatedAt.Should().NotBeNull();
-        statusType.UpdatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        statusType.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Theory]
-    [InlineData("Aberto", "Chamado recém criado")]
+    [InlineData("Aberto", "Chamado recï¿½m criado")]
     [InlineData("Em Andamento", "Chamado sendo processado")]
     [InlineData("Fechado", "Chamado resolvido")]
     [InlineData("Cancelado", "Chamado cancelado")]
     public void Create_WithDifferentValidInputs_ShouldCreateValidStatusType(string name, string description)
     {
         // Act
-        var statusType = StatusType.Create(name, description);
+        var statusType = StatusType.Create(name, description, _dateTimeProvider);
 
         // Assert
         statusType.Should().NotBeNull();
@@ -83,42 +86,42 @@ public class StatusTypeTests : UnitTestBase
     {
         // Arrange
         var name = "Teste Status";
-        var description = "Descrição do status";
+        var description = "Descriï¿½ï¿½o do status";
 
         // Act
-        var statusType = StatusType.Create(name, description);
+        var statusType = StatusType.Create(name, description, _dateTimeProvider);
 
         // Assert
         statusType.Id.Should().NotBe(Guid.Empty);
-        statusType.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        statusType.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         statusType.UpdatedAt.Should().BeNull();
         statusType.DeletedAt.Should().BeNull();
         statusType.IsDeleted.Should().BeFalse();
     }
 
     [Theory]
-    [InlineData("", "Descrição válida")]
-    [InlineData("   ", "Descrição válida")]
-    [InlineData("\t", "Descrição válida")]
+    [InlineData("", "Descriï¿½ï¿½o vï¿½lida")]
+    [InlineData("   ", "Descriï¿½ï¿½o vï¿½lida")]
+    [InlineData("\t", "Descriï¿½ï¿½o vï¿½lida")]
     public void Create_WithInvalidName_ShouldCreateInvalidStatusType(string invalidName, string description)
     {
         // Act
-        var statusType = StatusType.Create(invalidName, description);
+        var statusType = StatusType.Create(invalidName, description, _dateTimeProvider);
 
         // Assert
         statusType.IsValid().Should().BeFalse();
         statusType.GetErrors().Should().NotBeEmpty();
-        statusType.GetErrors().Should().Contain(e => e.Contains("Name") || e.Contains("obrigatório"));
+        statusType.GetErrors().Should().Contain(e => e.Contains("Name") || e.Contains("obrigatï¿½rio"));
     }
 
     [Theory]
-    [InlineData("Nome válido", "")]
-    [InlineData("Nome válido", "   ")]
-    [InlineData("Nome válido", "\t")]
+    [InlineData("Nome vï¿½lido", "")]
+    [InlineData("Nome vï¿½lido", "   ")]
+    [InlineData("Nome vï¿½lido", "\t")]
     public void Create_WithEmptyDescription_ShouldBeValid(string name, string description)
     {
         // Act
-        var statusType = StatusType.Create(name, description);
+        var statusType = StatusType.Create(name, description, _dateTimeProvider);
 
         // Assert
         statusType.IsValid().Should().BeTrue("Description is not required, only Name is required");
@@ -130,11 +133,11 @@ public class StatusTypeTests : UnitTestBase
     public void Create_WithDescriptionTooLong_ShouldCreateInvalidStatusType()
     {
         // Arrange
-        var name = "Nome válido";
+        var name = "Nome vï¿½lido";
         var tooLongDescription = new string('A', 501); // Excede limite de 500
 
         // Act
-        var statusType = StatusType.Create(name, tooLongDescription);
+        var statusType = StatusType.Create(name, tooLongDescription, _dateTimeProvider);
 
         // Assert
         statusType.IsValid().Should().BeFalse();
@@ -146,7 +149,7 @@ public class StatusTypeTests : UnitTestBase
     public void StatusType_ShouldHaveReadOnlyProperties()
     {
         // Arrange
-        var statusType = StatusType.Create("Test Status", "Test Description");
+        var statusType = StatusType.Create("Test Status", "Test Description", _dateTimeProvider);
 
         // Act & Assert
         var nameProperty = typeof(StatusType).GetProperty(nameof(StatusType.Name));
@@ -163,8 +166,8 @@ public class StatusTypeTests : UnitTestBase
     public void Create_MultipleStatusTypes_ShouldHaveUniqueIds()
     {
         // Act
-        var statusType1 = StatusType.Create("Status 1", "Description 1");
-        var statusType2 = StatusType.Create("Status 2", "Description 2");
+        var statusType1 = StatusType.Create("Status 1", "Description 1", _dateTimeProvider);
+        var statusType2 = StatusType.Create("Status 2", "Description 2", _dateTimeProvider);
 
         // Assert
         statusType1.Id.Should().NotBe(statusType2.Id);
@@ -175,10 +178,10 @@ public class StatusTypeTests : UnitTestBase
     public void Update_WithInvalidData_ShouldMakeStatusTypeInvalid()
     {
         // Arrange
-        var statusType = StatusType.Create("Status Válido", "Descrição Válida");
+        var statusType = StatusType.Create("Status Vï¿½lido", "Descriï¿½ï¿½o Vï¿½lida", _dateTimeProvider);
 
         // Act
-        statusType.Update("", "Descrição"); // Nome vazio
+        statusType.Update("", "Descriï¿½ï¿½o", _dateTimeProvider); // Nome vazio
 
         // Assert
         statusType.IsValid().Should().BeFalse();
@@ -189,21 +192,21 @@ public class StatusTypeTests : UnitTestBase
     public void Update_MultipleTimes_ShouldUpdateTimestamp()
     {
         // Arrange
-        var statusType = StatusType.Create("Status Original", "Descrição Original");
+        var statusType = StatusType.Create("Status Original", "Descriï¿½ï¿½o Original", _dateTimeProvider);
 
         // Act
-        statusType.Update("Status 1", "Descrição 1");
+        statusType.Update("Status 1", "Descriï¿½ï¿½o 1", _dateTimeProvider);
         var firstUpdate = statusType.UpdatedAt;
 
         Thread.Sleep(100);
 
-        statusType.Update("Status 2", "Descrição 2");
+        statusType.Update("Status 2", "Descriï¿½ï¿½o 2", _dateTimeProvider);
         var secondUpdate = statusType.UpdatedAt;
 
         // Assert
         secondUpdate.Should().BeAfter(firstUpdate!.Value);
         statusType.Name.Should().Be("Status 2");
-        statusType.Description.Should().Be("Descrição 2");
+        statusType.Description.Should().Be("Descriï¿½ï¿½o 2");
     }
 
     [Fact]
@@ -214,7 +217,7 @@ public class StatusTypeTests : UnitTestBase
         var description = new string('B', 500); // No limite assumido
 
         // Act
-        var statusType = StatusType.Create(name, description);
+        var statusType = StatusType.Create(name, description, _dateTimeProvider);
 
         // Assert
         statusType.Should().NotBeNull();
@@ -227,7 +230,7 @@ public class StatusTypeTests : UnitTestBase
     public void StatusType_ShouldInheritFromEntity()
     {
         // Arrange & Act
-        var statusType = StatusType.Create("Test Status", "Test Description");
+        var statusType = StatusType.Create("Test Status", "Test Description", _dateTimeProvider);
 
         // Assert
         statusType.Should().BeAssignableTo<EChamado.Shared.Shared.Entity>();

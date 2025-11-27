@@ -4,6 +4,7 @@ using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -12,6 +13,7 @@ namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 public class CreateOrderTypeCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateOrderTypeCommandHandler> logger) :
     RequestHandlerAsync<CreateOrderTypeCommand>
 {
@@ -24,7 +26,7 @@ public class CreateOrderTypeCommandHandler(
             throw new ArgumentNullException(nameof(command));
         }
 
-        var entity = OrderType.Create(command.Name, command.Description);
+        var entity = OrderType.Create(command.Name, command.Description, dateTimeProvider);
 
         if (!entity.IsValid())
         {

@@ -4,6 +4,7 @@ using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -12,6 +13,7 @@ namespace EChamado.Server.Application.UseCases.Categories.Commands;
 public class CreateCategoryCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateCategoryCommandHandler> logger) :
     RequestHandlerAsync<CreateCategoryCommand>
 {
@@ -19,7 +21,7 @@ public class CreateCategoryCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CreateCategoryCommand> HandleAsync(CreateCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var entity = Category.Create(command.Name, command.Description);
+        var entity = Category.Create(command.Name, command.Description, dateTimeProvider);
 
         if (!entity.IsValid())
         {

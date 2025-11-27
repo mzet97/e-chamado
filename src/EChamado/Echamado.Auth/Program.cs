@@ -22,6 +22,8 @@ using OpenIddict.Server.AspNetCore;
 using System.Text;
 using OpenIddict.Core;
 using OpenIddict.EntityFrameworkCore;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 try
 {
@@ -79,8 +81,8 @@ try
         options.Password.RequireLowercase = true;
         options.Password.RequireNonAlphanumeric = true;
         options.Password.RequireUppercase = true;
-        options.Password.RequiredLength = 6;
-        options.Password.RequiredUniqueChars = 1;
+        options.Password.RequiredLength = 12;
+        options.Password.RequiredUniqueChars = 4;
         options.SignIn.RequireConfirmedAccount = false;
         options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*()_=?. ";
         options.User.RequireUniqueEmail = true;
@@ -110,6 +112,36 @@ try
         options.LoginPath = "/Account/Login";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.SlidingExpiration = true;
+    });
+
+    // Rate Limiting Configuration
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+        // Global limiter
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        {
+            var username = context.User?.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+            return RateLimitPartition.GetFixedWindowLimiter(username, _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            });
+        });
+
+        // Login endpoint - proteção contra brute force
+        options.AddPolicy("login", context =>
+        {
+            var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+            return RateLimitPartition.GetFixedWindowLimiter(ipAddress, _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1)
+            });
+        });
     });
 
     // OpenIddict Configuration
@@ -179,6 +211,7 @@ try
     app.UseStaticFiles();
     app.UseRouting();
     app.UseCors();
+    app.UseRateLimiter();
     app.UseAntiforgery();
     app.UseAuthentication();
     app.UseAuthorization();

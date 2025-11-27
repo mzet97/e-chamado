@@ -1,5 +1,6 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.Departments;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
@@ -41,14 +42,15 @@ public class Department : Entity
 
     public static Department Create(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
         var department =
             new Department(
                 Guid.NewGuid(),
                 name,
                 description,
-                DateTime.Now,
+                dateTimeProvider.UtcNow,
                 null, null, false);
 
         department.AddEvent(
@@ -58,12 +60,13 @@ public class Department : Entity
 
     public void Update(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
         Name = name;
         Description = description;
 
-        Update(); // Chama base.Update() que define UpdatedAt
+        Update(dateTimeProvider); // Chama base.Update() que define UpdatedAt
 
         AddEvent(
             new DepartmentUpdated(this));

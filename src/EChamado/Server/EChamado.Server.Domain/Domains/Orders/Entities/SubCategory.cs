@@ -1,5 +1,6 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.SubCategories;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
@@ -47,7 +48,8 @@ public class SubCategory : Entity
     public static SubCategory Create(
         string name,
         string description,
-        Guid categoryId)
+        Guid categoryId,
+        IDateTimeProvider dateTimeProvider)
     {
         var subCategory =
             new SubCategory(
@@ -55,25 +57,26 @@ public class SubCategory : Entity
                 name,
                 description,
                 categoryId,
-                DateTime.Now,
+                dateTimeProvider.UtcNow,
                 null, null, false);
 
         subCategory.AddEvent(
             new SubCategoryCreated(subCategory));
-        
+
         return subCategory;
     }
 
     public void Update(
         string name,
         string description,
-        Guid categoryId)
+        Guid categoryId,
+        IDateTimeProvider dateTimeProvider)
     {
         Name = name;
         Description = description;
         CategoryId = categoryId;
 
-        Update();
+        Update(dateTimeProvider);
         Validate();
 
 

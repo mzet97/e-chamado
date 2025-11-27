@@ -1,4 +1,5 @@
 using EChamado.Server.Application.Users;
+using EChamado.Shared.Services;
 using EChamado.Server.Application.Users.Abstractions;
 using EChamado.Server.Application.Users.Handlers;
 using EChamado.Server.Application.Users.Queries;

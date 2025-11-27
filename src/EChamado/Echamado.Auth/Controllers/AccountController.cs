@@ -5,6 +5,7 @@ using EChamado.Server.Domain.Domains.Identities;
 using OpenIddict.Server;
 using OpenIddict.Core;
 using System.Security.Claims;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Echamado.Auth.Controllers;
 
@@ -26,6 +27,7 @@ public class AccountController : Controller
     }
 
     [HttpPost("DoLogin")]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> DoLogin([FromForm] string email, [FromForm] string password, [FromForm] string? returnUrl)
     {
         _logger.LogInformation("🔐 Login attempt for {Email}", email);

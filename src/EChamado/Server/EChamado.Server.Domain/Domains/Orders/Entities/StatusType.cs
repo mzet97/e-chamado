@@ -1,5 +1,6 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.StatusTypes;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
@@ -42,14 +43,15 @@ public class StatusType : Entity
 
     public static StatusType Create(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
-        var statusType = 
+        var statusType =
             new StatusType(
-                Guid.NewGuid(), 
-                name, 
-                description, 
-                DateTime.Now, 
+                Guid.NewGuid(),
+                name,
+                description,
+                dateTimeProvider.UtcNow,
                 null, null, false);
 
         statusType.Validate();
@@ -62,13 +64,14 @@ public class StatusType : Entity
 
     public void Update(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
         Name = name;
         Description = description;
-        
-        Update(); // Chama base.Update() que define UpdatedAt
-        
+
+        Update(dateTimeProvider); // Chama base.Update() que define UpdatedAt
+
         AddEvent(
            new StatusTypeUpdated(this));
     }

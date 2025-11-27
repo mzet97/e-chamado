@@ -1,5 +1,6 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.Categories;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
@@ -43,14 +44,15 @@ public class Category : Entity
 
     public static Category Create(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
         var category =
             new Category(
                 Guid.NewGuid(),
                 name,
                 description,
-                DateTime.Now,
+                dateTimeProvider.UtcNow,
                 null, null, false);
 
         category.AddEvent(
@@ -61,12 +63,13 @@ public class Category : Entity
 
     public void Update(
         string name,
-        string description)
+        string description,
+        IDateTimeProvider dateTimeProvider)
     {
         Name = name;
         Description = description;
 
-        Update(); // Chama base.Update() que define UpdatedAt
+        Update(dateTimeProvider); // Chama base.Update() que define UpdatedAt
 
         AddEvent(
             new CategoryUpdated(this));

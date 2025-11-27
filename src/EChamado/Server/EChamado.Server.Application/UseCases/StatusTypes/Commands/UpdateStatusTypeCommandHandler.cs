@@ -3,6 +3,7 @@ using EChamado.Server.Application.UseCases.StatusTypes.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -11,6 +12,7 @@ namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 public class UpdateStatusTypeCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<UpdateStatusTypeCommandHandler> logger) :
     RequestHandlerAsync<UpdateStatusTypeCommand>
 {
@@ -26,7 +28,7 @@ public class UpdateStatusTypeCommandHandler(
             throw new NotFoundException($"StatusType {command.Id} not found");
         }
 
-        statusType.Update(command.Name, command.Description);
+        statusType.Update(command.Name, command.Description, dateTimeProvider);
 
         if (!statusType.IsValid())
         {

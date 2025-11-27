@@ -1,4 +1,5 @@
 using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Shared.Services;
 using EChamado.Server.UnitTests.Common.Base;
 using FluentAssertions;
 using System.Globalization;
@@ -9,6 +10,7 @@ namespace EChamado.Server.UnitTests.EdgeCases;
 
 public class EntityEdgeCaseTests : UnitTestBase
 {
+    private static readonly IDateTimeProvider _dateTimeProvider = new SystemDateTimeProvider();
     [Fact]
     public void Category_WithUnicodeCharacters_ShouldHandleCorrectly()
     {
@@ -17,7 +19,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var unicodeDescription = "???????? with emojis ??????";
 
         // Act
-        var category = Category.Create(unicodeName, unicodeDescription);
+        var category = Category.Create(unicodeName, unicodeDescription, _dateTimeProvider);
 
         // Assert
         category.Should().NotBeNull();
@@ -34,7 +36,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var arabicDescription = "??? ??? ????????";
 
         // Act
-        var category = Category.Create(arabicName, arabicDescription);
+        var category = Category.Create(arabicName, arabicDescription, _dateTimeProvider);
 
         // Assert
         category.Should().NotBeNull();
@@ -52,7 +54,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var userId = Guid.NewGuid();
 
         // Act
-        var comment = Comment.Create(longUnicodeText, orderId, userId, "test@example.com");
+        var comment = Comment.Create(longUnicodeText, orderId, userId, "test@example.com", _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -61,15 +63,15 @@ public class EntityEdgeCaseTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("Café")]
-    [InlineData("naïve")]
-    [InlineData("résumé")]
-    [InlineData("piñata")]
-    [InlineData("Zürich")]
+    [InlineData("Cafï¿½")]
+    [InlineData("naï¿½ve")]
+    [InlineData("rï¿½sumï¿½")]
+    [InlineData("piï¿½ata")]
+    [InlineData("Zï¿½rich")]
     public void Category_WithAccentedCharacters_ShouldPreserveAccents(string name)
     {
         // Act
-        var category = Category.Create(name, "Test description");
+        var category = Category.Create(name, "Test description", _dateTimeProvider);
 
         // Assert
         category.Name.Should().Be(name);
@@ -84,7 +86,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var descWithControlChars = "Description\u0003\u0004\u0005";
 
         // Act
-        var category = Category.Create(nameWithControlChars, descWithControlChars);
+        var category = Category.Create(nameWithControlChars, descWithControlChars, _dateTimeProvider);
 
         // Assert
         category.Should().NotBeNull();
@@ -100,7 +102,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var descWithMixedEndings = "Desc1\nDesc2\r\nDesc3\rDesc4";
 
         // Act
-        var category = Category.Create(nameWithMixedEndings, descWithMixedEndings);
+        var category = Category.Create(nameWithMixedEndings, descWithMixedEndings, _dateTimeProvider);
 
         // Assert
         category.Name.Should().Be(nameWithMixedEndings);
@@ -119,7 +121,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var userId = Guid.NewGuid();
 
         // Act
-        var comment = Comment.Create("Test comment", orderId, userId, extremelyLongEmail);
+        var comment = Comment.Create("Test comment", orderId, userId, extremelyLongEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -130,13 +132,13 @@ public class EntityEdgeCaseTests : UnitTestBase
     public void Entity_CreatedAtExactSameTime_ShouldHaveDifferentIds()
     {
         // Arrange & Act
-        var categories = Parallel.For(0, 100, i => Category.Create($"Category {i}", $"Description {i}"))
+        var categories = Parallel.For(0, 100, i => Category.Create($"Category {i}", $"Description {i}", _dateTimeProvider))
             .ToString(); // Force parallel execution
 
         var categoriesActual = new List<Category>();
         for (int i = 0; i < 100; i++)
         {
-            categoriesActual.Add(Category.Create($"Category {i}", $"Description {i}"));
+            categoriesActual.Add(Category.Create($"Category {i}", $"Description {i}", _dateTimeProvider));
         }
 
         // Assert
@@ -156,7 +158,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var descWithInvisible = $"Test{invisibleChar}Description";
 
         // Act
-        var category = Category.Create(nameWithInvisible, descWithInvisible);
+        var category = Category.Create(nameWithInvisible, descWithInvisible, _dateTimeProvider);
 
         // Assert
         category.Name.Should().Be(nameWithInvisible);
@@ -171,7 +173,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var descWithSurrogates = "Description with ?????????????????? ??????????";
 
         // Act
-        var category = Category.Create(nameWithSurrogates, descWithSurrogates);
+        var category = Category.Create(nameWithSurrogates, descWithSurrogates, _dateTimeProvider);
 
         // Assert
         category.Name.Should().Be(nameWithSurrogates);
@@ -189,7 +191,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var userId = minGuid;
 
         // Act
-        var comment = Comment.Create("Test", orderId, userId, "test@example.com");
+        var comment = Comment.Create("Test", orderId, userId, "test@example.com", _dateTimeProvider);
 
         // Assert
         comment.OrderId.Should().Be(maxGuid);
@@ -210,7 +212,7 @@ public class EntityEdgeCaseTests : UnitTestBase
             foreach (var cultureCode in cultures)
             {
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureCode);
-                var category = Category.Create("Test Category", "Test Description");
+                var category = Category.Create("Test Category", "Test Description", _dateTimeProvider);
                 results.Add(category);
             }
 
@@ -248,7 +250,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         // Act & Assert
         foreach (var email in specialEmails)
         {
-            var comment = Comment.Create("Test comment", orderId, userId, email);
+            var comment = Comment.Create("Test comment", orderId, userId, email, _dateTimeProvider);
             comment.Should().NotBeNull();
             comment.UserEmail.Should().Be(email);
         }
@@ -258,13 +260,13 @@ public class EntityEdgeCaseTests : UnitTestBase
     public void Entity_WithMaxDateTimeValues_ShouldHandleCorrectly()
     {
         // Arrange
-        var category = Category.Create("Test", "Description");
+        var category = Category.Create("Test", "Description", _dateTimeProvider);
 
         // Act - Force extreme DateTime values through reflection if needed
         var createdAtProperty = typeof(Category).BaseType!.GetProperty("CreatedAt");
         
         // Assert - Verify normal behavior with extreme dates
-        category.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(10));
+        category.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
         category.CreatedAt.Should().BeAfter(DateTime.MinValue);
         category.CreatedAt.Should().BeBefore(DateTime.MaxValue);
     }
@@ -281,7 +283,7 @@ public class EntityEdgeCaseTests : UnitTestBase
         var description = "Test description";
 
         // Act
-        var category = Category.Create(name, description);
+        var category = Category.Create(name, description, _dateTimeProvider);
 
         // Assert
         category.Name.Should().Be(name);
@@ -301,7 +303,7 @@ public class EntityEdgeCaseTests : UnitTestBase
     public async Task Entity_WithConcurrentUpdates_ShouldMaintainConsistency()
     {
         // Arrange
-        var category = Category.Create("Original", "Original Description");
+        var category = Category.Create("Original", "Original Description", _dateTimeProvider);
         var tasks = new List<Task>();
 
         // Act
@@ -310,7 +312,7 @@ public class EntityEdgeCaseTests : UnitTestBase
             var index = i;
             tasks.Add(Task.Run(() =>
             {
-                category.Update($"Updated {index}", $"Description {index}");
+                category.Update($"Updated {index}", $"Description {index}", _dateTimeProvider);
             }));
         }
 

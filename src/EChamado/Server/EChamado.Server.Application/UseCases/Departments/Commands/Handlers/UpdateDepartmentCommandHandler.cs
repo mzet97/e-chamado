@@ -1,8 +1,9 @@
-﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.UseCases.Departments.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -10,6 +11,7 @@ namespace EChamado.Server.Application.UseCases.Departments.Commands.Handlers;
 
 public class UpdateDepartmentCommandHandler(IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<UpdateDepartmentCommandHandler> logger) :
     RequestHandlerAsync<UpdateDepartmentCommand>
 {
@@ -29,7 +31,7 @@ public class UpdateDepartmentCommandHandler(IUnitOfWork unitOfWork,
             throw new NotFoundException("Department not found");
         }
 
-        entityDb.Update(command.Name, command.Description);
+        entityDb.Update(command.Name, command.Description, dateTimeProvider);
 
         if (!entityDb.IsValid())
         {

@@ -3,6 +3,7 @@ using EChamado.Server.Application.UseCases.Categories.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -11,6 +12,7 @@ namespace EChamado.Server.Application.UseCases.Categories.Commands;
 public class UpdateSubCategoryCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<UpdateSubCategoryCommandHandler> logger) :
     RequestHandlerAsync<UpdateSubCategoryCommand>
 {
@@ -34,7 +36,7 @@ public class UpdateSubCategoryCommandHandler(
             throw new NotFoundException($"Category {command.CategoryId} not found");
         }
 
-        subCategory.Update(command.Name, command.Description, command.CategoryId);
+        subCategory.Update(command.Name, command.Description, command.CategoryId, dateTimeProvider);
 
         if (!subCategory.IsValid())
         {

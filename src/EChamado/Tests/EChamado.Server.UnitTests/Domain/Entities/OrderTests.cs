@@ -1,4 +1,5 @@
 using EChamado.Server.Domain.Domains.Orders;
+using EChamado.Shared.Services;
 using EChamado.Server.UnitTests.Common.Base;
 using EChamado.Server.UnitTests.Common.Builders;
 using FluentAssertions;
@@ -8,12 +9,14 @@ namespace EChamado.Server.UnitTests.Domain.Entities;
 
 public class OrderTests : UnitTestBase
 {
+    private static readonly IDateTimeProvider _dateTimeProvider = new SystemDateTimeProvider();
+
     [Fact]
     public void Create_WithValidData_ShouldCreateOrder()
     {
         // Arrange
         var title = "Chamado de Teste";
-        var description = "Descrição do chamado";
+        var description = "Descriï¿½ï¿½o do chamado";
         var requestingUserEmail = "user@test.com";
         var responsibleUserEmail = "admin@test.com";
         var requestingUserId = Guid.NewGuid();
@@ -29,7 +32,7 @@ public class OrderTests : UnitTestBase
         var order = Order.Create(
             title, description, requestingUserEmail, responsibleUserEmail,
             requestingUserId, responsibleUserId, categoryId, departmentId,
-            orderTypeId, statusTypeId, subCategoryId, dueDate);
+            orderTypeId, statusTypeId, subCategoryId, dueDate, _dateTimeProvider);
 
         // Assert
         order.Should().NotBeNull();
@@ -46,9 +49,9 @@ public class OrderTests : UnitTestBase
         order.SubCategoryId.Should().Be(subCategoryId);
         order.DueDate.Should().Be(dueDate);
         order.Id.Should().NotBe(Guid.Empty);
-        order.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
-        order.OpeningDate.Should().NotBeNull(); // Corrigido - OpeningDate agora é definida
-        order.OpeningDate.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        order.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        order.OpeningDate.Should().NotBeNull(); // Corrigido - OpeningDate agora ï¿½ definida
+        order.OpeningDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         order.IsValid().Should().BeTrue();
     }
 
@@ -56,8 +59,8 @@ public class OrderTests : UnitTestBase
     public void Create_WithInvalidData_ShouldCreateInvalidOrder()
     {
         // Arrange
-        var title = ""; // Título inválido
-        var description = "Descrição válida";
+        var title = ""; // Tï¿½tulo invï¿½lido
+        var description = "Descriï¿½ï¿½o vï¿½lida";
         var requestingUserEmail = "user@test.com";
         var responsibleUserEmail = "admin@test.com";
         var requestingUserId = Guid.NewGuid();
@@ -71,7 +74,7 @@ public class OrderTests : UnitTestBase
         var order = Order.Create(
             title, description, requestingUserEmail, responsibleUserEmail,
             requestingUserId, responsibleUserId, categoryId, departmentId,
-            orderTypeId, statusTypeId, null, null);
+            orderTypeId, statusTypeId, null, null, _dateTimeProvider);
 
         // Assert
         order.Should().NotBeNull();
@@ -87,12 +90,12 @@ public class OrderTests : UnitTestBase
 
         // Act & Assert
         order.Id.Should().NotBe(Guid.Empty);
-        order.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        order.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         order.UpdatedAt.Should().BeNull();
         order.DeletedAt.Should().BeNull();
         order.IsDeleted.Should().BeFalse();
-        order.OpeningDate.Should().NotBeNull(); // Corrigido - OpeningDate agora é definida
-        order.OpeningDate.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5)); // Validar que está próxima do momento atual
+        order.OpeningDate.Should().NotBeNull(); // Corrigido - OpeningDate agora ï¿½ definida
+        order.OpeningDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5)); // Validar que estï¿½ prï¿½xima do momento atual
         order.ClosingDate.Should().BeNull();
         order.Evaluation.Should().BeNullOrEmpty();
     }
@@ -102,8 +105,8 @@ public class OrderTests : UnitTestBase
     {
         // Arrange
         var order = OrderTestBuilder.Create().WithValidData().Build();
-        var newTitle = "Título Atualizado";
-        var newDescription = "Descrição Atualizada";
+        var newTitle = "Tï¿½tulo Atualizado";
+        var newDescription = "Descriï¿½ï¿½o Atualizada";
         var newRequestingUserEmail = "newuser@test.com";
         var newRequestingUserId = Guid.NewGuid();
         var newResponsibleUserId = Guid.NewGuid();
@@ -119,7 +122,7 @@ public class OrderTests : UnitTestBase
             newTitle, newDescription, newRequestingUserEmail,
             newRequestingUserId, newResponsibleUserId, newCategoryId,
             newDepartmentId, newOrderTypeId, newStatusTypeId,
-            newSubCategoryId, newDueDate);
+            newSubCategoryId, newDueDate, _dateTimeProvider);
 
         // Assert
         order.Title.Should().Be(newTitle);
@@ -134,7 +137,7 @@ public class OrderTests : UnitTestBase
         order.SubCategoryId.Should().Be(newSubCategoryId);
         order.DueDate.Should().Be(newDueDate);
         order.UpdatedAt.Should().NotBeNull();
-        order.UpdatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        order.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -146,13 +149,13 @@ public class OrderTests : UnitTestBase
         var newResponsibleUserEmail = "newresponsible@test.com";
 
         // Act
-        order.AssignTo(newResponsibleUserId, newResponsibleUserEmail);
+        order.AssignTo(newResponsibleUserId, newResponsibleUserEmail, _dateTimeProvider);
 
         // Assert
         order.ResponsibleUserId.Should().Be(newResponsibleUserId);
         order.ResponsibleUserEmail.Should().Be(newResponsibleUserEmail);
         order.UpdatedAt.Should().NotBeNull();
-        order.UpdatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        order.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -163,12 +166,12 @@ public class OrderTests : UnitTestBase
         var newStatusId = Guid.NewGuid();
 
         // Act
-        order.ChangeStatus(newStatusId);
+        order.ChangeStatus(newStatusId, _dateTimeProvider);
 
         // Assert
         order.StatusId.Should().Be(newStatusId);
         order.UpdatedAt.Should().NotBeNull();
-        order.UpdatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        order.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Theory]
@@ -181,14 +184,14 @@ public class OrderTests : UnitTestBase
         var order = OrderTestBuilder.Create().WithValidData().Build();
 
         // Act
-        order.Close(evaluation);
+        order.Close(evaluation, _dateTimeProvider);
 
         // Assert
         order.Evaluation.Should().Be(evaluation.ToString());
         order.ClosingDate.Should().NotBeNull();
-        order.ClosingDate.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        order.ClosingDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         order.UpdatedAt.Should().NotBeNull();
-        order.UpdatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        order.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -196,9 +199,9 @@ public class OrderTests : UnitTestBase
     {
         // Arrange & Act
         var order = Order.Create(
-            "Título", "Descrição", "user@test.com", "admin@test.com",
+            "Tï¿½tulo", "Descriï¿½ï¿½o", "user@test.com", "admin@test.com",
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            Guid.NewGuid(), Guid.NewGuid(), null, null); // SubCategory e DueDate opcionais
+            Guid.NewGuid(), Guid.NewGuid(), null, null, _dateTimeProvider); // SubCategory e DueDate opcionais
 
         // Assert
         order.Should().NotBeNull();
@@ -216,9 +219,9 @@ public class OrderTests : UnitTestBase
 
         // Act
         var order = Order.Create(
-            "Título", "Descrição", "user@test.com", "admin@test.com",
+            "Tï¿½tulo", "Descriï¿½ï¿½o", "user@test.com", "admin@test.com",
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            Guid.NewGuid(), Guid.NewGuid(), subCategoryId, dueDate);
+            Guid.NewGuid(), Guid.NewGuid(), subCategoryId, dueDate, _dateTimeProvider);
 
         // Assert
         order.SubCategoryId.Should().Be(subCategoryId);
@@ -226,17 +229,17 @@ public class OrderTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("Título Simples")]
-    [InlineData("Título com acentos: ção, ã, é")]
+    [InlineData("Tï¿½tulo Simples")]
+    [InlineData("Tï¿½tulo com acentos: ï¿½ï¿½o, ï¿½, ï¿½")]
     [InlineData("Title with numbers 123")]
-    [InlineData("TÍTULO MAIÚSCULO")]
+    [InlineData("Tï¿½TULO MAIï¿½SCULO")]
     public void Create_WithDifferentValidTitles_ShouldWork(string title)
     {
         // Act
         var order = Order.Create(
-            title, "Descrição", "user@test.com", "admin@test.com",
+            title, "Descriï¿½ï¿½o", "user@test.com", "admin@test.com",
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            Guid.NewGuid(), Guid.NewGuid(), null, null);
+            Guid.NewGuid(), Guid.NewGuid(), null, null, _dateTimeProvider);
 
         // Assert
         order.Title.Should().Be(title);
@@ -278,23 +281,23 @@ public class OrderTests : UnitTestBase
         var order = OrderTestBuilder.Create().WithValidData().Build();
 
         // Act
-        order.Update("Título 1", "Descrição 1", "user1@test.com",
+        order.Update("Tï¿½tulo 1", "Descriï¿½ï¿½o 1", "user1@test.com",
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            null, null);
+            null, null, _dateTimeProvider);
         var firstUpdate = order.UpdatedAt;
 
         Thread.Sleep(100);
 
-        order.Update("Título 2", "Descrição 2", "user2@test.com",
+        order.Update("Tï¿½tulo 2", "Descriï¿½ï¿½o 2", "user2@test.com",
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            null, null);
+            null, null, _dateTimeProvider);
         var secondUpdate = order.UpdatedAt;
 
         // Assert
         secondUpdate.Should().BeAfter(firstUpdate!.Value);
-        order.Title.Should().Be("Título 2");
+        order.Title.Should().Be("Tï¿½tulo 2");
     }
 
     [Fact]
@@ -308,7 +311,7 @@ public class OrderTests : UnitTestBase
         var order = Order.Create(
             maxTitle, maxDescription, "user@test.com", "admin@test.com",
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            Guid.NewGuid(), Guid.NewGuid(), null, null);
+            Guid.NewGuid(), Guid.NewGuid(), null, null, _dateTimeProvider);
 
         // Assert
         order.Title.Should().Be(maxTitle);

@@ -3,6 +3,7 @@ using EChamado.Server.Domain.Domains.Orders;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -10,6 +11,7 @@ namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class CreateOrderCommandHandler(
     IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateOrderCommandHandler> logger) :
     RequestHandlerAsync<CreateOrderCommand>
 {
@@ -65,7 +67,8 @@ public class CreateOrderCommandHandler(
             command.TypeId,
             statusId.Value,
             command.SubCategoryId,
-            command.DueDate
+            command.DueDate,
+            dateTimeProvider
         );
 
         if (!order.IsValid())

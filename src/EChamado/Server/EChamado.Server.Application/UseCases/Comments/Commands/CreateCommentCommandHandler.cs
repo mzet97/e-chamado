@@ -4,6 +4,7 @@ using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -12,6 +13,7 @@ namespace EChamado.Server.Application.UseCases.Comments.Commands;
 public class CreateCommentCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateCommentCommandHandler> logger) :
     RequestHandlerAsync<CreateCommentCommand>
 {
@@ -31,7 +33,8 @@ public class CreateCommentCommandHandler(
             command.Text,
             command.OrderId,
             command.UserId,
-            command.UserEmail);
+            command.UserEmail,
+            dateTimeProvider);
 
         if (!entity.IsValid())
         {

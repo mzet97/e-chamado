@@ -1,4 +1,5 @@
 using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Shared.Services;
 using EChamado.Server.UnitTests.Common.Base;
 using EChamado.Server.UnitTests.Common.Builders;
 using FluentAssertions;
@@ -8,22 +9,31 @@ namespace EChamado.Server.UnitTests.Domain.Entities;
 
 public class CategoryTests : UnitTestBase
 {
+    private static readonly IDateTimeProvider _dateTimeProvider = new MockDateTimeProvider();
+
+    private class MockDateTimeProvider : IDateTimeProvider
+    {
+        public DateTime Now => DateTime.Now;
+        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTimeOffset OffsetNow => DateTimeOffset.Now;
+        public DateTimeOffset OffsetUtcNow => DateTimeOffset.UtcNow;
+    }
     [Fact]
     public void Create_WithValidData_ShouldCreateCategory()
     {
         // Arrange
         var name = "Categoria Teste";
-        var description = "Descrição da categoria";
+        var description = "Descriï¿½ï¿½o da categoria";
 
         // Act
-        var category = Category.Create(name, description);
+        var category = Category.Create(name, description, _dateTimeProvider);
 
         // Assert
         category.Should().NotBeNull();
         category.Name.Should().Be(name);
         category.Description.Should().Be(description);
         category.Id.Should().NotBe(Guid.Empty);
-        category.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        category.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         category.IsValid().Should().BeTrue();
     }
 
@@ -31,11 +41,11 @@ public class CategoryTests : UnitTestBase
     public void Create_WithInvalidData_ShouldCreateInvalidCategory()
     {
         // Arrange
-        var name = ""; // Nome inválido
-        var description = "Descrição válida";
+        var name = ""; // Nome invï¿½lido
+        var description = "Descriï¿½ï¿½o vï¿½lida";
 
         // Act
-        var category = Category.Create(name, description);
+        var category = Category.Create(name, description, _dateTimeProvider);
 
         // Assert
         category.Should().NotBeNull();
@@ -52,16 +62,16 @@ public class CategoryTests : UnitTestBase
             .Build();
         
         var newName = "Nome Atualizado";
-        var newDescription = "Descrição Atualizada";
+        var newDescription = "Descriï¿½ï¿½o Atualizada";
 
         // Act
-        category.Update(newName, newDescription);
+        category.Update(newName, newDescription, _dateTimeProvider);
 
         // Assert
         category.Name.Should().Be(newName);
         category.Description.Should().Be(newDescription);
         category.UpdatedAt.Should().NotBeNull();
-        category.UpdatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        category.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -73,7 +83,7 @@ public class CategoryTests : UnitTestBase
             .Build();
 
         // Act
-        category.Update("", "Descrição"); // Nome vazio
+        category.Update("", "Descriï¿½ï¿½o", _dateTimeProvider); // Nome vazio
 
         // Assert
         category.IsValid().Should().BeFalse();
@@ -81,14 +91,14 @@ public class CategoryTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("AA", "B")] // Valores mínimos
-    [InlineData("Categoria Normal", "Descrição normal")]  
-    [InlineData("CATEGORIA MAIÚSCULA", "DESCRIÇÃO MAIÚSCULA")]
-    [InlineData("categoria minúscula", "descrição minúscula")]
+    [InlineData("AA", "B")] // Valores mï¿½nimos
+    [InlineData("Categoria Normal", "Descriï¿½ï¿½o normal")]  
+    [InlineData("CATEGORIA MAIï¿½SCULA", "DESCRIï¿½ï¿½O MAIï¿½SCULA")]
+    [InlineData("categoria minï¿½scula", "descriï¿½ï¿½o minï¿½scula")]
     public void Create_WithDifferentValidInputs_ShouldCreateValidCategory(string name, string description)
     {
         // Act
-        var category = Category.Create(name, description);
+        var category = Category.Create(name, description, _dateTimeProvider);
 
         // Assert
         category.Should().NotBeNull();
@@ -102,14 +112,14 @@ public class CategoryTests : UnitTestBase
     {
         // Arrange
         var name = "Categoria Teste";
-        var description = "Descrição da categoria";
+        var description = "Descriï¿½ï¿½o da categoria";
 
         // Act
-        var category = Category.Create(name, description);
+        var category = Category.Create(name, description, _dateTimeProvider);
 
         // Assert
         category.Id.Should().NotBe(Guid.Empty);
-        category.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        category.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         category.UpdatedAt.Should().BeNull();
         category.DeletedAt.Should().BeNull();
         category.IsDeleted.Should().BeFalse();
@@ -121,8 +131,8 @@ public class CategoryTests : UnitTestBase
     public void Create_ShouldTriggerValidation()
     {
         // Arrange & Act
-        var validCategory = Category.Create("Nome Válido", "Descrição Válida");
-        var invalidCategory = Category.Create("", "Descrição");
+        var validCategory = Category.Create("Nome Vï¿½lido", "Descriï¿½ï¿½o Vï¿½lida", _dateTimeProvider);
+        var invalidCategory = Category.Create("", "Descriï¿½ï¿½o", _dateTimeProvider);
 
         // Assert
         validCategory.IsValid().Should().BeTrue();
@@ -137,15 +147,15 @@ public class CategoryTests : UnitTestBase
     {
         // Arrange
         var category = CategoryTestBuilder.Create().WithValidData().Build();
-        var firstUpdateTime = DateTime.Now;
+        var firstUpdateTime = DateTime.UtcNow;
 
         // Act
-        category.Update("Nome 1", "Descrição 1");
+        category.Update("Nome 1", "Descriï¿½ï¿½o 1", _dateTimeProvider);
         var firstUpdate = category.UpdatedAt;
 
         Thread.Sleep(100); // Pequena pausa para garantir timestamp diferente
 
-        category.Update("Nome 2", "Descrição 2");
+        category.Update("Nome 2", "Descriï¿½ï¿½o 2", _dateTimeProvider);
         var secondUpdate = category.UpdatedAt;
 
         // Assert
@@ -153,7 +163,7 @@ public class CategoryTests : UnitTestBase
         secondUpdate.Should().NotBeNull();
         secondUpdate.Should().BeAfter(firstUpdate!.Value);
         category.Name.Should().Be("Nome 2");
-        category.Description.Should().Be("Descrição 2");
+        category.Description.Should().Be("Descriï¿½ï¿½o 2");
     }
 
     [Fact]
@@ -164,7 +174,7 @@ public class CategoryTests : UnitTestBase
         var description = new string('B', 500); // No limite
 
         // Act
-        var category = Category.Create(name, description);
+        var category = Category.Create(name, description, _dateTimeProvider);
 
         // Assert
         category.Should().NotBeNull();

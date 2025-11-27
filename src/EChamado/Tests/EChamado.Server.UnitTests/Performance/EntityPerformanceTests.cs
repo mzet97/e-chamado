@@ -1,4 +1,5 @@
 using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Shared.Services;
 using EChamado.Server.UnitTests.Common.Base;
 using FluentAssertions;
 using System.Diagnostics;
@@ -8,6 +9,8 @@ namespace EChamado.Server.UnitTests.Performance;
 
 public class EntityPerformanceTests : UnitTestBase
 {
+    private static readonly IDateTimeProvider _dateTimeProvider = new SystemDateTimeProvider();
+
     [Fact]
     public void Category_CreateManyInstances_ShouldBePerformant()
     {
@@ -19,7 +22,7 @@ public class EntityPerformanceTests : UnitTestBase
         var categories = new List<Category>();
         for (int i = 0; i < instanceCount; i++)
         {
-            categories.Add(Category.Create($"Category {i}", $"Description {i}"));
+            categories.Add(Category.Create($"Category {i}", $"Description {i}", _dateTimeProvider));
         }
         stopwatch.Stop();
 
@@ -45,7 +48,7 @@ public class EntityPerformanceTests : UnitTestBase
         var comments = new List<Comment>();
         for (int i = 0; i < instanceCount; i++)
         {
-            comments.Add(Comment.Create($"Comment {i}", orderId, userId, $"user{i}@test.com"));
+            comments.Add(Comment.Create($"Comment {i}", orderId, userId, $"user{i}@test.com", _dateTimeProvider));
         }
         stopwatch.Stop();
 
@@ -65,7 +68,7 @@ public class EntityPerformanceTests : UnitTestBase
         var orderTypes = new List<OrderType>();
         for (int i = 0; i < instanceCount; i++)
         {
-            orderTypes.Add(OrderType.Create($"OrderType {i}", $"Description {i}"));
+            orderTypes.Add(OrderType.Create($"OrderType {i}", $"Description {i}", _dateTimeProvider));
         }
         stopwatch.Stop();
 
@@ -85,7 +88,7 @@ public class EntityPerformanceTests : UnitTestBase
         var statusTypes = new List<StatusType>();
         for (int i = 0; i < instanceCount; i++)
         {
-            statusTypes.Add(StatusType.Create($"StatusType {i}", $"Description {i}"));
+            statusTypes.Add(StatusType.Create($"StatusType {i}", $"Description {i}", _dateTimeProvider));
         }
         stopwatch.Stop();
 
@@ -105,7 +108,7 @@ public class EntityPerformanceTests : UnitTestBase
         var departments = new List<Department>();
         for (int i = 0; i < instanceCount; i++)
         {
-            departments.Add(Department.Create($"Department {i}", $"Description {i}"));
+            departments.Add(Department.Create($"Department {i}", $"Description {i}", _dateTimeProvider));
         }
         stopwatch.Stop();
 
@@ -119,7 +122,7 @@ public class EntityPerformanceTests : UnitTestBase
     {
         // Arrange
         const int validationCount = 50000;
-        var category = Category.Create("Test Category", "Test Description");
+        var category = Category.Create("Test Category", "Test Description", _dateTimeProvider);
         var stopwatch = Stopwatch.StartNew();
 
         // Act
@@ -138,13 +141,13 @@ public class EntityPerformanceTests : UnitTestBase
     {
         // Arrange
         const int updateCount = 10000;
-        var category = Category.Create("Original", "Original Description");
+        var category = Category.Create("Original", "Original Description", _dateTimeProvider);
         var stopwatch = Stopwatch.StartNew();
 
         // Act
         for (int i = 0; i < updateCount; i++)
         {
-            category.Update($"Updated {i}", $"Updated Description {i}");
+            category.Update($"Updated {i}", $"Updated Description {i}", _dateTimeProvider);
         }
         stopwatch.Stop();
 
@@ -174,7 +177,8 @@ public class EntityPerformanceTests : UnitTestBase
                         $"Comment {taskIndex}-{i}",
                         orderId,
                         userId,
-                        $"user{taskIndex}-{i}@test.com"));
+                        $"user{taskIndex}-{i}@test.com",
+                        _dateTimeProvider));
                 }
                 return comments;
             }))
@@ -205,7 +209,7 @@ public class EntityPerformanceTests : UnitTestBase
         var entities = new List<Category>();
         for (int i = 0; i < instanceCount; i++)
         {
-            entities.Add(Category.Create($"Category {i}", $"Description for category number {i}"));
+            entities.Add(Category.Create($"Category {i}", $"Description for category number {i}", _dateTimeProvider));
         }
 
         var memoryAfterCreation = GC.GetTotalMemory(false);
@@ -214,7 +218,7 @@ public class EntityPerformanceTests : UnitTestBase
         // Assert
         entities.Should().HaveCount(instanceCount);
         
-        // Aproximadamente 1KB por entidade seria razoável
+        // Aproximadamente 1KB por entidade seria razoï¿½vel
         var averageMemoryPerEntity = memoryUsed / instanceCount;
         averageMemoryPerEntity.Should().BeLessThan(5000, "Each entity should use less than 5KB on average");
     }
@@ -228,7 +232,7 @@ public class EntityPerformanceTests : UnitTestBase
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var category = Category.Create(largeName, largeDescription);
+        var category = Category.Create(largeName, largeDescription, _dateTimeProvider);
         stopwatch.Stop();
 
         // Assert
@@ -251,7 +255,7 @@ public class EntityPerformanceTests : UnitTestBase
         var entities = new List<Category>();
         for (int i = 0; i < count; i++)
         {
-            entities.Add(Category.Create($"Category {i}", $"Description {i}"));
+            entities.Add(Category.Create($"Category {i}", $"Description {i}", _dateTimeProvider));
         }
         stopwatch.Stop();
 

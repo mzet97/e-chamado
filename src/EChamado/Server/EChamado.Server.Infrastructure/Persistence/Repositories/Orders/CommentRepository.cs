@@ -1,13 +1,14 @@
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Server.Infrastructure.Persistence;
+using EChamado.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace EChamado.Server.Infrastructure.Persistence.Repositories.Orders;
 
 public class CommentRepository : Repository<Comment>, ICommentRepository
 {
-    public CommentRepository(ApplicationDbContext db) : base(db)
+    public CommentRepository(ApplicationDbContext db, IDateTimeProvider dateTimeProvider) : base(db, dateTimeProvider)
     {
     }
 

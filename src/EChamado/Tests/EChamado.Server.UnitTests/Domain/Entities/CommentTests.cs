@@ -1,4 +1,5 @@
 using EChamado.Server.Domain.Domains.Orders.Entities;
+using EChamado.Shared.Services;
 using EChamado.Server.UnitTests.Common.Base;
 using EChamado.Server.UnitTests.Common.Builders;
 using FluentAssertions;
@@ -8,17 +9,19 @@ namespace EChamado.Server.UnitTests.Domain.Entities;
 
 public class CommentTests : UnitTestBase
 {
+    private static readonly IDateTimeProvider _dateTimeProvider = new SystemDateTimeProvider();
+
     [Fact]
     public void Create_WithValidData_ShouldCreateComment()
     {
         // Arrange
-        var text = "Comentário de teste";
+        var text = "Comentï¿½rio de teste";
         var orderId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var userEmail = "user@test.com";
 
         // Act
-        var comment = Comment.Create(text, orderId, userId, userEmail);
+        var comment = Comment.Create(text, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -27,7 +30,7 @@ public class CommentTests : UnitTestBase
         comment.UserId.Should().Be(userId);
         comment.UserEmail.Should().Be(userEmail);
         comment.Id.Should().NotBe(Guid.Empty);
-        comment.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        comment.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         comment.IsValid().Should().BeTrue();
     }
 
@@ -35,13 +38,13 @@ public class CommentTests : UnitTestBase
     public void Create_WithInvalidData_ShouldCreateInvalidComment()
     {
         // Arrange
-        var text = ""; // Texto inválido
+        var text = ""; // Texto invï¿½lido
         var orderId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var userEmail = "user@test.com";
 
         // Act
-        var comment = Comment.Create(text, orderId, userId, userEmail);
+        var comment = Comment.Create(text, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -50,10 +53,10 @@ public class CommentTests : UnitTestBase
     }
 
     [Theory]
-    [InlineData("Comentário simples")]
-    [InlineData("Comentário com números 123")]
-    [InlineData("Comentário\ncom\nquebras\nde\nlinha")]
-    [InlineData("Comentário com símbolos @#$%^&*()")]
+    [InlineData("Comentï¿½rio simples")]
+    [InlineData("Comentï¿½rio com nï¿½meros 123")]
+    [InlineData("Comentï¿½rio\ncom\nquebras\nde\nlinha")]
+    [InlineData("Comentï¿½rio com sï¿½mbolos @#$%^&*()")]
     public void Create_WithDifferentValidTexts_ShouldCreateValidComment(string text)
     {
         // Arrange
@@ -62,7 +65,7 @@ public class CommentTests : UnitTestBase
         var userEmail = "user@test.com";
 
         // Act
-        var comment = Comment.Create(text, orderId, userId, userEmail);
+        var comment = Comment.Create(text, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -78,12 +81,12 @@ public class CommentTests : UnitTestBase
     public void Create_WithDifferentValidEmails_ShouldCreateValidComment(string email)
     {
         // Arrange
-        var text = "Comentário de teste";
+        var text = "Comentï¿½rio de teste";
         var orderId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
         // Act
-        var comment = Comment.Create(text, orderId, userId, email);
+        var comment = Comment.Create(text, orderId, userId, email, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -95,17 +98,17 @@ public class CommentTests : UnitTestBase
     public void Create_ShouldSetDefaultProperties()
     {
         // Arrange
-        var text = "Comentário de teste";
+        var text = "Comentï¿½rio de teste";
         var orderId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var userEmail = "user@test.com";
 
         // Act
-        var comment = Comment.Create(text, orderId, userId, userEmail);
+        var comment = Comment.Create(text, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment.Id.Should().NotBe(Guid.Empty);
-        comment.CreatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        comment.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         comment.UpdatedAt.Should().BeNull();
         comment.DeletedAt.Should().BeNull();
         comment.IsDeleted.Should().BeFalse();
@@ -115,8 +118,8 @@ public class CommentTests : UnitTestBase
     public void Create_ShouldTriggerValidation()
     {
         // Arrange & Act
-        var validComment = Comment.Create("Texto válido", Guid.NewGuid(), Guid.NewGuid(), "user@test.com");
-        var invalidComment = Comment.Create("", Guid.NewGuid(), Guid.NewGuid(), "user@test.com");
+        var validComment = Comment.Create("Texto vï¿½lido", Guid.NewGuid(), Guid.NewGuid(), "user@test.com", _dateTimeProvider);
+        var invalidComment = Comment.Create("", Guid.NewGuid(), Guid.NewGuid(), "user@test.com", _dateTimeProvider);
 
         // Assert
         validComment.IsValid().Should().BeTrue();
@@ -136,7 +139,7 @@ public class CommentTests : UnitTestBase
         var userEmail = "user@test.com";
 
         // Act
-        var comment = Comment.Create(maxLengthText, orderId, userId, userEmail);
+        var comment = Comment.Create(maxLengthText, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -148,13 +151,13 @@ public class CommentTests : UnitTestBase
     public void Create_WithEmptyGuids_ShouldCreateInvalidComment()
     {
         // Arrange
-        var text = "Comentário válido";
-        var orderId = Guid.Empty; // ID inválido
-        var userId = Guid.Empty; // ID inválido
+        var text = "Comentï¿½rio vï¿½lido";
+        var orderId = Guid.Empty; // ID invï¿½lido
+        var userId = Guid.Empty; // ID invï¿½lido
         var userEmail = "user@test.com";
 
         // Act
-        var comment = Comment.Create(text, orderId, userId, userEmail);
+        var comment = Comment.Create(text, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -171,12 +174,12 @@ public class CommentTests : UnitTestBase
     public void Create_WithInvalidEmail_ShouldCreateInvalidComment(string invalidEmail)
     {
         // Arrange
-        var text = "Comentário válido";
+        var text = "Comentï¿½rio vï¿½lido";
         var orderId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
         // Act
-        var comment = Comment.Create(text, orderId, userId, invalidEmail);
+        var comment = Comment.Create(text, orderId, userId, invalidEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -192,14 +195,14 @@ public class CommentTests : UnitTestBase
         var comment = CommentTestBuilder.Create().WithValidData().Build();
 
         // Act & Assert
-        // Verificar que as propriedades são apenas leitura (não há setters públicos)
+        // Verificar que as propriedades sï¿½o apenas leitura (nï¿½o hï¿½ setters pï¿½blicos)
         var textProperty = typeof(Comment).GetProperty(nameof(Comment.Text));
         var orderIdProperty = typeof(Comment).GetProperty(nameof(Comment.OrderId));
         var userIdProperty = typeof(Comment).GetProperty(nameof(Comment.UserId));
         var userEmailProperty = typeof(Comment).GetProperty(nameof(Comment.UserEmail));
 
         textProperty!.SetMethod.Should().NotBeNull(); // Setter privado existe
-        textProperty.SetMethod!.IsPublic.Should().BeFalse(); // Mas não é público
+        textProperty.SetMethod!.IsPublic.Should().BeFalse(); // Mas nï¿½o ï¿½ pï¿½blico
 
         orderIdProperty!.SetMethod.Should().NotBeNull();
         orderIdProperty.SetMethod!.IsPublic.Should().BeFalse();
@@ -215,13 +218,13 @@ public class CommentTests : UnitTestBase
     public void Create_WithSpecialCharacters_ShouldPreserveText()
     {
         // Arrange
-        var textWithSpecialChars = "Texto com acentos: ção, ã, é, í, ó, ú\nCom quebra de linha\tCom tab";
+        var textWithSpecialChars = "Texto com acentos: ï¿½ï¿½o, ï¿½, ï¿½, ï¿½, ï¿½, ï¿½\nCom quebra de linha\tCom tab";
         var orderId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var userEmail = "user@test.com";
 
         // Act
-        var comment = Comment.Create(textWithSpecialChars, orderId, userId, userEmail);
+        var comment = Comment.Create(textWithSpecialChars, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment.Should().NotBeNull();
@@ -233,14 +236,14 @@ public class CommentTests : UnitTestBase
     public void Create_MultipleComments_ShouldHaveUniqueIds()
     {
         // Arrange
-        var text = "Comentário de teste";
+        var text = "Comentï¿½rio de teste";
         var orderId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var userEmail = "user@test.com";
 
         // Act
-        var comment1 = Comment.Create(text, orderId, userId, userEmail);
-        var comment2 = Comment.Create(text, orderId, userId, userEmail);
+        var comment1 = Comment.Create(text, orderId, userId, userEmail, _dateTimeProvider);
+        var comment2 = Comment.Create(text, orderId, userId, userEmail, _dateTimeProvider);
 
         // Assert
         comment1.Id.Should().NotBe(comment2.Id);

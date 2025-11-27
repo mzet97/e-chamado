@@ -1,4 +1,5 @@
 using EChamado.Server.Domain.Domains.Orders;
+using EChamado.Shared.Services;
 using EChamado.Server.Domain.Domains.Orders.Validations;
 using EChamado.Server.UnitTests.Common.Base;
 using EChamado.Server.UnitTests.Common.Builders;

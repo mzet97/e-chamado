@@ -4,6 +4,7 @@ using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -12,6 +13,7 @@ namespace EChamado.Server.Application.UseCases.Categories.Commands;
 public class CreateSubCategoryCommandHandler(
     IUnitOfWork unitOfWork,
     IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateSubCategoryCommandHandler> logger) :
     RequestHandlerAsync<CreateSubCategoryCommand>
 {
@@ -27,7 +29,7 @@ public class CreateSubCategoryCommandHandler(
             throw new NotFoundException($"Category {command.CategoryId} not found");
         }
 
-        var entity = SubCategory.Create(command.Name, command.Description, command.CategoryId);
+        var entity = SubCategory.Create(command.Name, command.Description, command.CategoryId, dateTimeProvider);
 
         if (!entity.IsValid())
         {

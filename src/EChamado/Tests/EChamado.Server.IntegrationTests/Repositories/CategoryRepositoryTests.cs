@@ -1,6 +1,7 @@
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Infrastructure.Persistence;
 using EChamado.Server.IntegrationTests.Infrastructure;
+using EChamado.Shared.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -11,6 +12,7 @@ namespace EChamado.Server.IntegrationTests.Repositories;
 public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactory>
 {
     private readonly IntegrationTestWebAppFactory _factory;
+    private static readonly IDateTimeProvider _dateTimeProvider = new SystemDateTimeProvider();
 
     public CategoryRepositoryTests(IntegrationTestWebAppFactory factory)
     {
@@ -24,7 +26,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         
-        var category = Category.Create("Test Category", "Test Description");
+        var category = Category.Create("Test Category", "Test Description", _dateTimeProvider);
 
         // Act
         dbContext.Categories.Add(category);
@@ -44,7 +46,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         
-        var category = Category.Create("Search Test Category", "Search Test Description");
+        var category = Category.Create("Search Test Category", "Search Test Description", _dateTimeProvider);
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync();
 
@@ -80,12 +82,12 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         
-        var category = Category.Create("Original Name", "Original Description");
+        var category = Category.Create("Original Name", "Original Description", _dateTimeProvider);
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync();
 
         // Act
-        category.Update("Updated Name", "Updated Description");
+        category.Update("Updated Name", "Updated Description", _dateTimeProvider);
         dbContext.Categories.Update(category);
         await dbContext.SaveChangesAsync();
 
@@ -104,7 +106,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         
-        var category = Category.Create("To Delete", "Will be deleted");
+        var category = Category.Create("To Delete", "Will be deleted", _dateTimeProvider);
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync();
 
@@ -124,9 +126,9 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         
-        var category1 = Category.Create("Category 1", "Description 1");
-        var category2 = Category.Create("Category 2", "Description 2");
-        var category3 = Category.Create("Category 3", "Description 3");
+        var category1 = Category.Create("Category 1", "Description 1", _dateTimeProvider);
+        var category2 = Category.Create("Category 2", "Description 2", _dateTimeProvider);
+        var category3 = Category.Create("Category 3", "Description 3", _dateTimeProvider);
         
         dbContext.Categories.AddRange(category1, category2, category3);
         await dbContext.SaveChangesAsync();
@@ -148,15 +150,15 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         
-        var categoryToAdd = Category.Create("New Category", "New Description");
-        var categoryToUpdate = Category.Create("To Update", "Original");
-        
+        var categoryToAdd = Category.Create("New Category", "New Description", _dateTimeProvider);
+        var categoryToUpdate = Category.Create("To Update", "Original", _dateTimeProvider);
+
         dbContext.Categories.Add(categoryToUpdate);
         await dbContext.SaveChangesAsync();
 
         // Act
         dbContext.Categories.Add(categoryToAdd);
-        categoryToUpdate.Update("Updated", "Modified Description");
+        categoryToUpdate.Update("Updated", "Modified Description", _dateTimeProvider);
         dbContext.Categories.Update(categoryToUpdate);
         
         await dbContext.SaveChangesAsync();

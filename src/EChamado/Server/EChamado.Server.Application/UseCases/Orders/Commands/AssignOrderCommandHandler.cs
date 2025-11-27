@@ -2,6 +2,7 @@ using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
 using Paramore.Brighter;
 
@@ -9,6 +10,7 @@ namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
 public class AssignOrderCommandHandler(
     IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider,
     ILogger<AssignOrderCommandHandler> logger) :
     RequestHandlerAsync<AssignOrderCommand>
 {
@@ -26,7 +28,7 @@ public class AssignOrderCommandHandler(
 
         // Como não temos acesso ao Users no UnitOfWork, vamos usar o ID e email que será fornecido
         // O email pode ser buscado de outra forma ou passado como parâmetro
-        order.AssignTo(command.AssignedToUserId, string.Empty);
+        order.AssignTo(command.AssignedToUserId, string.Empty, dateTimeProvider);
 
         if (!order.IsValid())
         {

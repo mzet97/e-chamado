@@ -1,10 +1,11 @@
 using AutoFixture;
 using EChamado.Server.Domain.Domains.Orders;
+using EChamado.Shared.Services;
 
 namespace EChamado.Server.UnitTests.Common.Builders;
 
 /// <summary>
-/// Builder para criar instâncias de Order para testes
+/// Builder para criar instï¿½ncias de Order para testes
 /// </summary>
 public class OrderTestBuilder
 {
@@ -21,11 +22,12 @@ public class OrderTestBuilder
     private Guid _statusTypeId;
     private Guid? _subCategoryId;
     private DateTime? _dueDate;
+    private static readonly IDateTimeProvider _dateTimeProvider = new MockDateTimeProvider();
 
     public OrderTestBuilder()
     {
         _fixture = new Fixture();
-        // Valores padrão
+        // Valores padrÃ£o
         _title = _fixture.Create<string>();
         _description = _fixture.Create<string>();
         _requestingUserEmail = _fixture.Create<string>() + "@test.com";
@@ -38,6 +40,14 @@ public class OrderTestBuilder
         _statusTypeId = Guid.NewGuid();
         _subCategoryId = null;
         _dueDate = DateTime.UtcNow.AddDays(30);
+    }
+
+    private class MockDateTimeProvider : IDateTimeProvider
+    {
+        public DateTime Now => DateTime.Now;
+        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTimeOffset OffsetNow => DateTimeOffset.Now;
+        public DateTimeOffset OffsetUtcNow => DateTimeOffset.UtcNow;
     }
 
     public static OrderTestBuilder Create() => new();
@@ -158,6 +168,7 @@ public class OrderTestBuilder
             _orderTypeId,
             _statusTypeId,
             _subCategoryId,
-            _dueDate);
+            _dueDate,
+            _dateTimeProvider);
     }
 }

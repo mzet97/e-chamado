@@ -1,6 +1,7 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Domains.Orders.Events.Orders;
 using EChamado.Server.Domain.Domains.Orders.Validations;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders;
@@ -42,7 +43,8 @@ public class Order : AggregateRoot
 
     }
 
-    // Constructor para testes - não valida automaticamente
+    // Constructor interno para testes e EF Core
+    // SEMPRE valida a entidade para garantir consistência DDD
     internal Order(
         Guid id,
         string title,
@@ -60,15 +62,14 @@ public class Order : AggregateRoot
         DateTime createdAt,
         DateTime? updatedAt,
         DateTime? deletedAt,
-        DateTime? openingDate,
-        bool skipValidation) : base(id, createdAt, updatedAt, deletedAt, false)
+        DateTime? openingDate) : base(id, createdAt, updatedAt, deletedAt, false)
     {
         Title = title;
         Description = description;
         RequestingUserId = requestingUserId;
         ResponsibleUserId = responsibleUserId;
         RequestingUserEmail = requestingUserEmail;
-        ResponsibleUserEmail = requestingUserEmail;
+        ResponsibleUserEmail = responsibleUserEmail;
         CategoryId = categoryId;
         DepartmentId = departmentId;
         TypeId = orderTypeId;
@@ -76,11 +77,7 @@ public class Order : AggregateRoot
         StatusId = statusTypeId;
         DueDate = dueDate;
         OpeningDate = openingDate;
-        
-        if (!skipValidation)
-        {
-            Validate();
-        }
+        Validate();
     }
 
     public Order(
@@ -118,8 +115,8 @@ public class Order : AggregateRoot
         Validate();
     }
 
-    // Método factory para testes - não valida automaticamente
-    internal static Order CreateForValidationTest(
+    // Método factory para testes - SEMPRE valida para garantir consistência
+    internal static Order CreateForTest(
         string title,
         string description,
         string requestingUserEmail,
@@ -130,6 +127,7 @@ public class Order : AggregateRoot
         Guid departmentId,
         Guid orderTypeId,
         Guid statusTypeId,
+        IDateTimeProvider dateTimeProvider,
         Guid? subCategoryId = null,
         DateTime? dueDate = null,
         DateTime? openingDate = null)
@@ -148,11 +146,10 @@ public class Order : AggregateRoot
             statusTypeId,
             subCategoryId,
             dueDate,
-            DateTime.Now,
+            dateTimeProvider.UtcNow,
             null,
             null,
-            openingDate,
-            skipValidation: true);
+            openingDate ?? dateTimeProvider.UtcNow);
     }
 
     public static Order Create(
@@ -167,7 +164,8 @@ public class Order : AggregateRoot
         Guid orderTypeId,
         Guid statusTypeId,
         Guid? subCategoryId,
-        DateTime? dueDate)
+        DateTime? dueDate,
+        IDateTimeProvider dateTimeProvider)
     {
         var order = new Order(
             Guid.NewGuid(),
@@ -183,7 +181,7 @@ public class Order : AggregateRoot
             statusTypeId,
             subCategoryId,
             dueDate,
-            DateTime.Now,
+            dateTimeProvider.UtcNow,
             null,
             null);
 
@@ -204,7 +202,8 @@ public class Order : AggregateRoot
         Guid orderTypeId,
         Guid statusTypeId,
         Guid? subCategoryId,
-        DateTime? dueDate)
+        DateTime? dueDate,
+        IDateTimeProvider dateTimeProvider)
     {
         Title = title;
         Description = description;
@@ -218,38 +217,38 @@ public class Order : AggregateRoot
         SubCategoryId = subCategoryId;
         DueDate = dueDate;
 
-        Update();
+        Update(dateTimeProvider);
 
         AddEvent(
             new OrderUpdated(this));
     }
 
-    public void AssignTo(Guid userId, string userEmail)
+    public void AssignTo(Guid userId, string userEmail, IDateTimeProvider dateTimeProvider)
     {
         ResponsibleUserId = userId;
         ResponsibleUserEmail = userEmail;
-        
-        Update();
-        
+
+        Update(dateTimeProvider);
+
         AddEvent(new OrderUpdated(this));
     }
 
-    public void ChangeStatus(Guid statusId)
+    public void ChangeStatus(Guid statusId, IDateTimeProvider dateTimeProvider)
     {
         StatusId = statusId;
-        
-        Update();
-        
+
+        Update(dateTimeProvider);
+
         AddEvent(new OrderUpdated(this));
     }
 
-    public void Close(int evaluation)
+    public void Close(int evaluation, IDateTimeProvider dateTimeProvider)
     {
         Evaluation = evaluation.ToString();
-        ClosingDate = DateTime.Now;
-        
-        Update();
-        
+        ClosingDate = dateTimeProvider.UtcNow;
+
+        Update(dateTimeProvider);
+
         AddEvent(new OrderClosed(this));
     }
 
