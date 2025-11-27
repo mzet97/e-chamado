@@ -21,7 +21,7 @@ public class DeleteRoleCommandHandler(
 
         var role = await roleService.GetRoleByIdAsync(command.Id);
 
-        if(role == null)
+        if (role == null)
             throw new Exception("Erro ao deletar");
 
         var result = await roleService.DeleteRoleAsync(command.Id);
@@ -29,7 +29,7 @@ public class DeleteRoleCommandHandler(
         if (!result.Succeeded || result == null)
             throw new Exception("Erro ao deletar");
 
-        logger.LogInformation("Role deletada com sucesso: ", role);
+        logger.LogInformation("Role deletada com sucesso: {RoleId} - {RoleName}", role.Id, role.Name);
 
         command.Result = new BaseResult(true, "Deletada com sucesso");
         return await base.HandleAsync(command, cancellationToken);

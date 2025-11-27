@@ -71,7 +71,7 @@ public sealed class UserReadRepositoryIntegrationTests : IAsyncLifetime
             SortDescending = true
         }, CancellationToken.None);
 
-        Assert.Equal(1, result.Items.Count);
+        Assert.Single(result.Items);
         Assert.Equal(2, result.TotalCount);
         Assert.Equal("beta@test.com", result.Items[0].Email);
     }

@@ -77,6 +77,14 @@ namespace EChamado.Client
                     client.Timeout = TimeSpan.FromSeconds(30);
                 }).AddHttpMessageHandler<AuthTokenHandler>();
 
+                // OData Service
+                builder.Services.AddHttpClient<ODataService>(client =>
+                {
+                    client.BaseAddress = new Uri(backendUrl);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                }).AddHttpMessageHandler<AuthTokenHandler>();
+                builder.Services.AddScoped<IODataService, ODataService>();
+
                 // Authentication - Updated to use AuthService
                 builder.Services.AddAuthorizationCore();
                 builder.Services.AddScoped<AuthenticationStateProvider, CookieAuthenticationStateProvider>();

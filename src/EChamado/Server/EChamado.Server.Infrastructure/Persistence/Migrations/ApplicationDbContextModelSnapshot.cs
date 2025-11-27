@@ -254,6 +254,18 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Category_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Category_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Category_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_Category_IsDeleted_Name");
+
                     b.ToTable("Category", "public");
                 });
 
@@ -327,6 +339,18 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Department_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Department_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Department_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_Department_IsDeleted_Name");
+
                     b.ToTable("Department", "public");
                 });
 
@@ -359,6 +383,18 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_OrderType_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_OrderType_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_OrderType_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_OrderType_IsDeleted_Name");
+
                     b.ToTable("OrderType", "public");
                 });
 
@@ -390,6 +426,18 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_StatusType_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_StatusType_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_StatusType_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_StatusType_IsDeleted_Name");
 
                     b.ToTable("StatusType", "public");
                 });
@@ -505,15 +553,44 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("IX_Order_CategoryId");
 
-                    b.HasIndex("DepartmentId");
+                    b.HasIndex("ClosingDate")
+                        .HasDatabaseName("IX_Order_ClosingDate");
 
-                    b.HasIndex("StatusId");
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Order_CreatedAt");
 
-                    b.HasIndex("SubCategoryId");
+                    b.HasIndex("DepartmentId")
+                        .HasDatabaseName("IX_Order_DepartmentId");
 
-                    b.HasIndex("TypeId");
+                    b.HasIndex("DueDate")
+                        .HasDatabaseName("IX_Order_DueDate");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Order_IsDeleted");
+
+                    b.HasIndex("OpeningDate")
+                        .HasDatabaseName("IX_Order_OpeningDate");
+
+                    b.HasIndex("RequestingUserId")
+                        .HasDatabaseName("IX_Order_RequestingUserId");
+
+                    b.HasIndex("ResponsibleUserId")
+                        .HasDatabaseName("IX_Order_ResponsibleUserId");
+
+                    b.HasIndex("StatusId")
+                        .HasDatabaseName("IX_Order_StatusId");
+
+                    b.HasIndex("SubCategoryId")
+                        .HasDatabaseName("IX_Order_SubCategoryId");
+
+                    b.HasIndex("TypeId")
+                        .HasDatabaseName("IX_Order_TypeId");
+
+                    b.HasIndex("IsDeleted", "StatusId", "CreatedAt")
+                        .HasDatabaseName("IX_Order_IsDeleted_StatusId_CreatedAt");
 
                     b.ToTable("Order", "public");
                 });

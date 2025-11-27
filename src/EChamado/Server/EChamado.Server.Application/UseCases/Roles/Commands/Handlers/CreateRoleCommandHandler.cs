@@ -16,23 +16,23 @@ public class CreateRoleCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<CreateRoleCommand> HandleAsync(CreateRoleCommand command, CancellationToken cancellationToken = default)
     {
-        if(command == null)
+        if (command == null)
             throw new ArgumentNullException(nameof(command));
 
-        if(string.IsNullOrWhiteSpace(command.Name))
+        if (string.IsNullOrWhiteSpace(command.Name))
             throw new ArgumentNullException(nameof(command.Name));
 
         var result = await roleService.CreateRoleAsync(ApplicationRole.Create(command.Name));
 
-        if(!result.Succeeded || result == null)
+        if (!result.Succeeded || result == null)
             throw new Exception("Erro ao criar");
 
         var role = await roleService.GetRoleByNameAsync(command.Name);
 
-        if(role == null)
+        if (role == null)
             throw new Exception("Erro ao criar");
 
-        logger.LogInformation("Role criada com sucesso: ", role);
+        logger.LogInformation("Role criada com sucesso: {RoleId} - {RoleName}", role.Id, role.Name);
 
         command.Result = new BaseResult<Guid>(role.Id, true, "Criado com sucesso");
         return await base.HandleAsync(command, cancellationToken);

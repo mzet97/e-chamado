@@ -31,6 +31,20 @@ namespace EChamado.Server.Infrastructure.Persistence.Mappings
 
             builder.Property(x => x.IsDeleted)
                 .IsRequired();
+
+            // Indexes for Gridify query performance
+            builder.HasIndex(x => x.Name)
+                .HasDatabaseName("IX_Department_Name");
+
+            builder.HasIndex(x => x.CreatedAt)
+                .HasDatabaseName("IX_Department_CreatedAt");
+
+            builder.HasIndex(x => x.IsDeleted)
+                .HasDatabaseName("IX_Department_IsDeleted");
+
+            // Composite index for common filtering scenario
+            builder.HasIndex(x => new { x.IsDeleted, x.Name })
+                .HasDatabaseName("IX_Department_IsDeleted_Name");
         }
     }
 }

@@ -1,69 +1,72 @@
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
+using EChamado.Server.Domain.Domains.Orders;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
+using LinqKit;
 using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries;
 
 public class SearchOrdersQueryHandler(
     IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider,
     ILogger<SearchOrdersQueryHandler> logger) :
     RequestHandlerAsync<SearchOrdersQuery>
 {
     public override async Task<SearchOrdersQuery> HandleAsync(SearchOrdersQuery query, CancellationToken cancellationToken = default)
     {
-        // Busca todos os orders
-        var orders = await unitOfWork.Orders.GetAllAsync();
-
-        // Aplica filtros
-        var filtered = orders.AsEnumerable();
+        // Constrói predicado para filtro no banco de dados (evita carregar todos na memória)
+        Expression<Func<Order, bool>> filter = PredicateBuilder.New<Order>(true);
 
         if (!string.IsNullOrWhiteSpace(query.SearchText))
         {
             var searchLower = query.SearchText.ToLower();
-            filtered = filtered.Where(o =>
+            filter = filter.And(o =>
                 o.Title.ToLower().Contains(searchLower) ||
                 o.Description.ToLower().Contains(searchLower));
         }
 
         if (query.StatusId.HasValue)
-            filtered = filtered.Where(o => o.StatusId == query.StatusId.Value);
+            filter = filter.And(o => o.StatusId == query.StatusId.Value);
 
         if (query.TypeId.HasValue)
-            filtered = filtered.Where(o => o.TypeId == query.TypeId.Value);
+            filter = filter.And(o => o.TypeId == query.TypeId.Value);
 
         if (query.DepartmentId.HasValue)
-            filtered = filtered.Where(o => o.DepartmentId == query.DepartmentId.Value);
+            filter = filter.And(o => o.DepartmentId == query.DepartmentId.Value);
 
         if (query.CategoryId.HasValue)
-            filtered = filtered.Where(o => o.CategoryId == query.CategoryId.Value);
+            filter = filter.And(o => o.CategoryId == query.CategoryId.Value);
 
         if (query.RequestingUserId.HasValue)
-            filtered = filtered.Where(o => o.RequestingUserId == query.RequestingUserId.Value);
+            filter = filter.And(o => o.RequestingUserId == query.RequestingUserId.Value);
 
         if (query.AssignedToUserId.HasValue)
-            filtered = filtered.Where(o => o.ResponsibleUserId == query.AssignedToUserId.Value);
+            filter = filter.And(o => o.ResponsibleUserId == query.AssignedToUserId.Value);
 
         if (query.StartDate.HasValue)
-            filtered = filtered.Where(o => o.OpeningDate.HasValue && o.OpeningDate.Value >= query.StartDate.Value);
+            filter = filter.And(o => o.OpeningDate.HasValue && o.OpeningDate.Value >= query.StartDate.Value);
 
         if (query.EndDate.HasValue)
-            filtered = filtered.Where(o => o.OpeningDate.HasValue && o.OpeningDate.Value <= query.EndDate.Value);
+            filter = filter.And(o => o.OpeningDate.HasValue && o.OpeningDate.Value <= query.EndDate.Value);
 
+        var utcNow = dateTimeProvider.UtcNow;
         if (query.IsOverdue.HasValue && query.IsOverdue.Value)
-            filtered = filtered.Where(o => o.DueDate.HasValue && o.DueDate.Value < DateTime.UtcNow && !o.ClosingDate.HasValue);
+            filter = filter.And(o => o.DueDate.HasValue && o.DueDate.Value < utcNow && !o.ClosingDate.HasValue);
 
-        var totalCount = filtered.Count();
+        // Usa SearchAsync com paginação no banco de dados
+        Func<IQueryable<Order>, IOrderedQueryable<Order>> orderBy = q => q.OrderByDescending(o => o.OpeningDate);
 
-        // Paginação
-        var ordersResult = filtered
-            .OrderByDescending(o => o.OpeningDate)
-            .Skip((query.PageNumber - 1) * query.PageSize)
-            .Take(query.PageSize)
-            .ToList();
+        var result = await unitOfWork.Orders.SearchAsync(
+            predicate: filter,
+            orderBy: orderBy,
+            pageSize: query.PageSize,
+            page: query.PageNumber);
 
-        // Busca dados relacionados
+        // Busca dados relacionados para lookup (estes são pequenos, OK carregar todos)
         var statuses = await unitOfWork.StatusTypes.GetAllAsync();
         var types = await unitOfWork.OrderTypes.GetAllAsync();
         var departments = await unitOfWork.Departments.GetAllAsync();
@@ -73,10 +76,10 @@ public class SearchOrdersQueryHandler(
         var departmentDict = departments.ToDictionary(d => d.Id, d => d.Name);
 
         // Mapeia para ViewModels
-        var items = ordersResult.Select(o => new OrderListViewModel(
+        var items = result.Data.Select(o => new OrderListViewModel(
             o.Id,
             o.Title,
-            o.OpeningDate ?? DateTime.UtcNow,
+            o.OpeningDate ?? utcNow,
             o.ClosingDate,
             o.DueDate,
             statusDict.GetValueOrDefault(o.StatusId, "Unknown"),
@@ -84,13 +87,12 @@ public class SearchOrdersQueryHandler(
             departmentDict.GetValueOrDefault(o.DepartmentId),
             o.RequestingUserEmail,
             o.ResponsibleUserEmail,
-            o.DueDate.HasValue && o.DueDate.Value < DateTime.UtcNow && !o.ClosingDate.HasValue
+            o.DueDate.HasValue && o.DueDate.Value < utcNow && !o.ClosingDate.HasValue
         )).ToList();
 
-        logger.LogInformation("Search orders returned {Count} results", items.Count);
+        logger.LogInformation("Search orders returned {Count} results out of {Total}", items.Count, result.PagedResult?.RowCount ?? 0);
 
-        var pagedResult = PagedResult.Create(query.PageNumber, query.PageSize, totalCount);
-        query.Result = new BaseResultList<OrderListViewModel>(items, pagedResult);
+        query.Result = new BaseResultList<OrderListViewModel>(items, result.PagedResult);
 
         return await base.HandleAsync(query, cancellationToken);
     }

@@ -189,6 +189,11 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
         return await DbSet.AsNoTracking().AnyAsync(predicate);
     }
 
+    public virtual IQueryable<TEntity> GetAllQueryable()
+    {
+        return DbSet.AsNoTracking().AsQueryable();
+    }
+
     public void Dispose()
     {
         Dispose(true);

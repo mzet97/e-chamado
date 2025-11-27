@@ -31,5 +31,19 @@ public class StatusTypeMapping : IEntityTypeConfiguration<StatusType>
 
         builder.Property(x => x.IsDeleted)
             .IsRequired();
+
+        // Indexes for Gridify query performance
+        builder.HasIndex(x => x.Name)
+            .HasDatabaseName("IX_StatusType_Name");
+
+        builder.HasIndex(x => x.CreatedAt)
+            .HasDatabaseName("IX_StatusType_CreatedAt");
+
+        builder.HasIndex(x => x.IsDeleted)
+            .HasDatabaseName("IX_StatusType_IsDeleted");
+
+        // Composite index for common filtering scenario
+        builder.HasIndex(x => new { x.IsDeleted, x.Name })
+            .HasDatabaseName("IX_StatusType_IsDeleted_Name");
     }
 }

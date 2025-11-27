@@ -35,7 +35,7 @@ public class UpdateRoleCommandHandler(
         if (!result.Succeeded || result == null)
             throw new Exception("Erro ao atualizar");
 
-        logger.LogInformation("Role atualizar com sucesso: ", role);
+        logger.LogInformation("Role atualizada com sucesso: {RoleId} - {RoleName}", role.Id, role.Name);
 
         command.Result = new BaseResult(true, "Atualizada com sucesso");
         return await base.HandleAsync(command, cancellationToken);

@@ -8,9 +8,11 @@ using EChamado.Server.Domain.Services.Interface;
 using EChamado.Server.Endpoints;
 using EChamado.Server.Infrastructure.Configuration;
 using EChamado.Server.Infrastructure.MessageBus;
+using EChamado.Server.OData;
 using EChamado.Server.Infrastructure.Users;
 using EChamado.Server.Middlewares;
 using EChamado.Server.Presentation.Api.Endpoints;
+using Microsoft.AspNetCore.OData;
 using Scrutor;
 using Serilog;
 
@@ -54,7 +56,16 @@ try
     builder.Services.ResolveDependenciesInfrastructure();
     builder.Services.AddApiDocumentation();
     builder.Services.AddHealthCheckConfiguration(builder.Configuration);
-    builder.Services.AddControllers();
+    builder.Services
+        .AddControllers()
+        .AddOData(opt => opt
+            .AddRouteComponents("odata", ODataModel.Model)
+            .Select()
+            .Filter()
+            .OrderBy()
+            .Expand()
+            .Count()
+            .SetMaxTop(100));
 
     var app = builder.Build();
 

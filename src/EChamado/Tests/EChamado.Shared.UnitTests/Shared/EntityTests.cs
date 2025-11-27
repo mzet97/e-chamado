@@ -8,7 +8,7 @@ namespace EChamado.Shared.UnitTests.Shared;
 public class EntityTests
 {
     private static readonly IDateTimeProvider _dateTimeProvider = new MockDateTimeProvider();
-    
+
     private class MockDateTimeProvider : IDateTimeProvider
     {
         public DateTime Now => DateTime.Now;
@@ -26,14 +26,14 @@ public class EntityTests
             // Simular comportamento padr�o de cria��o
             var idField = typeof(Entity).GetField("Id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var createdAtField = typeof(Entity).GetField("CreatedAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
+
             // Como as propriedades s�o private set, vamos usar reflection para testes
             SetId(Guid.NewGuid());
             SetCreatedAt(DateTime.Now);
             Validate();
         }
 
-        public TestEntity(Guid id, DateTime createdAt, string name) 
+        public TestEntity(Guid id, DateTime createdAt, string name)
             : base(id, createdAt, null, null, false)
         {
             Name = name;
@@ -113,7 +113,7 @@ public class EntityTests
 
         // Assert
         entity.UpdatedAt.Should().NotBeNull();
-        entity.UpdatedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        entity.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         entity.UpdatedAt.Should().NotBe(originalUpdatedAt);
         entity.Name.Should().Be("New Name");
     }
@@ -130,7 +130,7 @@ public class EntityTests
         // Assert
         entity.IsDeleted.Should().BeTrue();
         entity.DeletedAt.Should().NotBeNull();
-        entity.DeletedAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
+        entity.DeletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -231,13 +231,13 @@ public class EntityTests
     {
         // Arrange
         var entity = new TestEntity(Guid.NewGuid(), DateTime.Now, "Original Name");
-        
+
         // Act
         entity.UpdateName("Name1");
         var firstUpdate = entity.UpdatedAt;
-        
+
         Thread.Sleep(10); // Pequena pausa
-        
+
         entity.UpdateName("Name2");
         var secondUpdate = entity.UpdatedAt;
 

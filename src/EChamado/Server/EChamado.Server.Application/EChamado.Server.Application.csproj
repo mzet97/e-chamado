@@ -32,8 +32,11 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
+    <PackageReference Include="Gridify" Version="2.16.3" />
+    <PackageReference Include="Gridify.EntityFramework" Version="2.16.3" />
     <PackageReference Include="LinqKit.Core" Version="1.2.8" />
     <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
     <PackageReference Include="Paramore.Brighter" Version="10.0.2" />
     <PackageReference Include="Paramore.Brighter.Extensions.DependencyInjection" Version="10.0.2" />
     <PackageReference Include="Paramore.Darker" Version="4.1.1" />

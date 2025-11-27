@@ -35,4 +35,6 @@ public interface IRepository<TEntity> : IDisposable where TEntity : IEntity
     Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null);
 
     Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate);
+
+    IQueryable<TEntity> GetAllQueryable();
 }

@@ -1,0 +1,234 @@
+@page "/orders/odata"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject IODataService ODataService
+@inject ILogger<OrderListOData> Logger
+@attribute [Authorize]
+
+<PageTitle>Orders - OData Query</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Orders com OData Query</MudText>
+
+    <MudPaper Class="pa-4 mb-4">
+        <MudText Typo="Typo.h6" Class="mb-2">Filtros OData</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="filterText"
+                             Label="Filtro OData"
+                             Variant="Variant.Outlined"
+                             HelperText="Ex: contains(Title, 'Suporte')" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="orderByText"
+                             Label="Ordenação"
+                             Variant="Variant.Outlined"
+                             HelperText="Ex: CreatedAt desc" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudNumericField @bind-Value="topValue"
+                                Label="Quantidade (Top)"
+                                Variant="Variant.Outlined"
+                                Min="1"
+                                Max="100" />
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid Class="mt-2">
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Filtros Rápidos:</MudText>
+                <MudChipSet T="string">
+                    <MudChip T="string" Color="Color.Primary" OnClick="@(() => ApplyQuickFilter("contains(Title, 'Suporte')"))">
+                        Título contém "Suporte"
+                    </MudChip>
+                    <MudChip T="string" Color="Color.Secondary" OnClick="@(() => ApplyQuickFilter("IsDeleted eq false"))">
+                        Não deletados
+                    </MudChip>
+                    <MudChip T="string" Color="Color.Tertiary" OnClick="@(() => ApplyQuickFilter("CreatedAt ge 2024-01-01"))">
+                        Criados em 2024+
+                    </MudChip>
+                    <MudChip T="string" Color="Color.Info" OnClick="@(() => ApplyOrderBy("CreatedAt desc"))">
+                        Mais recentes primeiro
+                    </MudChip>
+                    <MudChip T="string" Color="Color.Warning" OnClick="ClearFilters">
+                        Limpar filtros
+                    </MudChip>
+                </MudChipSet>
+            </MudItem>
+        </MudGrid>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Class="mt-4"
+                   OnClick="LoadOrdersAsync"
+                   Disabled="loading">
+            @if (loading)
+            {
+                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                <span>Carregando...</span>
+            }
+            else
+            {
+                <span>Buscar Orders</span>
+            }
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Secondary"
+                   Class="mt-4 ml-2"
+                   OnClick="LoadCountAsync"
+                   Disabled="loading">
+            Contar Total
+        </MudButton>
+    </MudPaper>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+    }
+
+    @if (totalCount.HasValue)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            Total de orders (com filtro aplicado): <strong>@totalCount</strong>
+        </MudAlert>
+    }
+
+    @if (orders != null && orders.Any())
+    {
+        <MudTable Items="@orders" Hover="true" Striped="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Título</MudTh>
+                <MudTh>Descrição</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Tipo</MudTh>
+                <MudTh>Categoria</MudTh>
+                <MudTh>Departamento</MudTh>
+                <MudTh>Data Abertura</MudTh>
+                <MudTh>Solicitante</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Título">@context.Title</MudTd>
+                <MudTd DataLabel="Descrição">-</MudTd>
+                <MudTd DataLabel="Status">@context.StatusName</MudTd>
+                <MudTd DataLabel="Tipo">@context.TypeName</MudTd>
+                <MudTd DataLabel="Categoria">-</MudTd>
+                <MudTd DataLabel="Departamento">@context.DepartmentName</MudTd>
+                <MudTd DataLabel="Data Abertura">@context.OpeningDate.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                <MudTd DataLabel="Solicitante">@context.RequestingUserEmail</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+
+        <MudText Typo="Typo.caption" Class="mt-2">
+            Exibindo @orders.Count() order(s) carregadas via OData
+        </MudText>
+    }
+    else if (!loading && orders != null)
+    {
+        <MudAlert Severity="Severity.Info">Nenhuma order encontrada com os filtros aplicados.</MudAlert>
+    }
+
+    <MudPaper Class="pa-4 mt-4">
+        <MudText Typo="Typo.h6" Class="mb-2">Exemplos de Queries OData</MudText>
+        <MudList T="string" Dense="true">
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Code">
+                <code>contains(Title, 'Suporte')</code> - Título contém "Suporte"
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Code">
+                <code>StatusName eq 'Aberto'</code> - Status igual a "Aberto"
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Code">
+                <code>CreatedAt ge 2024-01-01</code> - Criados após 01/01/2024
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Code">
+                <code>IsDeleted eq false and contains(Title, 'TI')</code> - Não deletados E título contém "TI"
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Code">
+                <code>CreatedAt desc</code> - Ordenar por data de criação (descendente)
+            </MudListItem>
+        </MudList>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private IEnumerable<OrderListViewModel>? orders;
+    private string? filterText;
+    private string? orderByText;
+    private int? topValue = 20;
+    private int? totalCount;
+    private bool loading = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrdersAsync();
+    }
+
+    private async Task LoadOrdersAsync()
+    {
+        loading = true;
+        errorMessage = null;
+        totalCount = null;
+
+        try
+        {
+            orders = await ODataService.GetOrdersAsync(
+                filter: filterText,
+                orderBy: orderByText,
+                top: topValue
+            );
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading orders via OData");
+            errorMessage = $"Erro ao carregar orders: {ex.Message}";
+            orders = null;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task LoadCountAsync()
+    {
+        loading = true;
+        errorMessage = null;
+
+        try
+        {
+            totalCount = await ODataService.GetOrdersCountAsync(filterText);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error counting orders via OData");
+            errorMessage = $"Erro ao contar orders: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void ApplyQuickFilter(string filter)
+    {
+        filterText = filter;
+    }
+
+    private void ApplyOrderBy(string orderBy)
+    {
+        orderByText = orderBy;
+    }
+
+    private void ClearFilters()
+    {
+        filterText = null;
+        orderByText = null;
+        topValue = 20;
+        totalCount = null;
+    }
+}
