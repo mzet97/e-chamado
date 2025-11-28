@@ -11,135 +11,182 @@
 
 <PageTitle>@(IsEditMode ? "Editar Chamado" : "Novo Chamado") - EChamado</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudPaper Class="pa-6" Elevation="2">
-        <MudText Typo="Typo.h4" Class="mb-6">
-            @(IsEditMode ? "Editar Chamado" : "Novo Chamado")
-        </MudText>
-
-        @if (isLoading)
-        {
-            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
-            <MudText>Carregando...</MudText>
-        }
-        else
-        {
-            <MudForm @ref="form" @bind-IsValid="@isFormValid">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    @if (isLoading)
+    {
+        <MudCard Elevation="3">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudSkeleton Width="200px" Height="20px" />
+                    <MudSkeleton Width="100px" Height="15px" />
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
                 <MudGrid>
-                    <!-- Título -->
-                    <MudItem xs="12">
-                        <MudTextField @bind-Value="model.Title"
-                                      Label="Título *"
-                                      Variant="Variant.Outlined"
-                                      Required="true"
-                                      RequiredError="Título é obrigatório"
-                                      MaxLength="200"
-                                      Counter="200" />
-                    </MudItem>
+                    <MudItem xs="12"><MudSkeleton Height="50px" /></MudItem>
+                    <MudItem xs="12"><MudSkeleton Height="150px" /></MudItem>
+                    <MudItem xs="12" md="6"><MudSkeleton Height="50px" /></MudItem>
+                    <MudItem xs="12" md="6"><MudSkeleton Height="50px" /></MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    }
+    else
+    {
+        <MudCard Elevation="3">
+            <MudForm @ref="form" @bind-IsValid="@isFormValid">
+                <MudCardHeader>
+                    <CardHeaderAvatar>
+                        <MudAvatar Color="@(IsEditMode ? Color.Info : Color.Primary)">
+                            <MudIcon Icon="@(IsEditMode ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" />
+                        </MudAvatar>
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h5">@(IsEditMode ? "Editar Chamado" : "Novo Chamado")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Preencha as informações abaixo</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
 
-                    <!-- Descrição -->
-                    <MudItem xs="12">
-                        <MudTextField @bind-Value="model.Description"
-                                      Label="Descrição *"
-                                      Variant="Variant.Outlined"
-                                      Required="true"
-                                      RequiredError="Descrição é obrigatória"
-                                      Lines="5"
-                                      MaxLength="2000"
-                                      Counter="2000" />
-                    </MudItem>
+                <MudCardContent>
+                    <MudGrid Spacing="3">
+                        <!-- Título -->
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="model.Title"
+                                          Label="Título"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          RequiredError="Título é obrigatório"
+                                          MaxLength="200"
+                                          Counter="200"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Title" />
+                        </MudItem>
 
-                    <!-- Tipo -->
-                    <MudItem xs="12" md="6">
-                        <MudSelect T="Guid" @bind-Value="model.TypeId"
-                                   Label="Tipo *"
-                                   Variant="Variant.Outlined"
-                                   Required="true"
-                                   RequiredError="Tipo é obrigatório">
-                            @foreach (var type in types)
-                            {
-                                <MudSelectItem Value="@type.Id">@type.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudItem>
+                        <!-- Descrição -->
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="model.Description"
+                                          Label="Descrição"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          RequiredError="Descrição é obrigatória"
+                                          Lines="5"
+                                          MaxLength="2000"
+                                          Counter="2000"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Description" />
+                        </MudItem>
 
-                    <!-- Departamento -->
-                    <MudItem xs="12" md="6">
-                        <MudSelect T="Guid?" @bind-Value="model.DepartmentId"
-                                   Label="Departamento"
-                                   Variant="Variant.Outlined"
-                                   Clearable="true">
-                            @foreach (var dept in departments)
-                            {
-                                <MudSelectItem T="Guid?" Value="@dept.Id">@dept.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudItem>
+                        <MudItem xs="12">
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Classificação</MudText>
+                        </MudItem>
 
-                    <!-- Categoria -->
-                    <MudItem xs="12" md="6">
-                        <MudSelect T="Guid?" Value="selectedCategoryId"
-                                   ValueChanged="OnCategoryChanged"
-                                   Label="Categoria"
-                                   Variant="Variant.Outlined"
-                                   Clearable="true">
-                            @foreach (var cat in categories)
-                            {
-                                <MudSelectItem T="Guid?" Value="@cat.Id">@cat.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudItem>
+                        <!-- Tipo -->
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="Guid" @bind-Value="model.TypeId"
+                                       Label="Tipo"
+                                       Variant="Variant.Outlined"
+                                       Required="true"
+                                       RequiredError="Tipo é obrigatório"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       AdornmentIcon="@Icons.Material.Filled.Category">
+                                @foreach (var type in types)
+                                {
+                                    <MudSelectItem Value="@type.Id">@type.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
 
-                    <!-- Subcategoria -->
-                    <MudItem xs="12" md="6">
-                        <MudSelect T="Guid?" @bind-Value="model.SubCategoryId"
-                                   Label="Subcategoria"
-                                   Variant="Variant.Outlined"
-                                   Clearable="true"
-                                   Disabled="@(availableSubCategories.Count == 0)">
-                            @foreach (var subCat in availableSubCategories)
-                            {
-                                <MudSelectItem T="Guid?" Value="@subCat.Id">@subCat.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudItem>
-
-                    <!-- Prazo -->
-                    <MudItem xs="12" md="6">
-                        <MudDatePicker @bind-Date="dueDate"
-                                       Label="Prazo"
+                        <!-- Departamento -->
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="Guid?" @bind-Value="model.DepartmentId"
+                                       Label="Departamento"
                                        Variant="Variant.Outlined"
                                        Clearable="true"
-                                       MinDate="DateTime.Today"
-                                       DateFormat="dd/MM/yyyy" />
-                    </MudItem>
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       AdornmentIcon="@Icons.Material.Filled.Business">
+                                @foreach (var dept in departments)
+                                {
+                                    <MudSelectItem T="Guid?" Value="@dept.Id">@dept.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
 
-                    <!-- Botões -->
-                    <MudItem xs="12" Class="d-flex justify-space-between mt-4">
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Default"
-                                   OnClick="Cancel">
-                            Cancelar
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   Disabled="@(!isFormValid || isSaving)"
-                                   OnClick="Submit">
-                            @if (isSaving)
-                            {
-                                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
-                                <span>Salvando...</span>
-                            }
-                            else
-                            {
-                                <span>@(IsEditMode ? "Atualizar" : "Criar")</span>
-                            }
-                        </MudButton>
-                    </MudItem>
-                </MudGrid>
+                        <!-- Categoria -->
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="Guid?" Value="selectedCategoryId"
+                                       ValueChanged="OnCategoryChanged"
+                                       Label="Categoria"
+                                       Variant="Variant.Outlined"
+                                       Clearable="true"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       AdornmentIcon="@Icons.Material.Filled.Class">
+                                @foreach (var cat in categories)
+                                {
+                                    <MudSelectItem T="Guid?" Value="@cat.Id">@cat.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+
+                        <!-- Subcategoria -->
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="Guid?" @bind-Value="model.SubCategoryId"
+                                       Label="Subcategoria"
+                                       Variant="Variant.Outlined"
+                                       Clearable="true"
+                                       Disabled="@(availableSubCategories.Count == 0)"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       AdornmentIcon="@Icons.Material.Filled.SubdirectoryArrowRight">
+                                @foreach (var subCat in availableSubCategories)
+                                {
+                                    <MudSelectItem T="Guid?" Value="@subCat.Id">@subCat.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+
+                        <!-- Prazo -->
+                        <MudItem xs="12" md="6">
+                            <MudDatePicker @bind-Date="dueDate"
+                                           Label="Prazo (Opcional)"
+                                           Variant="Variant.Outlined"
+                                           Clearable="true"
+                                           MinDate="DateTime.Today"
+                                           DateFormat="dd/MM/yyyy"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.Event" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+
+                <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               OnClick="Cancel"
+                               Disabled="isSaving">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="@(!isFormValid || isSaving)"
+                               OnClick="Submit"
+                               StartIcon="@(IsEditMode ? Icons.Material.Filled.Save : Icons.Material.Filled.Send)">
+                        @if (isSaving)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Salvando...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>@(IsEditMode ? "Atualizar" : "Criar Chamado")</MudText>
+                        }
+                    </MudButton>
+                </MudCardActions>
             </MudForm>
-        }
-    </MudPaper>
+        </MudCard>
+    }
 </MudContainer>
 
 @code {

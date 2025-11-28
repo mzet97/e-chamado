@@ -1,4 +1,5 @@
 using EChamado.Server.Common.Api;
+using EChamado.Server.Endpoints.AI;
 using EChamado.Server.Endpoints.Categories;
 using EChamado.Server.Endpoints.Comments;
 using EChamado.Server.Endpoints.Departments;
@@ -140,6 +141,12 @@ public static class Endpoint
             .MapEndpoint<CreateCommentEndpoint>()
             .MapEndpoint<GetCommentsByOrderIdEndpoint>()
             .MapEndpoint<DeleteCommentEndpoint>();
+
+        // AI v1 - Natural Language to Gridify conversion
+        endpoints.MapGroup("v1/ai")
+            .WithTags("AI")
+            .RequireAuthorization()
+            .MapEndpoint<ConvertNLToGridifyEndpoint>();
     }
 
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)

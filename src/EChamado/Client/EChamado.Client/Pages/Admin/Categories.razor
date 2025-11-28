@@ -1,16 +1,23 @@
 @page "/admin/categories"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using EChamado.Client.Components
 @inject CategoryService CategoryService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
+@inject ILogger<Categories> Logger
 @attribute [Authorize]
 
 <PageTitle>Gerenciar Categorias - EChamado</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <div class="d-flex justify-space-between align-center mb-4">
-        <MudText Typo="Typo.h4">Gerenciar Categorias</MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Category" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h4">Gerenciar Categorias</MudText>
+        </MudStack>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
@@ -18,6 +25,10 @@
             Nova Categoria
         </MudButton>
     </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="Category"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
 
     @if (loading)
     {
@@ -122,21 +133,63 @@
     private List<CategoryResponse> categories = new();
     private bool loading = true;
     private string searchString = "";
+    private string? currentODataFilter;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCategories();
     }
 
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for Categories: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadCategoriesWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
     private async Task LoadCategories()
+    {
+        currentODataFilter = null;
+        await LoadCategoriesWithFilter();
+    }
+
+    private async Task LoadCategoriesWithFilter()
     {
         loading = true;
         try
         {
-            categories = await CategoryService.GetAllAsync();
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading categories with OData filter: {Filter}", currentODataFilter);
+                categories = (await ODataService.GetCategoriesAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                categories = await CategoryService.GetAllAsync();
+            }
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading categories");
             Snackbar.Add($"Erro ao carregar categorias: {ex.Message}", Severity.Error);
         }
         finally

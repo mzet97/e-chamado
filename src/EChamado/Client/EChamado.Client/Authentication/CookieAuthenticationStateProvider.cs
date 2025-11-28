@@ -180,8 +180,8 @@ public class CookieAuthenticationStateProvider : AuthenticationStateProvider
 
     public async Task<bool> LoginAsync(string email, string password)
     {
-        var success = await _authService.LoginAsync(email, password);
-        return success;
+        var result = await _authService.LoginAsync(new Models.LoginModel { Email = email, Password = password });
+        return result.Successful;
     }
 
     public async Task LogoutAsync()

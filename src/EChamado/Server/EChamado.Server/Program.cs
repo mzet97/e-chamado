@@ -1,4 +1,5 @@
 using EChamado.Server.Application.Configuration;
+using EChamado.Server.Application.Services.AI.Configuration;
 using EChamado.Server.Application.Users;
 using EChamado.Server.Application.Users.Abstractions;
 using EChamado.Server.Application.Users.Handlers;
@@ -54,6 +55,13 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.ResolveDependenciesApplication();
     builder.Services.ResolveDependenciesInfrastructure();
+
+    // AI Services for Natural Language Query Conversion
+    builder.Services.AddAIServices(options =>
+    {
+        builder.Configuration.GetSection(AISettings.SectionName).Bind(options);
+    });
+
     builder.Services.AddApiDocumentation();
     builder.Services.AddHealthCheckConfiguration(builder.Configuration);
     builder.Services
@@ -76,11 +84,20 @@ try
     app.UseCors("AllowBlazorClient");
     app.UseRequestLogging();
     app.UsePerformanceLogging(slowRequestThresholdMs: 3000);
-    app.UseApiDocumentation();
     app.UseHealthCheckConfiguration();
 
     // ✅ ORDEM CORRETA: Routing → Authentication → Authorization → Endpoints
     app.UseRouting();
+
+    // Swagger/OpenAPI - usado apenas para gerar o JSON que o Scalar consome
+    app.UseSwagger(c =>
+    {
+        c.RouteTemplate = "openapi/{documentName}.json";
+    });
+
+    // Scalar - UI moderna para documentação da API (substitui Swagger UI)
+    app.UseApiDocumentation();
+
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -88,8 +105,9 @@ try
     app.MapEndpoints();
     app.MapUserReadEndpoints();
     app.MapControllers();
-    app.MapGet("/swagger", () => Results.Redirect("/api-docs/v1", permanent: true));
-    app.MapGet("/swagger/index.html", () => Results.Redirect("/api-docs/v1", permanent: true));
+
+    // Endpoint de health check simples
+    app.MapGet("/health", () => new { status = "ok", service = "EChamado.Server", timestamp = DateTime.UtcNow });
 
     Log.Information("=== EChamado Server configured successfully, starting... ===");
     app.Run();

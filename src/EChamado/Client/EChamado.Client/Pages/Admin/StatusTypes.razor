@@ -2,10 +2,14 @@
 @page "/admin/status"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using EChamado.Client.Components
 @using MudBlazor
 @inject LookupService LookupService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
+@inject ILogger<StatusTypes> Logger
 @attribute [Authorize]
 
 <PageTitle>Gerenciar Status - EChamado</PageTitle>
@@ -20,6 +24,10 @@
             Novo Status
         </MudButton>
     </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="StatusType"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
 
     @if (loading)
     {
@@ -81,21 +89,63 @@
     private List<StatusTypeResponse> statusTypes = new();
     private bool loading = true;
     private string searchString = "";
+    private string? currentODataFilter;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadStatusTypes();
     }
 
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for StatusTypes: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadStatusTypesWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
     private async Task LoadStatusTypes()
+    {
+        currentODataFilter = null;
+        await LoadStatusTypesWithFilter();
+    }
+
+    private async Task LoadStatusTypesWithFilter()
     {
         loading = true;
         try
         {
-            statusTypes = await LookupService.GetStatusTypesAsync(forceRefresh: true);
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading status types with OData filter: {Filter}", currentODataFilter);
+                statusTypes = (await ODataService.GetStatusTypesAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                statusTypes = await LookupService.GetStatusTypesAsync(forceRefresh: true);
+            }
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading status types");
             Snackbar.Add($"Erro ao carregar status: {ex.Message}", Severity.Error);
         }
         finally

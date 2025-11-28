@@ -12,8 +12,9 @@ namespace EChamado.Server.Controllers.OData;
 /// <summary>
 /// Controller OData para OrderTypes
 /// </summary>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-[Route("odata/[controller]")]
+
 public class OrderTypesController(IOrderTypeRepository orderTypeRepository) : ODataController
 {
     /// <summary>
@@ -21,7 +22,6 @@ public class OrderTypesController(IOrderTypeRepository orderTypeRepository) : OD
     /// </summary>
     /// <returns>Lista de order types</returns>
     [HttpGet]
-    [HttpGet("$count")]
     [EnableQuery(MaxExpansionDepth = 5)]
     public IQueryable<OrderType> Get()
         => orderTypeRepository.GetAllQueryable();

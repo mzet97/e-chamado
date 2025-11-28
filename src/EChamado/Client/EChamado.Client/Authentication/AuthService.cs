@@ -4,7 +4,10 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using EChamado.Client.Services;
+using EChamado.Client.Models;
 
 namespace EChamado.Client.Authentication;
 
@@ -14,6 +17,7 @@ public class AuthService
     private readonly ILogger<AuthService> _logger;
     private readonly IJSRuntime _js;
     private readonly PersistentLogger _persistentLog;
+    private const string RedirectUri = "https://localhost:7274/authentication/login-callback";
 
     public AuthService(
         HttpClient httpClient,
@@ -27,15 +31,78 @@ public class AuthService
         _persistentLog = persistentLog;
     }
 
-    public async Task<bool> LoginAsync(string email, string password)
+    public async Task<string> InitiateLoginAsync()
     {
+        var codeVerifier = GenerateRandomString(64);
+        var codeChallenge = GenerateCodeChallenge(codeVerifier);
+        var state = GenerateRandomString(32);
+
+        await _js.InvokeVoidAsync("localStorage.setItem", "pkce_code_verifier", codeVerifier);
+        await _js.InvokeVoidAsync("localStorage.setItem", "pkce_state", state);
+
+        var query = new Dictionary<string, string>
+        {
+            ["client_id"] = "bwa-client",
+            ["redirect_uri"] = RedirectUri,
+            ["response_type"] = "code",
+            ["scope"] = "openid profile email roles api chamados offline_access",
+            ["code_challenge"] = codeChallenge,
+            ["code_challenge_method"] = "S256",
+            ["state"] = state
+        };
+
+        var queryString = string.Join("&", query.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+        var baseUrl = _httpClient.BaseAddress?.ToString().TrimEnd('/');
+        return $"{baseUrl}/connect/authorize?{queryString}";
+    }
+
+    public string InitiateRegisterAsync()
+    {
+        var baseUrl = _httpClient.BaseAddress?.ToString().TrimEnd('/');
+        var returnUrl = Uri.EscapeDataString(RedirectUri);
+        return $"{baseUrl}/Account/Register?returnUrl={returnUrl}";
+    }
+
+    public string InitiateLogoutAsync()
+    {
+        var baseUrl = _httpClient.BaseAddress?.ToString().TrimEnd('/');
+        var postLogoutRedirectUri = "https://localhost:7274/";
+        return $"{baseUrl}/connect/logout?post_logout_redirect_uri={Uri.EscapeDataString(postLogoutRedirectUri)}";
+    }
+
+    private string GenerateRandomString(int length)
+    {
+        var bytes = new byte[length];
+        RandomNumberGenerator.Fill(bytes);
+        return Base64UrlEncode(bytes);
+    }
+
+    private string GenerateCodeChallenge(string codeVerifier)
+    {
+        using var sha256 = SHA256.Create();
+        var challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(codeVerifier));
+        return Base64UrlEncode(challengeBytes);
+    }
+
+    private static string Base64UrlEncode(byte[] bytes)
+    {
+        return Convert.ToBase64String(bytes)
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .Replace("=", "");
+    }
+
+    public async Task<AuthResult> LoginAsync(LoginModel model)
+    {
+        // ... (ROPC Implementation kept for compatibility but should be avoided)
+
         try
         {
             var loginRequest = new
             {
                 grant_type = "password",
-                username = email,
-                password = password,
+                username = model.Email,
+                password = model.Password,
                 client_id = "mobile-client",
                 scope = "openid profile email roles api chamados"
             };
@@ -47,21 +114,47 @@ public class AuthService
                 if (tokenResponse?.AccessToken != null)
                 {
                     await StoreTokensAsync(tokenResponse);
-                    return true;
+                    return new AuthResult { Successful = true };
                 }
             }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogWarning("Login failed: {Error}", errorContent);
+                return new AuthResult { Successful = false, Error = "Login failed. Check credentials." };
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Login failed with exception");
+            return new AuthResult { Successful = false, Error = ex.Message };
         }
 
-        return false;
+        return new AuthResult { Successful = false, Error = "Unknown error" };
+    }
+
+    public async Task<AuthResult> RegisterAsync(RegisterModel model)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/identity/register", model);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return new AuthResult { Successful = true };
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Registration failed: {Error}", errorContent);
+                return new AuthResult { Successful = false, Error = "Registration failed. " + errorContent };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Registration failed with exception");
+            return new AuthResult { Successful = false, Error = ex.Message };
+        }
     }
 
     public async Task<bool> ExchangeCodeForTokenAsync(string code, string state, string codeVerifier)
@@ -79,7 +172,7 @@ public class AuthService
                 { "grant_type", "authorization_code" },
                 { "client_id", "bwa-client" },
                 { "code", code },
-                { "redirect_uri", "https://localhost:7274/authentication/login-callback" },
+                { "redirect_uri", RedirectUri },
                 { "code_verifier", codeVerifier }
             };
 

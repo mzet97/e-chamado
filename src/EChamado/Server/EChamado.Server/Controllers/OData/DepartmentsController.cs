@@ -12,8 +12,9 @@ namespace EChamado.Server.Controllers.OData;
 /// <summary>
 /// Controller OData para Departments
 /// </summary>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-[Route("odata/[controller]")]
+
 public class DepartmentsController(IDepartmentRepository departmentRepository) : ODataController
 {
     /// <summary>
@@ -21,7 +22,6 @@ public class DepartmentsController(IDepartmentRepository departmentRepository) :
     /// </summary>
     /// <returns>Lista de departments</returns>
     [HttpGet]
-    [HttpGet("$count")]
     [EnableQuery(MaxExpansionDepth = 5)]
     public IQueryable<Department> Get()
         => departmentRepository.GetAllQueryable();

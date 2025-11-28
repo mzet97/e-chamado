@@ -1,82 +1,45 @@
 @page "/authentication/login"
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
-@inject ILogger<Login> Logger
+@using EChamado.Client.Services
+@using EChamado.Client.Authentication
+@inject AuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Login - EChamado</PageTitle>
 
-<div style="text-align: center; padding: 50px;">
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-    <p>Iniciando processo de autenticação...</p>
-</div>
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8" Width="100%">
+        <div class="d-flex flex-column align-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+            <MudText Typo="Typo.h5" GutterBottom="true">Redirecionando para autenticação...</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                Você está sendo redirecionado para o servidor de identidade seguro do EChamado.
+            </MudText>
+        </div>
+    </MudPaper>
+</MudContainer>
 
 @code {
     protected override async Task OnInitializedAsync()
     {
+        // Se já estiver logado, vai para a home
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
         try
         {
-            Logger.LogInformation("Starting PKCE authentication flow");
-
-            // Gera código PKCE
-            var codeVerifier = GenerateCodeVerifier();
-            var codeChallenge = await GenerateCodeChallengeAsync(codeVerifier);
-
-            // Armazena code verifier no localStorage
-            await JS.InvokeVoidAsync("localStorage.setItem", "pkce_code_verifier", codeVerifier);
-
-            // Gera state para proteção contra CSRF
-            var state = Guid.NewGuid().ToString("N");
-
-            // Monta URL de autorização - DEVE usar /connect/authorize do OpenIddict
-            var callbackUrl = "https://localhost:7274/authentication/login-callback";
-            var encodedCallback = Uri.EscapeDataString(callbackUrl);
-            var encodedState = Uri.EscapeDataString(state);
-            var encodedChallenge = Uri.EscapeDataString(codeChallenge);
-
-            // CORREÇÃO: Usar endpoint correto do OpenIddict /connect/authorize
-            var authUrl = $"https://localhost:7133/connect/authorize?" +
-                         $"client_id=bwa-client&" +
-                         $"response_type=code&" +
-                         $"redirect_uri={encodedCallback}&" +
-                         $"scope=openid%20profile%20email%20roles%20api%20chamados&" +
-                         $"state={encodedState}&" +
-                         $"code_challenge={encodedChallenge}&" +
-                         $"code_challenge_method=S256";
-
-            Logger.LogInformation("Redirecting to auth server");
-            Navigation.NavigateTo(authUrl, forceLoad: true);
+            // Inicia o fluxo Authorization Code com PKCE
+            var authUrl = await AuthService.InitiateLoginAsync();
+            NavigationManager.NavigateTo(authUrl);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error initiating login flow");
-            Navigation.NavigateTo("/", forceLoad: true);
+            Snackbar.Add($"Erro ao iniciar login: {ex.Message}", Severity.Error);
         }
-    }
-
-    private string GenerateCodeVerifier()
-    {
-        // Gera um code verifier aleatório de 43-128 caracteres
-        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
-        var random = new Random();
-        var length = random.Next(43, 129);
-        var verifier = new char[length];
-        
-        for (int i = 0; i < length; i++)
-        {
-            verifier[i] = chars[random.Next(chars.Length)];
-        }
-        
-        return new string(verifier);
-    }
-
-    private async Task<string> GenerateCodeChallengeAsync(string codeVerifier)
-    {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var data = System.Text.Encoding.UTF8.GetBytes(codeVerifier);
-        var hash = sha256.ComputeHash(data);
-        return Convert.ToBase64String(hash)
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .Replace("=", "");
     }
 }

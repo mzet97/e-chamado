@@ -2,11 +2,15 @@
 @page "/admin/types"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using EChamado.Client.Components
 @using MudBlazor
 @inject LookupService LookupService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject ILogger<OrderTypes> Logger
 @attribute [Authorize]
 
 <PageTitle>Gerenciar Tipos de Chamado - EChamado</PageTitle>
@@ -21,6 +25,10 @@
             Novo Tipo
         </MudButton>
     </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="OrderType"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
 
     @if (loading)
     {
@@ -82,21 +90,63 @@
     private List<OrderTypeResponse> orderTypes = new();
     private bool loading = true;
     private string searchString = "";
+    private string? currentODataFilter;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadOrderTypes();
     }
 
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for OrderTypes: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadOrderTypesWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
     private async Task LoadOrderTypes()
+    {
+        currentODataFilter = null;
+        await LoadOrderTypesWithFilter();
+    }
+
+    private async Task LoadOrderTypesWithFilter()
     {
         loading = true;
         try
         {
-            orderTypes = await LookupService.GetOrderTypesAsync(forceRefresh: true);
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading order types with OData filter: {Filter}", currentODataFilter);
+                orderTypes = (await ODataService.GetOrderTypesAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                orderTypes = await LookupService.GetOrderTypesAsync(forceRefresh: true);
+            }
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading order types");
             Snackbar.Add($"Erro ao carregar tipos de chamado: {ex.Message}", Severity.Error);
         }
         finally

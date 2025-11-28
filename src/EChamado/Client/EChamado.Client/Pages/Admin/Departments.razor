@@ -1,11 +1,15 @@
 @page "/admin/departments"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using EChamado.Client.Components
 @using MudBlazor
 @inject DepartmentService DepartmentService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject ILogger<Departments> Logger
 @attribute [Authorize]
 
 <PageTitle>Gerenciar Departamentos - EChamado</PageTitle>
@@ -20,6 +24,10 @@
             Novo Departamento
         </MudButton>
     </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="Department"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
 
     @if (loading)
     {
@@ -81,21 +89,63 @@
     private List<DepartmentResponse> departments = new();
     private bool loading = true;
     private string searchString = "";
+    private string? currentODataFilter;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadDepartments();
     }
 
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for Departments: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadDepartmentsWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
     private async Task LoadDepartments()
+    {
+        currentODataFilter = null;
+        await LoadDepartmentsWithFilter();
+    }
+
+    private async Task LoadDepartmentsWithFilter()
     {
         loading = true;
         try
         {
-            departments = await DepartmentService.GetAllAsync();
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading departments with OData filter: {Filter}", currentODataFilter);
+                departments = (await ODataService.GetDepartmentsAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                departments = await DepartmentService.GetAllAsync();
+            }
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading departments");
             Snackbar.Add($"Erro ao carregar departamentos: {ex.Message}", Severity.Error);
         }
         finally

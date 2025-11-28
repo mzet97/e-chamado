@@ -1,5 +1,6 @@
 using EChamado.Client.Models;
 using EChamado.Shared.Responses;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
 namespace EChamado.Client.Services;
@@ -7,10 +8,12 @@ namespace EChamado.Client.Services;
 public class OrderService
 {
     private readonly HttpClient _httpClient;
+    private readonly ILogger<OrderService>? _logger;
 
-    public OrderService(HttpClient httpClient)
+    public OrderService(HttpClient httpClient, ILogger<OrderService>? logger = null)
     {
         _httpClient = httpClient;
+        _logger = logger;
     }
 
     /// <summary>
@@ -123,6 +126,70 @@ public class OrderService
     }
 
     /// <summary>
+    /// Busca chamados com query Gridify
+    /// </summary>
+    public async Task<GridifyResult<OrderListViewModel>> SearchWithGridifyAsync(string filter, string? orderBy = null, int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            var queryParams = new List<string>
+            {
+                $"Filter={Uri.EscapeDataString(filter)}",
+                $"Page={page}",
+                $"PageSize={pageSize}"
+            };
+
+            if (!string.IsNullOrWhiteSpace(orderBy))
+                queryParams.Add($"OrderBy={Uri.EscapeDataString(orderBy)}");
+
+            var queryString = string.Join("&", queryParams);
+            var response = await _httpClient.GetAsync($"v1/orders/gridify?{queryString}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException(error, null, response.StatusCode);
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<BaseResultList<OrderListViewModel>>();
+
+            if (result?.Data != null && result.PagedResult != null)
+            {
+                return new GridifyResult<OrderListViewModel>
+                {
+                    Items = result.Data.ToList(),
+                    TotalCount = result.PagedResult.RowCount,
+                    Page = result.PagedResult.CurrentPage,
+                    PageSize = result.PagedResult.PageSize,
+                    TotalPages = result.PagedResult.PageCount,
+                    Success = result.Success
+                };
+            }
+
+            return new GridifyResult<OrderListViewModel>
+            {
+                Items = new List<OrderListViewModel>(),
+                TotalCount = 0,
+                Page = 1,
+                PageSize = pageSize,
+                TotalPages = 0,
+                Success = false
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error searching orders with Gridify");
+            return new GridifyResult<OrderListViewModel>
+            {
+                Items = new List<OrderListViewModel>(),
+                TotalCount = 0,
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
     /// Busca chamados do usuário logado
     /// </summary>
     public Task<PagedResult<OrderListViewModel>> GetMyTicketsAsync(Guid userId, int pageIndex = 1, int pageSize = 10)
@@ -211,4 +278,18 @@ public class SearchOrdersParameters
     public Guid? CreatedByUserId { get; set; }
     public Guid? AssignedToUserId { get; set; }
     public bool? IsOverdue { get; set; }
+}
+
+/// <summary>
+/// Resultado de busca com Gridify
+/// </summary>
+public class GridifyResult<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages { get; set; }
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
 }

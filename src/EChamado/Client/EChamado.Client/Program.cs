@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 using EChamado.Client.Services;
 using EChamado.Client.Authentication;
 using MudBlazor.Services;
@@ -20,6 +21,7 @@ namespace EChamado.Client
 
                 var builder = WebAssemblyHostBuilder.CreateDefault(args);
                 builder.RootComponents.Add<App>("#app");
+                builder.RootComponents.Add<HeadOutlet>("head::after");
 
                 // Services configuration
                 builder.Services.AddMudServices();
@@ -84,6 +86,14 @@ namespace EChamado.Client
                     client.Timeout = TimeSpan.FromSeconds(30);
                 }).AddHttpMessageHandler<AuthTokenHandler>();
                 builder.Services.AddScoped<IODataService, ODataService>();
+
+                // NL Query Service (AI-powered Natural Language to Gridify)
+                builder.Services.AddHttpClient<NLQueryService>(client =>
+                {
+                    client.BaseAddress = new Uri(backendUrl);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                }).AddHttpMessageHandler<AuthTokenHandler>();
+                builder.Services.AddScoped<INLQueryService, NLQueryService>();
 
                 // Authentication - Updated to use AuthService
                 builder.Services.AddAuthorizationCore();

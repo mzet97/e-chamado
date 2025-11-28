@@ -1,4 +1,18 @@
-﻿using EChamado.Server.Extensions;
+﻿// ============================================================================
+// ESTE ARQUIVO FOI SUBSTITUÍDO POR ScalarConfig.cs
+// ============================================================================
+// Este arquivo é mantido apenas para referência e compatibilidade com
+// ApiConfig.cs (que não está sendo usado no Program.cs atual).
+//
+// A documentação da API agora usa SCALAR ao invés de Swagger UI.
+// Veja: ScalarConfig.cs para a configuração atual.
+//
+// IMPORTANTE: Os Operation Filters abaixo (GridifyExamplesOperationFilter
+// e ODataExamplesOperationFilter) são ainda úteis e estão documentados aqui
+// para referência futura caso precise adicionar ao ScalarConfig.
+// ============================================================================
+
+using EChamado.Server.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
@@ -6,6 +20,11 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace EChamado.Server.Configuration;
 
+/// <summary>
+/// [OBSOLETO] Configuração antiga do Swagger UI.
+/// Use ScalarConfig.cs para a configuração atual da documentação.
+/// </summary>
+[Obsolete("Use ScalarConfig.AddApiDocumentation() ao invés deste método. Swagger UI foi substituído por Scalar.")]
 public static class SwaggerConfig
 {
     public static IServiceCollection AddSwaggerConfig(this IServiceCollection services)
@@ -61,6 +80,7 @@ public static class SwaggerConfig
         return services;
     }
 
+    [Obsolete("Use ScalarConfig.UseApiDocumentation() ao invés deste método. Swagger UI foi substituído por Scalar.")]
     public static IApplicationBuilder UseSwaggerConfig(this IApplicationBuilder app)
     {
         app.UseSwagger();

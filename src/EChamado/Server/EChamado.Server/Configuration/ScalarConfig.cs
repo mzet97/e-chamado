@@ -7,6 +7,27 @@ using System.Reflection;
 
 namespace EChamado.Server.Configuration;
 
+/// <summary>
+/// Filtro para excluir controllers OData da documentação Swagger
+/// Este filtro remove apenas rotas que começam com "/odata/"
+/// preservando endpoints REST normais
+/// </summary>
+public class ODataIgnoreFilter : IDocumentFilter
+{
+    public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
+    {
+        var pathsToRemove = swaggerDoc.Paths
+            .Where(path => path.Key.StartsWith("/odata/", StringComparison.OrdinalIgnoreCase))
+            .Select(path => path.Key)
+            .ToList();
+
+        foreach (var path in pathsToRemove)
+        {
+            swaggerDoc.Paths.Remove(path);
+        }
+    }
+}
+
 public static class ScalarConfig
 {
     public static IServiceCollection AddApiDocumentation(this IServiceCollection services)
@@ -20,6 +41,11 @@ public static class ScalarConfig
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c =>
         {
+            // Configuração simples do Swagger para gerar OpenAPI JSON
+            // O DocumentFilter removerá os endpoints OData
+            c.DocumentFilter<ODataIgnoreFilter>();
+
+            // Definir tags com descrições
             c.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "EChamado API",
@@ -37,12 +63,13 @@ API RESTful completa para gerenciamento de tickets/chamados com autenticação O
 - **Workflow**: Tipos de pedido e tipos de status customizáveis
 - **Comentários**: Sistema de comentários nos chamados
 - **Usuários e Roles**: Gerenciamento completo de usuários e permissões
+- **Documentação**: Interface moderna com Scalar para explorar e testar a API
 
 ## 🔐 Autenticação
 
 Esta API usa **Bearer Token** (JWT) para autenticação. Para obter um token:
 
-### Opção 1: Password Grant (Apps Mobile/Desktop/Scripts)
+### Método 1: Password Grant (Apps Mobile/Desktop/Scripts)
 ```bash
 curl -X POST https://localhost:7133/connect/token \
   -H ""Content-Type: application/x-www-form-urlencoded"" \
@@ -53,24 +80,29 @@ curl -X POST https://localhost:7133/connect/token \
   -d ""scope=openid profile email roles api chamados""
 ```
 
-### Opção 2: Use o botão 'Authorize' acima
-1. Clique no botão **Authorize** 🔓
+### Método 2: Use o botão 'Authenticate' no Scalar
+1. Clique no botão **Authenticate** 🔐 no topo da página
 2. Obtenha um token usando o comando acima
-3. Cole o **access_token** no campo
-4. Clique em **Authorize**
+3. Cole o **access_token** no campo de autenticação
+4. Todos os endpoints usarão automaticamente este token
 
-## 📚 Documentação Adicional
+## 📚 Documentação e Acesso
 
+### Acessar esta Documentação:
+- **Scalar UI**: `/scalar/v1` ou `/docs` (você está aqui!)
+- **OpenAPI JSON**: `/openapi/v1.json` (especificação raw)
+
+### Documentação Adicional:
 - **Guia Completo**: Ver arquivo `CLAUDE.md` na raiz do projeto
 - **Autenticação**: Ver `docs/AUTENTICACAO-SISTEMAS-EXTERNOS.md`
 - **Exemplos**: Ver `docs/exemplos-autenticacao-openiddict.md`
 - **Scripts de Teste**: `test-openiddict-login.sh`, `.ps1`, `.py` na raiz
 
-## ⚙️ Configuração
+## ⚙️ Configuração de Servidores
 
-- **Auth Server**: https://localhost:7133
-- **API Server**: https://localhost:7296
-- **Client App**: https://localhost:7274
+- **Auth Server**: https://localhost:7133 (OpenIddict)
+- **API Server**: https://localhost:7296 (esta API)
+- **Client App**: https://localhost:7274 (Blazor WebAssembly)
 
 ## 👥 Usuários Padrão
 
@@ -228,10 +260,37 @@ curl -X POST https://localhost:7133/connect/token \
                 return new[] { "Default" };
             });
 
-            // Ordenar tags alfabeticamente
-            c.OrderActionsBy(api => $"{api.GroupName}_{api.HttpMethod}_{api.RelativePath}");
+            // Ordenar tags alfabeticamente e endpoints por método
+            c.OrderActionsBy(api =>
+            {
+                var tag = api.GroupName ?? "ZZZ"; // Tags sem grupo vão pro final
+                var httpMethod = api.HttpMethod switch
+                {
+                    "GET" => "1",
+                    "POST" => "2",
+                    "PUT" => "3",
+                    "PATCH" => "4",
+                    "DELETE" => "5",
+                    _ => "9"
+                };
+                return $"{tag}_{httpMethod}_{api.RelativePath}";
+            });
 
-            c.DocInclusionPredicate((name, api) => true);
+            // ✅ CORREÇÃO CRÍTICA: Excluir APENAS os endpoints OData (começam com "odata/")
+            c.DocInclusionPredicate((name, api) =>
+            {
+                var path = api.RelativePath?.ToLowerInvariant() ?? "";
+                // Excluir APENAS endpoints que começam com "odata/" (controllers OData)
+                // Mantém endpoints REST como "v1/categories", "v1/orders", etc.
+                if (path.StartsWith("odata/"))
+                {
+                    return false;
+                }
+                return true;
+            });
+
+            // Adicionar descrições para as tags
+            c.DocumentFilter<TagDescriptionsDocumentFilter>();
         });
 
         return services;
@@ -251,38 +310,112 @@ curl -X POST https://localhost:7133/connect/token \
 
     public static WebApplication UseApiDocumentation(this WebApplication app)
     {
-        app.UseSwagger(options =>
-        {
-            options.RouteTemplate = "openapi/{documentName}.json";
-        });
-
         // Configuração do Scalar - UI moderna para documentação
         app.MapScalarApiReference(options =>
         {
             options
                 .WithTitle("EChamado API Documentation")
-                .WithTheme(ScalarTheme.Purple)
+                .WithTheme(ScalarTheme.Mars)
                 .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-                .WithSidebar(true)
-                .WithModels(true)
-                .WithDarkMode(true)
-                .WithSearchHotKey("k")
                 .WithOpenApiRoutePattern("/openapi/{documentName}.json")
-                .WithEndpointPrefix("/api-docs/{documentName}")
-                .WithProxyUrl("https://proxy.scalar.com")
-                .WithHttpBearerAuthentication(x =>
-                {
-                    x.Token = "your-bearer-token-here";
-                })
-                .WithOAuth2Authentication(x =>
-                {
-                    x.ClientId = "mobile-client";
-                    x.Scopes = ["openid", "profile", "email", "roles", "api", "chamados"];
-                })
-                .WithFavicon("/favicon.ico")
-                .WithCdnUrl("https://cdn.jsdelivr.net/npm/@scalar/api-reference");
+                .WithEndpointPrefix("/scalar/{documentName}")
+                .WithModels(true)
+                .WithDefaultOpenAllTags(true)
+                .WithSearchHotKey("k");
         });
 
+        // Adicionar rotas alternativas
+        app.MapGet("/api-docs", (HttpContext context) =>
+        {
+            context.Response.Redirect("/scalar/v1");
+            return Task.CompletedTask;
+        }).ExcludeFromDescription();
+
+        app.MapGet("/api-docs/v1", (HttpContext context) =>
+        {
+            context.Response.Redirect("/scalar/v1");
+            return Task.CompletedTask;
+        }).ExcludeFromDescription();
+
+        app.MapGet("/docs", (HttpContext context) =>
+        {
+            context.Response.Redirect("/scalar/v1");
+            return Task.CompletedTask;
+        }).ExcludeFromDescription();
+
         return app;
+    }
+}
+
+/// <summary>
+/// Adiciona descrições para as tags dos endpoints
+/// </summary>
+public class TagDescriptionsDocumentFilter : IDocumentFilter
+{
+    public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
+    {
+        swaggerDoc.Tags = new List<OpenApiTag>
+        {
+            new OpenApiTag
+            {
+                Name = "Category",
+                Description = "Endpoints para gerenciamento de categorias de chamados"
+            },
+            new OpenApiTag
+            {
+                Name = "SubCategory",
+                Description = "Endpoints para gerenciamento de subcategorias de chamados"
+            },
+            new OpenApiTag
+            {
+                Name = "Department",
+                Description = "Endpoints para gerenciamento de departamentos"
+            },
+            new OpenApiTag
+            {
+                Name = "Order",
+                Description = "Endpoints para gerenciamento de chamados/pedidos"
+            },
+            new OpenApiTag
+            {
+                Name = "OrderType",
+                Description = "Endpoints para gerenciamento de tipos de pedidos"
+            },
+            new OpenApiTag
+            {
+                Name = "StatusType",
+                Description = "Endpoints para gerenciamento de tipos de status"
+            },
+            new OpenApiTag
+            {
+                Name = "Comment",
+                Description = "Endpoints para gerenciamento de comentários nos chamados"
+            },
+            new OpenApiTag
+            {
+                Name = "user",
+                Description = "Endpoints para gerenciamento de usuários do sistema"
+            },
+            new OpenApiTag
+            {
+                Name = "role",
+                Description = "Endpoints para gerenciamento de roles/perfis de acesso"
+            },
+            new OpenApiTag
+            {
+                Name = "AI",
+                Description = "Endpoints de IA para conversão de linguagem natural para Gridify"
+            },
+            new OpenApiTag
+            {
+                Name = "Health Check",
+                Description = "Endpoints de health check e monitoramento"
+            },
+            new OpenApiTag
+            {
+                Name = "Cache Redis",
+                Description = "Endpoints de demonstração de cache Redis"
+            }
+        };
     }
 }

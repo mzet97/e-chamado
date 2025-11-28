@@ -2,12 +2,16 @@
 @page "/admin/sub-categories"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using EChamado.Client.Components
 @using MudBlazor
 @inject SubCategoryService SubCategoryService
 @inject CategoryService CategoryService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject ILogger<SubCategories> Logger
 @attribute [Authorize]
 
 <PageTitle>Gerenciar Subcategorias - EChamado</PageTitle>
@@ -22,6 +26,10 @@
             Nova Subcategoria
         </MudButton>
     </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="SubCategory"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
 
     @if (loading)
     {
@@ -85,24 +93,72 @@
     private List<CategoryResponse> categories = new();
     private bool loading = true;
     private string searchString = "";
+    private string? currentODataFilter;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
     }
 
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for SubCategories: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadDataWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
     private async Task LoadData()
+    {
+        currentODataFilter = null;
+        await LoadDataWithFilter();
+    }
+
+    private async Task LoadDataWithFilter()
     {
         loading = true;
         try
         {
-            var subcategoriesTask = SubCategoryService.GetAllAsync();
-            var categoriesTask = CategoryService.GetAllAsync();
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading subcategories with OData filter: {Filter}", currentODataFilter);
 
-            await Task.WhenAll(subcategoriesTask, categoriesTask);
+                var subcategoriesTask = ODataService.GetSubCategoriesAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                );
+                var categoriesTask = CategoryService.GetAllAsync();
 
-            subcategories = await subcategoriesTask;
-            categories = await categoriesTask;
+                await Task.WhenAll(subcategoriesTask, categoriesTask);
+
+                subcategories = (await subcategoriesTask).ToList();
+                categories = await categoriesTask;
+            }
+            else
+            {
+                var subcategoriesTask = SubCategoryService.GetAllAsync();
+                var categoriesTask = CategoryService.GetAllAsync();
+
+                await Task.WhenAll(subcategoriesTask, categoriesTask);
+
+                subcategories = await subcategoriesTask;
+                categories = await categoriesTask;
+            }
 
             // Enrich subcategories with category names
             foreach (var subcategory in subcategories)
@@ -113,6 +169,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading subcategories");
             Snackbar.Add($"Erro ao carregar dados: {ex.Message}", Severity.Error);
         }
         finally

@@ -12,8 +12,9 @@ namespace EChamado.Server.Controllers.OData;
 /// <summary>
 /// Controller OData para SubCategories
 /// </summary>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-[Route("odata/[controller]")]
+
 public class SubCategoriesController(ISubCategoryRepository subCategoryRepository) : ODataController
 {
     /// <summary>
@@ -21,7 +22,6 @@ public class SubCategoriesController(ISubCategoryRepository subCategoryRepositor
     /// </summary>
     /// <returns>Lista de subcategories</returns>
     [HttpGet]
-    [HttpGet("$count")]
     [EnableQuery(MaxExpansionDepth = 5)]
     public IQueryable<SubCategory> Get()
         => subCategoryRepository.GetAllQueryable();

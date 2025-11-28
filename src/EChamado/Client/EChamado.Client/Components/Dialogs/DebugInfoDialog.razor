@@ -1,0 +1,58 @@
+@using EChamado.Client.Authentication
+@using MudBlazor
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<MudDialog>
+    <DialogContent>
+        <MudStack>
+            <MudText><strong>Estado de Autenticação:</strong> @AuthState</MudText>
+            <MudText><strong>Token Encontrado:</strong> @(!string.IsNullOrEmpty(TestToken) ? "✅ Sim" : "❌ Não")</MudText>
+            @if (!string.IsNullOrEmpty(TestToken))
+            {
+                <MudText Typo="Typo.caption" Class="d-block" Style="word-break: break-all;">
+                    Token: @TestToken.Substring(0, Math.Min(50, TestToken.Length))...
+                </MudText>
+            }
+            <MudText><strong>Claims Count:</strong> @ClaimsCount</MudText>
+            <MudText><strong>User Identity:</strong> @UserIdentity</MudText>
+            
+            <MudStack Row="true" Wrap="Wrap.Wrap">
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" OnClick="TestAuthState">🔄 Testar Estado</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ForceLogout">🚪 Logout</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success" OnClick="TestLogin">🔐 Login Teste</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info" OnClick="DownloadLogs">📥 Baixar Logs</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning" OnClick="ClearLogs">🗑️ Limpar Logs</MudButton>
+            </MudStack>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Fechar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] object MudDialog { get; set; }
+
+    // Parameters passed from parent
+    [Parameter] public string AuthState { get; set; }
+    [Parameter] public string TestToken { get; set; }
+    [Parameter] public int ClaimsCount { get; set; }
+    [Parameter] public string UserIdentity { get; set; }
+    
+    // Actions passed as EventCallbacks
+    [Parameter] public EventCallback OnTestAuthState { get; set; }
+    [Parameter] public EventCallback OnForceLogout { get; set; }
+    [Parameter] public EventCallback OnTestLogin { get; set; }
+    [Parameter] public EventCallback OnDownloadLogs { get; set; }
+    [Parameter] public EventCallback OnClearLogs { get; set; }
+
+    private async Task TestAuthState() => await OnTestAuthState.InvokeAsync();
+    private async Task ForceLogout() => await OnForceLogout.InvokeAsync();
+    private async Task TestLogin() => await OnTestLogin.InvokeAsync();
+    private async Task DownloadLogs() => await OnDownloadLogs.InvokeAsync();
+    private async Task ClearLogs() => await OnClearLogs.InvokeAsync();
+
+    private void Cancel() => (MudDialog as dynamic)?.Cancel();
+}

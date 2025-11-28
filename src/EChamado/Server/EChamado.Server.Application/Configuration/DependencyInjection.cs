@@ -1,9 +1,14 @@
 using EChamado.Server.Application.Common;
 using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.Services;
+using EChamado.Server.Application.Services.AI;
+using EChamado.Server.Application.Services.AI.Configuration;
+using EChamado.Server.Application.Services.AI.Interfaces;
+using EChamado.Server.Application.Services.AI.Providers;
 using EChamado.Server.Domain.Services.Interface;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Paramore.Brighter;
 using Paramore.Brighter.Extensions.DependencyInjection;
@@ -53,6 +58,46 @@ public static class DependencyInjection
         services.AddScoped<IUserLoginService, UserLoginService>();
         services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IOpenIddictService, OpenIddictService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Add AI services for Natural Language to Gridify query conversion
+    /// </summary>
+    public static IServiceCollection AddAIServices(
+        this IServiceCollection services,
+        Action<AISettings>? configureSettings = null)
+    {
+        // Configure settings
+        if (configureSettings != null)
+        {
+            services.Configure(configureSettings);
+        }
+
+        // Add memory cache for AI response caching
+        services.AddMemoryCache(options =>
+        {
+            options.SizeLimit = 1024; // Limit cache size
+        });
+
+        // Register AI providers
+        services.AddSingleton<IAIProvider, OpenAIProvider>();
+        services.AddSingleton<IAIProvider, GeminiProvider>();
+        services.AddSingleton<IAIProvider, OpenRouterProvider>();
+
+        // Register provider factory
+        services.AddSingleton<AIProviderFactory>();
+
+        // Register main NL to Gridify service
+        services.AddScoped<NLToGridifyService>();
+
+        // Add HttpClient for OpenRouter
+        services.AddHttpClient("OpenRouter")
+            .ConfigureHttpClient(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
 
         return services;
     }

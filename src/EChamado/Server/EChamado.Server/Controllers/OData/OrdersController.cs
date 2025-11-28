@@ -15,8 +15,8 @@ namespace EChamado.Server.Controllers.OData;
 /// <remarks>
 /// Suporta queries OData padrão: $filter, $orderby, $select, $expand, $top, $skip, $count
 /// </remarks>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-[Route("odata/[controller]")]
 public class OrdersController(IOrderRepository orderRepository) : ODataController
 {
     /// <summary>
@@ -33,7 +33,6 @@ public class OrdersController(IOrderRepository orderRepository) : ODataControlle
     /// <response code="200">Retorna a lista de orders</response>
     /// <response code="401">Não autenticado</response>
     [HttpGet]
-    [HttpGet("$count")]
     [EnableQuery(MaxExpansionDepth = 5)]
     [ProducesResponseType(typeof(IQueryable<Order>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

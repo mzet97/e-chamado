@@ -12,8 +12,9 @@ namespace EChamado.Server.Controllers.OData;
 /// <summary>
 /// Controller OData para StatusTypes
 /// </summary>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-[Route("odata/[controller]")]
+
 public class StatusTypesController(IStatusTypeRepository statusTypeRepository) : ODataController
 {
     /// <summary>
@@ -21,7 +22,6 @@ public class StatusTypesController(IStatusTypeRepository statusTypeRepository) :
     /// </summary>
     /// <returns>Lista de status types</returns>
     [HttpGet]
-    [HttpGet("$count")]
     [EnableQuery(MaxExpansionDepth = 5)]
     public IQueryable<StatusType> Get()
         => statusTypeRepository.GetAllQueryable();

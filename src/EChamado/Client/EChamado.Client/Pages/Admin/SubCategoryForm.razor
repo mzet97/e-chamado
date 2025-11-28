@@ -10,47 +10,87 @@
 
 <PageTitle>@(IsEdit ? "Editar Subcategoria" : "Nova Subcategoria") - EChamado</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-    <MudPaper Class="pa-6" Elevation="2">
-        <MudText Typo="Typo.h5" Class="mb-4">@(IsEdit ? "Editar Subcategoria" : "Nova Subcategoria")</MudText>
-
-        @if (Loading)
-        {
-            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
-        }
-        else
-        {
-            <MudForm @ref="Form" @bind-IsValid="IsValid">
-                <MudSelect T="Guid" @bind-Value="Model.CategoryId"
-                           Label="Categoria"
-                           Variant="Variant.Outlined"
-                           Required="true"
-                           RequiredError="Categoria é obrigatória"
-                           Class="mb-3">
-                    @foreach (var category in categories)
-                    {
-                        <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
-                    }
-                </MudSelect>
-
-                <MudTextField @bind-Value="Model.Name"
-                              Label="Nome"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="Nome é obrigatório"
-                              Class="mb-3" />
-
-                <MudTextField @bind-Value="Model.Description"
-                              Label="Descrição"
-                              Variant="Variant.Outlined"
-                              Lines="3" />
-
-                <div class="d-flex justify-space-between mt-4">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="GoBack">Cancelar</MudButton>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">
+    @if (Loading)
+    {
+        <MudCard Elevation="3">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudSkeleton Width="200px" Height="20px" />
+                    <MudSkeleton Width="100px" Height="15px" />
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudSkeleton Height="50px" Class="mb-3" />
+                <MudSkeleton Height="50px" Class="mb-3" />
+                <MudSkeleton Height="100px" />
+            </MudCardContent>
+        </MudCard>
+    }
+    else
+    {
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@(IsEdit ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" Color="Color.Primary" Size="Size.Large" />
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(IsEdit ? "Editar Subcategoria" : "Nova Subcategoria")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Preencha os dados abaixo</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudSelect T="Guid" @bind-Value="Model.CategoryId"
+                                       Label="Categoria"
+                                       Variant="Variant.Outlined"
+                                       Required="true"
+                                       RequiredError="Categoria é obrigatória"
+                                       Adornment="Adornment.Start"
+                                       AdornmentIcon="@Icons.Material.Filled.Category"
+                                       AnchorOrigin="Origin.BottomCenter">
+                                @foreach (var category in categories)
+                                {
+                                    <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Name"
+                                          Label="Nome"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          RequiredError="Nome é obrigatório"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.SubdirectoryArrowRight" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Description"
+                                          Label="Descrição"
+                                          Variant="Variant.Outlined"
+                                          Lines="3"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Description" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions Class="pa-4 justify-end">
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Secondary" 
+                               OnClick="GoBack"
+                               Class="mr-2">
+                        Cancelar
+                    </MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                Disabled="!IsValid || Saving"
-                               OnClick="Submit">
+                               OnClick="Submit"
+                               StartIcon="@Icons.Material.Filled.Save">
                         @if (Saving)
                         {
                             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -61,10 +101,10 @@
                             <span>@(IsEdit ? "Salvar" : "Criar")</span>
                         }
                     </MudButton>
-                </div>
-            </MudForm>
-        }
-    </MudPaper>
+                </MudCardActions>
+            </MudCard>
+        </MudForm>
+    }
 </MudContainer>
 
 @code {

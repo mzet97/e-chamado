@@ -19,7 +19,7 @@ public class SearchCategoriesEndpoint : IEndpoint
     /// <remarks>
     /// Exemplo de requisição:
     ///
-    ///     GET /v1/categories?name=Hardware&pageIndex=1&pageSize=10
+    ///     GET /v1/categories?name=Hardware&amp;pageIndex=1&amp;pageSize=10
     ///
     /// Parâmetros de busca disponíveis:
     /// - **name**: Filtrar por nome (busca parcial)

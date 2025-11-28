@@ -12,8 +12,9 @@ namespace EChamado.Server.Controllers.OData;
 /// <summary>
 /// Controller OData para Comments
 /// </summary>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-[Route("odata/[controller]")]
+
 public class CommentsController(ICommentRepository commentRepository) : ODataController
 {
     /// <summary>
@@ -21,7 +22,6 @@ public class CommentsController(ICommentRepository commentRepository) : ODataCon
     /// </summary>
     /// <returns>Lista de comments</returns>
     [HttpGet]
-    [HttpGet("$count")]
     [EnableQuery(MaxExpansionDepth = 5)]
     public IQueryable<Comment> Get()
         => commentRepository.GetAllQueryable();

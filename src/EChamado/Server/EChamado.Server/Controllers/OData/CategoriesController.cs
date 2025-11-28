@@ -12,8 +12,8 @@ namespace EChamado.Server.Controllers.OData;
 /// <summary>
 /// Controller OData para Categories
 /// </summary>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-[Route("odata/[controller]")]
 public class CategoriesController(ICategoryRepository categoryRepository) : ODataController
 {
     /// <summary>
@@ -21,7 +21,6 @@ public class CategoriesController(ICategoryRepository categoryRepository) : ODat
     /// </summary>
     /// <returns>Lista de categories</returns>
     [HttpGet]
-    [HttpGet("$count")]
     [EnableQuery(MaxExpansionDepth = 5)]
     public IQueryable<Category> Get()
         => categoryRepository.GetAllQueryable();

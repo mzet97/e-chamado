@@ -8,8 +8,11 @@ public interface IODataService
 {
     Task<IEnumerable<OrderListViewModel>> GetOrdersAsync(string? filter = null, string? orderBy = null, int? top = null, int? skip = null);
     Task<OrderViewModel?> GetOrderByIdAsync(Guid id);
-    Task<IEnumerable<CategoryResponse>> GetCategoriesAsync(string? filter = null);
-    Task<IEnumerable<DepartmentResponse>> GetDepartmentsAsync(string? filter = null);
+    Task<IEnumerable<CategoryResponse>> GetCategoriesAsync(string? filter = null, string? orderBy = null, int? top = null);
+    Task<IEnumerable<DepartmentResponse>> GetDepartmentsAsync(string? filter = null, string? orderBy = null, int? top = null);
+    Task<IEnumerable<OrderTypeResponse>> GetOrderTypesAsync(string? filter = null, string? orderBy = null, int? top = null);
+    Task<IEnumerable<StatusTypeResponse>> GetStatusTypesAsync(string? filter = null, string? orderBy = null, int? top = null);
+    Task<IEnumerable<SubCategoryResponse>> GetSubCategoriesAsync(string? filter = null, string? orderBy = null, int? top = null);
     Task<int> GetOrdersCountAsync(string? filter = null);
 }
 
@@ -22,10 +25,8 @@ public class ODataService : IODataService
     {
         _logger = logger;
 
-        var baseUrl = configuration["ApiSettings:BaseUrl"] ?? throw new InvalidOperationException("ApiSettings:BaseUrl not configured");
-        var odataUri = $"{baseUrl}/odata";
-
-        var settings = new ODataClientSettings(httpClient, new Uri(odataUri))
+        // Simple.OData.Client expects a relative URI when using HttpClient with BaseAddress
+        var settings = new ODataClientSettings(httpClient, new Uri("/odata", UriKind.Relative))
         {
             IgnoreResourceNotFoundException = true,
             OnTrace = (message, args) => _logger.LogDebug(message, args)
@@ -130,7 +131,7 @@ public class ODataService : IODataService
         }
     }
 
-    public async Task<IEnumerable<CategoryResponse>> GetCategoriesAsync(string? filter = null)
+    public async Task<IEnumerable<CategoryResponse>> GetCategoriesAsync(string? filter = null, string? orderBy = null, int? top = null)
     {
         try
         {
@@ -138,6 +139,12 @@ public class ODataService : IODataService
 
             if (!string.IsNullOrEmpty(filter))
                 query = query.Filter(filter);
+
+            if (!string.IsNullOrEmpty(orderBy))
+                query = query.OrderBy(orderBy);
+
+            if (top.HasValue)
+                query = query.Top(top.Value);
 
             var results = await query.FindEntriesAsync();
 
@@ -155,7 +162,7 @@ public class ODataService : IODataService
         }
     }
 
-    public async Task<IEnumerable<DepartmentResponse>> GetDepartmentsAsync(string? filter = null)
+    public async Task<IEnumerable<DepartmentResponse>> GetDepartmentsAsync(string? filter = null, string? orderBy = null, int? top = null)
     {
         try
         {
@@ -163,6 +170,12 @@ public class ODataService : IODataService
 
             if (!string.IsNullOrEmpty(filter))
                 query = query.Filter(filter);
+
+            if (!string.IsNullOrEmpty(orderBy))
+                query = query.OrderBy(orderBy);
+
+            if (top.HasValue)
+                query = query.Top(top.Value);
 
             var results = await query.FindEntriesAsync();
 
@@ -175,6 +188,98 @@ public class ODataService : IODataService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching departments via OData");
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<OrderTypeResponse>> GetOrderTypesAsync(string? filter = null, string? orderBy = null, int? top = null)
+    {
+        try
+        {
+            var query = _client.For("OrderTypes");
+
+            if (!string.IsNullOrEmpty(filter))
+                query = query.Filter(filter);
+
+            if (!string.IsNullOrEmpty(orderBy))
+                query = query.OrderBy(orderBy);
+
+            if (top.HasValue)
+                query = query.Top(top.Value);
+
+            var results = await query.FindEntriesAsync();
+
+            return results.Select(r => new OrderTypeResponse(
+                Id: r["Id"] as Guid? ?? Guid.Empty,
+                Name: r["Name"] as string ?? string.Empty,
+                Description: r["Description"] as string ?? string.Empty
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching order types via OData");
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<StatusTypeResponse>> GetStatusTypesAsync(string? filter = null, string? orderBy = null, int? top = null)
+    {
+        try
+        {
+            var query = _client.For("StatusTypes");
+
+            if (!string.IsNullOrEmpty(filter))
+                query = query.Filter(filter);
+
+            if (!string.IsNullOrEmpty(orderBy))
+                query = query.OrderBy(orderBy);
+
+            if (top.HasValue)
+                query = query.Top(top.Value);
+
+            var results = await query.FindEntriesAsync();
+
+            return results.Select(r => new StatusTypeResponse(
+                Id: r["Id"] as Guid? ?? Guid.Empty,
+                Name: r["Name"] as string ?? string.Empty,
+                Description: r["Description"] as string ?? string.Empty
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching status types via OData");
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<SubCategoryResponse>> GetSubCategoriesAsync(string? filter = null, string? orderBy = null, int? top = null)
+    {
+        try
+        {
+            var query = _client.For("SubCategories");
+
+            if (!string.IsNullOrEmpty(filter))
+                query = query.Filter(filter);
+
+            if (!string.IsNullOrEmpty(orderBy))
+                query = query.OrderBy(orderBy);
+
+            if (top.HasValue)
+                query = query.Top(top.Value);
+
+            var results = await query.FindEntriesAsync();
+
+            return results.Select(r => new SubCategoryResponse(
+                id: r["Id"] as Guid? ?? Guid.Empty,
+                name: r["Name"] as string ?? string.Empty,
+                description: r["Description"] as string ?? string.Empty,
+                categoryId: r["CategoryId"] as Guid? ?? Guid.Empty,
+                categoryName: null
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching sub-categories via OData");
             throw;
         }
     }
