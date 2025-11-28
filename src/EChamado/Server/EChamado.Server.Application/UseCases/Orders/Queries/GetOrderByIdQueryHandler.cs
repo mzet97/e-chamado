@@ -2,7 +2,7 @@ using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries;
@@ -10,39 +10,40 @@ namespace EChamado.Server.Application.UseCases.Orders.Queries;
 public class GetOrderByIdQueryHandler(
     IUnitOfWork unitOfWork,
     ILogger<GetOrderByIdQueryHandler> logger) :
-    IRequestHandler<GetOrderByIdQuery, BaseResult<OrderViewModel>>
+    RequestHandlerAsync<GetOrderByIdQuery>
 {
-    public async Task<BaseResult<OrderViewModel>> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
+    public override async Task<GetOrderByIdQuery> HandleAsync(GetOrderByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var order = await unitOfWork.Orders.GetByIdAsync(request.OrderId, cancellationToken);
+        var order = await unitOfWork.Orders.GetByIdAsync(query.OrderId);
 
         if (order == null)
         {
-            logger.LogError("Order {OrderId} not found", request.OrderId);
-            throw new NotFoundException($"Order {request.OrderId} not found");
+            logger.LogError("Order {OrderId} not found", query.OrderId);
+            throw new NotFoundException($"Order {query.OrderId} not found");
         }
 
-        var status = await unitOfWork.StatusTypes.GetByIdAsync(order.StatusId, cancellationToken);
-        var type = await unitOfWork.OrderTypes.GetByIdAsync(order.TypeId, cancellationToken);
-
-        var category = order.CategoryId.HasValue
-            ? await unitOfWork.Categories.GetByIdAsync(order.CategoryId.Value, cancellationToken)
-            : null;
+        var status = await unitOfWork.StatusTypes.GetByIdAsync(order.StatusId);
+        var type = await unitOfWork.OrderTypes.GetByIdAsync(order.TypeId);
+        var category = await unitOfWork.Categories.GetByIdAsync(order.CategoryId);
+        var department = await unitOfWork.Departments.GetByIdAsync(order.DepartmentId);
 
         var subCategory = order.SubCategoryId.HasValue
-            ? await unitOfWork.SubCategories.GetByIdAsync(order.SubCategoryId.Value, cancellationToken)
+            ? await unitOfWork.SubCategories.GetByIdAsync(order.SubCategoryId.Value)
             : null;
 
-        var department = order.DepartmentId.HasValue
-            ? await unitOfWork.Departments.GetByIdAsync(order.DepartmentId.Value, cancellationToken)
-            : null;
+        // Converter Evaluation de string para int?
+        int? evaluation = null;
+        if (!string.IsNullOrEmpty(order.Evaluation) && int.TryParse(order.Evaluation, out var evalValue))
+        {
+            evaluation = evalValue;
+        }
 
         var viewModel = new OrderViewModel(
             order.Id,
             order.Title,
             order.Description,
-            order.Evaluation,
-            order.OpeningDate,
+            evaluation,
+            order.OpeningDate ?? DateTime.UtcNow,
             order.ClosingDate,
             order.DueDate,
             order.StatusId,
@@ -63,8 +64,10 @@ public class GetOrderByIdQueryHandler(
             order.UpdatedAt
         );
 
-        logger.LogInformation("Order {OrderId} retrieved successfully", request.OrderId);
+        logger.LogInformation("Order {OrderId} retrieved successfully", query.OrderId);
 
-        return new BaseResult<OrderViewModel>(viewModel);
+        query.Result = new BaseResult<OrderViewModel>(viewModel);
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

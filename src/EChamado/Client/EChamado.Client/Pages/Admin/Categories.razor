@@ -1,0 +1,229 @@
+@page "/admin/categories"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using EChamado.Client.Components
+@inject CategoryService CategoryService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject ILogger<Categories> Logger
+@attribute [Authorize]
+
+<PageTitle>Gerenciar Categorias - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Category" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h4">Gerenciar Categorias</MudText>
+        </MudStack>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/admin/categories/create">
+            Nova Categoria
+        </MudButton>
+    </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="Category"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+        <MudDataGrid T="CategoryResponse"
+                     Items="@categories"
+                     Filterable="true"
+                     Sortable="true"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     QuickFilter="@QuickFilter"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Categorias</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar categorias..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn Title="Subcategorias" Sortable="false" Filterable="true">
+                    <CellTemplate>
+                        <MudChip T="int" Size="Size.Small" Color="Color.Info">
+                            @((context.Item.SubCategories?.Count ?? 0)) sub
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="MudBlazor.Align.Right" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/categories/{context.Item.Id}/edit")"
+                                       Title="Editar" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Small"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteCategory(context.Item.Id))"
+                                       Title="Excluir" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <ChildRowContent Context="category">
+                <MudPaper Class="pa-3" Outlined="true">
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.subtitle2">Subcategorias de @category.Item.Name</MudText>
+                    </div>
+
+                    @if (category.Item.SubCategories == null || !category.Item.SubCategories.Any())
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhuma subcategoria cadastrada</MudText>
+                    }
+                    else
+                    {
+                        <MudDataGrid T="SubCategoryResponse"
+                                     Items="category.Item.SubCategories"
+                                     Dense="true"
+                                     Hover="true"
+                                     Bordered="true"
+                                     Striped="true"
+                                     Filterable="true"
+                                     Sortable="true"
+                                     PageSize="5"
+                                     PageSizeOptions="@(new int[] { 5, 10, 20 })">
+                            <Columns>
+                                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                                <TemplateColumn Title="Ações" Align="MudBlazor.Align.Right" Sortable="false" Filterable="false" Context="subCtx">
+                                    <CellTemplate>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Somente leitura</MudText>
+                                    </CellTemplate>
+                                </TemplateColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    }
+                </MudPaper>
+            </ChildRowContent>
+            <PagerContent>
+                <MudDataGridPager T="CategoryResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhuma categoria encontrada
+                </MudText>
+            </NoRecordsContent>
+        </MudDataGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<CategoryResponse> categories = new();
+    private bool loading = true;
+    private string searchString = "";
+    private string? currentODataFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for Categories: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadCategoriesWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
+    private async Task LoadCategories()
+    {
+        currentODataFilter = null;
+        await LoadCategoriesWithFilter();
+    }
+
+    private async Task LoadCategoriesWithFilter()
+    {
+        loading = true;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading categories with OData filter: {Filter}", currentODataFilter);
+                categories = (await ODataService.GetCategoriesAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                categories = await CategoryService.GetAllAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading categories");
+            Snackbar.Add($"Erro ao carregar categorias: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private Func<CategoryResponse, bool> QuickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        var term = searchString.ToLowerInvariant();
+        var subCats = x.SubCategories?.Any(sc =>
+            sc.Name?.ToLowerInvariant().Contains(term) == true ||
+            sc.Description?.ToLowerInvariant().Contains(term) == true) == true;
+
+        return x.Name?.ToLowerInvariant().Contains(term) == true
+               || x.Description?.ToLowerInvariant().Contains(term) == true
+               || subCats;
+    };
+
+    private async Task DeleteCategory(Guid id)
+    {
+        try
+        {
+            await CategoryService.DeleteAsync(id);
+            Snackbar.Add("Categoria excluída com sucesso!", Severity.Success);
+            await LoadCategories();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao excluir categoria: {ex.Message}", Severity.Error);
+        }
+    }
+}

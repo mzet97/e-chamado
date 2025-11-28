@@ -1,6 +1,30 @@
 @page "/authentication/logout"
-@inject NavigationManager Navigation
+@using EChamado.Client.Authentication
+@inject AuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
 
 <PageTitle>Logout</PageTitle>
 
-<RemoteAuthenticatorView Action="logout" />
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8" Width="100%">
+        <div class="d-flex flex-column align-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+            <MudText Typo="Typo.h5" GutterBottom="true">Saindo...</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Encerrando sua sessão com segurança.</MudText>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Limpa tokens locais e notifica estado
+        var authStateProvider = (CookieAuthenticationStateProvider)AuthStateProvider;
+        await authStateProvider.LogoutAsync();
+
+        // Redireciona para logout no servidor de identidade
+        var logoutUrl = AuthService.InitiateLogoutAsync();
+        NavigationManager.NavigateTo(logoutUrl);
+    }
+}

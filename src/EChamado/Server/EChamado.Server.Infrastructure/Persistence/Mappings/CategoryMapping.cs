@@ -35,5 +35,19 @@ public class CategoryMapping : IEntityTypeConfiguration<Category>
 
         builder.Property(x => x.IsDeleted)
             .IsRequired();
+
+        // Indexes for Gridify query performance
+        builder.HasIndex(x => x.Name)
+            .HasDatabaseName("IX_Category_Name");
+
+        builder.HasIndex(x => x.CreatedAt)
+            .HasDatabaseName("IX_Category_CreatedAt");
+
+        builder.HasIndex(x => x.IsDeleted)
+            .HasDatabaseName("IX_Category_IsDeleted");
+
+        // Composite index for common filtering scenario
+        builder.HasIndex(x => new { x.IsDeleted, x.Name })
+            .HasDatabaseName("IX_Category_IsDeleted_Name");
     }
 }

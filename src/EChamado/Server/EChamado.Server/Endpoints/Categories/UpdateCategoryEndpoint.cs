@@ -1,37 +1,45 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.Commands;
+using EChamado.Server.Endpoints.Categories.DTOs;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Categories;
 
 public class UpdateCategoryEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapPut("/{id:guid}", HandleAsync)
+        => app.MapPut("/{id}", HandleAsync)
             .WithName("Atualizar uma categoria")
             .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        Guid id,
-        UpdateCategoryRequest request)
+        [FromRoute] Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] UpdateCategoryRequest request)
     {
-        var command = new UpdateCategoryCommand(
-            id,
-            request.Name,
-            request.Description
-        );
+        try
+        {
+            // Atribui o ID da rota ao request
+            request.Id = id;
 
-        var result = await mediator.Send(command);
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
+            var result = command.Result;
 
-        return TypedResults.BadRequest(result);
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }
-
-public record UpdateCategoryRequest(
-    string Name,
-    string Description
-);

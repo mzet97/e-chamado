@@ -27,12 +27,18 @@ namespace EChamado.Server.Infrastructure.Persistence.Mappings.Identity
             builder.Property(u => u.Photo)
                 .HasMaxLength(500);
 
+            builder.Property(u => u.FullName)
+                .HasMaxLength(256);
+
+            builder.Property(u => u.CreatedAtUtc)
+                .IsRequired();
+
             builder.HasIndex(u => u.NormalizedUserName)
                 .IsUnique()
-                .HasName("UserNameIndex");
+                .HasDatabaseName("UserNameIndex");
 
             builder.HasIndex(u => u.NormalizedEmail)
-                .HasName("EmailIndex");
+                .HasDatabaseName("EmailIndex");
 
             builder.ToTable("AspNetUsers");
 

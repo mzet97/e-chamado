@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # PostgreSQL com Health Check
+  postgres:
+    image: postgres:15-alpine
+    container_name: echamado-postgres
+    environment:
+      POSTGRES_DB: e-chamado
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dsv@123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d e-chamado"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - echamado-network
+
+  # Redis com Health Check
+  redis:
+    image: redis:7-alpine
+    container_name: echamado-redis
+    command: redis-server --requirepass dsv@123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - echamado-network
+
+  # Elasticsearch com Health Check
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: echamado-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - echamado-network
+
+  # Kibana com Health Check
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: echamado-kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - echamado-network
+
+  # API EChamado com Health Check
+  echamado-api:
+    build:
+      context: ./src/EChamado/Server
+      dockerfile: EChamado.Server/Dockerfile
+    container_name: echamado-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=e-chamado;Username=postgres;Password=dsv@123
+      - Redis__ConnectionString=redis:6379,password=dsv@123
+      - ElasticSettings__Uri=http://elasticsearch:9200
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - echamado-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+networks:
+  echamado-network:
+    driver: bridge

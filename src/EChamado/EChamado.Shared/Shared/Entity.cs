@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using EChamado.Shared.Services;
 
 namespace EChamado.Shared.Shared;
 
@@ -101,10 +102,10 @@ public abstract class Entity : IEntity
 
     protected void ClearEvents() => _events.Clear();
 
-    public virtual void Disabled()
+    public virtual void Disabled(IDateTimeProvider dateTimeProvider)
     {
         IsDeleted = true;
-        DeletedAt = DateTime.Now;
+        DeletedAt = dateTimeProvider.UtcNow;
         Validate();
     }
 
@@ -115,9 +116,9 @@ public abstract class Entity : IEntity
         Validate();
     }
 
-    public virtual void Update()
+    public virtual void Update(IDateTimeProvider dateTimeProvider)
     {
-        UpdatedAt = DateTime.Now;
+        UpdatedAt = dateTimeProvider.UtcNow;
         Validate();
     }
 }

@@ -1,26 +1,42 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.OrderTypes.Commands;
+using EChamado.Server.Endpoints.OrderTypes.DTOs;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.OrderTypes;
 
 public class DeleteOrderTypeEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapDelete("/{id:guid}", HandleAsync)
-            .WithName("Deletar um tipo de chamado")
+        => app.MapDelete("/{id}", HandleAsync)
+            .WithName("Deletar um tipo de ordem")
             .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        Guid id)
+        Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var command = new DeleteOrderTypeCommand(id);
-        var result = await mediator.Send(command);
+        try
+        {
+            var request = new DeleteOrderTypeRequest { Id = id };
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
+            var result = command.Result;
 
-        return TypedResults.BadRequest(result);
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

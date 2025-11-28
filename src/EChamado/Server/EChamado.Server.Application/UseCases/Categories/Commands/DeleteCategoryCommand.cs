@@ -1,6 +1,18 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
-public record DeleteCategoryCommand(Guid CategoryId) : IRequest<BaseResult>;
+public class DeleteCategoryCommand : BrighterRequest<BaseResult>
+{
+    public Guid CategoryId { get; set; } = default!;
+
+    public DeleteCategoryCommand()
+    {
+    }
+
+    public DeleteCategoryCommand(Guid categoryId)
+    {
+        CategoryId = categoryId;
+    }
+}

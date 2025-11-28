@@ -1,0 +1,58 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Blazor WebAssembly",
+      "type": "blazorwasm",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/Client/EChamado.Client",
+      "browser": "chrome",
+      "url": "https://localhost:7274",
+      "webRoot": "${workspaceFolder}/Client/EChamado.Client/wwwroot",
+      "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
+      "hosted": false,
+      "program": "${workspaceFolder}/Client/EChamado.Client/bin/Debug/net9.0/EChamado.Client.dll",
+      "args": [],
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": "Launch Multiple Projects",
+      "type": "compound",
+      "configurations": [
+        "Launch Auth Server",
+        "Launch API Server", 
+        "Launch Blazor WebAssembly"
+      ]
+    },
+    {
+      "name": "Launch Auth Server",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/Echamado.Auth/bin/Debug/net9.0/Echamado.Auth.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Echamado.Auth",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7133;http://localhost:5137"
+      },
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Launch API Server",
+      "type": "coreclr",
+      "request": "launch", 
+      "program": "${workspaceFolder}/Server/EChamado.Server/bin/Debug/net9.0/EChamado.Server.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Server/EChamado.Server",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7296;http://localhost:5071"
+      },
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ]
+}

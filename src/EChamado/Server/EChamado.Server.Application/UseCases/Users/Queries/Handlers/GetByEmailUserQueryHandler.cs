@@ -1,22 +1,24 @@
 ﻿using EChamado.Server.Application.UseCases.Users.ViewModels;
 using EChamado.Server.Domain.Services.Interface;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Users.Queries.Handlers;
 
 public class GetByEmailUserQueryHandler(IApplicationUserService applicationUserService) :
-    IRequestHandler<GetByEmailUserQuery, BaseResult<ApplicationUserViewModel>>
+    RequestHandlerAsync<GetByEmailUserQuery>
 {
-    public async Task<BaseResult<ApplicationUserViewModel>> Handle(
-        GetByEmailUserQuery request, 
-        CancellationToken cancellationToken)
+    public override async Task<GetByEmailUserQuery> HandleAsync(
+        GetByEmailUserQuery query,
+        CancellationToken cancellationToken = default)
     {
-        var users = await applicationUserService.FindByEmailAsync(request.Email);
+        var users = await applicationUserService.FindByEmailAsync(query.Email);
 
-        return new BaseResult<ApplicationUserViewModel>(
+        query.Result = new BaseResult<ApplicationUserViewModel>(
             new ApplicationUserViewModel(users),
             true,
             "Obtido com sucesso");
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

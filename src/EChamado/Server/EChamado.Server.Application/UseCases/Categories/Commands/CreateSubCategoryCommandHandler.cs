@@ -1,31 +1,35 @@
-using EChamado.Server.Domain.Entities;
+using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Categories.Notifications;
+using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
+using EChamado.Shared.Services;
 using Microsoft.Extensions.Logging;
-
-using EChamado.Server.Application.UseCases.Categories.Notifications;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
 public class CreateSubCategoryCommandHandler(
     IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
     ILogger<CreateSubCategoryCommandHandler> logger) :
-    IRequestHandler<CreateSubCategoryCommand, BaseResult<Guid>>
+    RequestHandlerAsync<CreateSubCategoryCommand>
 {
-    public async Task<BaseResult<Guid>> Handle(CreateSubCategoryCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<CreateSubCategoryCommand> HandleAsync(CreateSubCategoryCommand command, CancellationToken cancellationToken = default)
     {
-        var category = await unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken);
+        var category = await unitOfWork.Categories.GetByIdAsync(command.CategoryId);
 
         if (category == null)
         {
-            logger.LogError("Category {CategoryId} not found", request.CategoryId);
-            throw new NotFoundException($"Category {request.CategoryId} not found");
+            logger.LogError("Category {CategoryId} not found", command.CategoryId);
+            throw new NotFoundException($"Category {command.CategoryId} not found");
         }
 
-        var entity = SubCategory.Create(request.Name, request.Description, request.CategoryId);
+        var entity = SubCategory.Create(command.Name, command.Description, command.CategoryId, dateTimeProvider);
 
         if (!entity.IsValid())
         {
@@ -39,11 +43,12 @@ public class CreateSubCategoryCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(new CreatedSubCategoryNotification(entity.Id, entity.Name, entity.Description, entity.CategoryId));
+        await commandProcessor.PublishAsync(new CreatedSubCategoryNotification(entity.Id, entity.Name, entity.Description, entity.CategoryId), cancellationToken: cancellationToken);
 
         logger.LogInformation("SubCategory {SubCategoryId} created successfully for Category {CategoryId}",
-            entity.Id, request.CategoryId);
+            entity.Id, command.CategoryId);
 
-        return new BaseResult<Guid>(entity.Id);
+        command.Result = new BaseResult<Guid>(entity.Id);
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

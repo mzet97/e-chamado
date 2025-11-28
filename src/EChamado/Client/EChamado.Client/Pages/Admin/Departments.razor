@@ -1,0 +1,192 @@
+@page "/admin/departments"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using EChamado.Client.Components
+@using MudBlazor
+@inject DepartmentService DepartmentService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@inject ILogger<Departments> Logger
+@attribute [Authorize]
+
+<PageTitle>Gerenciar Departamentos - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Gerenciar Departamentos</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/admin/departments/create">
+            Novo Departamento
+        </MudButton>
+    </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="Department"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+        <MudDataGrid T="DepartmentResponse"
+                     Items="@departments"
+                     Sortable="true"
+                     Filterable="true"
+                     QuickFilter="@QuickFilter"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     Loading="@loading"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Departamentos</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar departamentos..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn CellClass="d-flex justify-end" Title="Ações" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/departments/{context.Item.Id}/edit")" />
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteDepartment(context.Item.Id))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="DepartmentResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhum departamento encontrado
+                </MudText>
+            </NoRecordsContent>
+        </MudDataGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<DepartmentResponse> departments = new();
+    private bool loading = true;
+    private string searchString = "";
+    private string? currentODataFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDepartments();
+    }
+
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for Departments: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadDepartmentsWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
+    private async Task LoadDepartments()
+    {
+        currentODataFilter = null;
+        await LoadDepartmentsWithFilter();
+    }
+
+    private async Task LoadDepartmentsWithFilter()
+    {
+        loading = true;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading departments with OData filter: {Filter}", currentODataFilter);
+                departments = (await ODataService.GetDepartmentsAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                departments = await DepartmentService.GetAllAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading departments");
+            Snackbar.Add($"Erro ao carregar departamentos: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private Func<DepartmentResponse, bool> QuickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        var lowerSearch = searchString.ToLower();
+        return x.Name?.ToLower().Contains(lowerSearch) == true ||
+               x.Description?.ToLower().Contains(lowerSearch) == true;
+    };
+
+
+    private async Task DeleteDepartment(Guid id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Tem certeza que deseja excluir este departamento?" },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            try
+            {
+                await DepartmentService.DeleteAsync(id);
+                Snackbar.Add("Departamento excluído com sucesso!", Severity.Success);
+                await LoadDepartments();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir departamento: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

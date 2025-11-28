@@ -7,9 +7,11 @@ using EChamado.Server.Infrastructure.Persistence;
 using EChamado.Server.Infrastructure.Persistence.Repositories;
 using EChamado.Server.Infrastructure.Persistence.Repositories.Orders;
 using EChamado.Server.Infrastructure.Redis;
+using EChamado.Shared.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using EChamado.Server.Infrastructure.Services;
 
 namespace EChamado.Server.Infrastructure.Configuration;
 
@@ -27,9 +29,13 @@ public static class DependencyInjectionConfig
         services.AddScoped<IOrderTypeRepository, OrderTypeRepository>();
         services.AddScoped<IStatusTypeRepository, StatusTypeRepository>();
         services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
+        services.AddScoped<IUserTokenService, UserTokenService>();
 
         services.AddScoped<IRedisService, RedisService>();
         services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
+
+        // Date/Time provider for testable timestamps
+        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 
         return services;
     }

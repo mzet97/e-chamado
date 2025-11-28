@@ -1,6 +1,18 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
-public record DeleteOrderTypeCommand(Guid OrderTypeId) : IRequest<BaseResult>;
+public class DeleteOrderTypeCommand : BrighterRequest<BaseResult>
+{
+    public Guid OrderTypeId { get; set; } = default!;
+
+    public DeleteOrderTypeCommand()
+    {
+    }
+
+    public DeleteOrderTypeCommand(Guid orderTypeId)
+    {
+        OrderTypeId = orderTypeId;
+    }
+}

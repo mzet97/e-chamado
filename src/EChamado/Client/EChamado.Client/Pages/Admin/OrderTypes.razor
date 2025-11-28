@@ -1,0 +1,192 @@
+@page "/admin/ordertypes"
+@page "/admin/types"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using EChamado.Client.Components
+@using MudBlazor
+@inject LookupService LookupService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@inject ILogger<OrderTypes> Logger
+@attribute [Authorize]
+
+<PageTitle>Gerenciar Tipos de Chamado - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Gerenciar Tipos de Chamado</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/admin/ordertypes/create">
+            Novo Tipo
+        </MudButton>
+    </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="OrderType"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+        <MudDataGrid T="OrderTypeResponse"
+                     Items="@orderTypes"
+                     Sortable="true"
+                     Filterable="true"
+                     QuickFilter="@QuickFilter"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     Loading="@loading"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Tipos de Chamado</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar tipos..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn CellClass="d-flex justify-end" Title="Ações" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/ordertypes/{context.Item.Id}/edit")" />
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteOrderType(context.Item.Id))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="OrderTypeResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhum tipo de chamado encontrado
+                </MudText>
+            </NoRecordsContent>
+        </MudDataGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<OrderTypeResponse> orderTypes = new();
+    private bool loading = true;
+    private string searchString = "";
+    private string? currentODataFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrderTypes();
+    }
+
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for OrderTypes: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadOrderTypesWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
+    private async Task LoadOrderTypes()
+    {
+        currentODataFilter = null;
+        await LoadOrderTypesWithFilter();
+    }
+
+    private async Task LoadOrderTypesWithFilter()
+    {
+        loading = true;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading order types with OData filter: {Filter}", currentODataFilter);
+                orderTypes = (await ODataService.GetOrderTypesAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                orderTypes = await LookupService.GetOrderTypesAsync(forceRefresh: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading order types");
+            Snackbar.Add($"Erro ao carregar tipos de chamado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private Func<OrderTypeResponse, bool> QuickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        var lowerSearch = searchString.ToLower();
+        return x.Name?.ToLower().Contains(lowerSearch) == true ||
+               x.Description?.ToLower().Contains(lowerSearch) == true;
+    };
+
+    private async Task DeleteOrderType(Guid id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Tem certeza que deseja excluir este tipo de chamado?" },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            try
+            {
+                await LookupService.DeleteOrderTypeAsync(id);
+                Snackbar.Add("Tipo de chamado excluído com sucesso!", Severity.Success);
+                await LoadOrderTypes();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir tipo de chamado: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

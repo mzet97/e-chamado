@@ -1,8 +1,10 @@
-﻿using EChamado.Server.Application.UseCases.Roles.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Roles.Queries;
 using EChamado.Server.Application.UseCases.Roles.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Roles;
 
@@ -17,15 +19,24 @@ public class GetAllRolesEndpoint : IEndpoint
         .Produces<BaseResultList<RolesViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator)
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await mediator.Send(new GetAllRolesQuery());
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var query = new GetAllRolesQuery();
+            await commandProcessor.SendAsync(query);
 
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.BadRequest(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResultList<RolesViewModel>(
+                new List<RolesViewModel>(),
+                null,
+                false,
+                $"Erro interno: {ex.Message}"));
+        }
     }
 }

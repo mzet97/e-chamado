@@ -1,5 +1,6 @@
-﻿using EChamado.Server.Domain.Repositories;
+using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
+using EChamado.Shared.Services;
 using EChamado.Shared.Shared;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -10,10 +11,12 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
 {
     protected readonly ApplicationDbContext Db;
     protected readonly DbSet<TEntity> DbSet;
+    protected readonly IDateTimeProvider DateTimeProvider;
 
-    protected Repository(ApplicationDbContext db)
+    protected Repository(ApplicationDbContext db, IDateTimeProvider dateTimeProvider)
     {
         Db = db ?? throw new ArgumentNullException(nameof(db));
+        DateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         DbSet = db.Set<TEntity>();
     }
 
@@ -110,7 +113,7 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
     {
         if (entity == null) throw new ArgumentNullException(nameof(entity));
 
-        entity.Update();
+        entity.Update(DateTimeProvider);
 
         DbSet.Update(entity);
         await Db.SaveChangesAsync();
@@ -142,7 +145,7 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
 
         if (entity != null)
         {
-            entity.Disabled();
+            entity.Disabled(DateTimeProvider);
             DbSet.Update(entity);
             await Db.SaveChangesAsync();
         }
@@ -184,6 +187,11 @@ public abstract class Repository<TEntity> : IRepository<TEntity> where TEntity :
         if (predicate == null) throw new ArgumentNullException(nameof(predicate));
 
         return await DbSet.AsNoTracking().AnyAsync(predicate);
+    }
+
+    public virtual IQueryable<TEntity> GetAllQueryable()
+    {
+        return DbSet.AsNoTracking().AsQueryable();
     }
 
     public void Dispose()
