@@ -1,16 +1,10 @@
 using EChamado.Server.Application.Common;
 using EChamado.Server.Application.Common.Behaviours;
-using EChamado.Server.Application.Common.Messaging;
-using EChamado.Server.Application.Orders.QueryHandlers;
-using EChamado.Server.Application.Orders.Queries;
 using EChamado.Server.Application.Services;
 using EChamado.Server.Application.Services.AI;
 using EChamado.Server.Application.Services.AI.Configuration;
 using EChamado.Server.Application.Services.AI.Interfaces;
 using EChamado.Server.Application.Services.AI.Providers;
-using EChamado.Server.Application.UseCases.Categories.ViewModels;
-using EChamado.Server.Application.UseCases.Orders.ViewModels;
-using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
 using EChamado.Server.Domain.Services.Interface;
 using FluentValidation;
 using MediatR;
@@ -18,7 +12,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Paramore.Brighter;
 using Paramore.Brighter.Extensions.DependencyInjection;
-using Paramore.Darker;
 using System.Reflection;
 
 namespace EChamado.Server.Application.Configuration;
@@ -38,12 +31,6 @@ public static class DependencyInjection
                 options.HandlerLifetime = ServiceLifetime.Scoped;
             })
             .AutoFromAssemblies(new[] { currentAssembly });
-
-            services.AddScoped<IQueryProcessor, ServiceProviderQueryProcessor>();
-            services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderViewModel?>, GetOrderByIdQueryHandler>();
-            services.AddScoped<IQueryHandler<ListOrdersQuery, IEnumerable<OrderListViewModel>>, ListOrdersQueryHandler>();
-            services.AddScoped<IQueryHandler<ListCategoriesQuery, IEnumerable<CategoryViewModel>>, ListCategoriesQueryHandler>();
-            services.AddScoped<IQueryHandler<ListStatusTypesQuery, IEnumerable<StatusTypeViewModel>>, ListStatusTypesQueryHandler>();
 
             // Add MediatR
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(currentAssembly));
