@@ -12,6 +12,15 @@ public sealed class ServiceProviderQueryProcessor : IQueryProcessor
         _serviceProvider = serviceProvider;
     }
 
+    /// <summary>
+    /// Executes a query synchronously. This method is obsolete and should be avoided.
+    /// </summary>
+    /// <remarks>
+    /// This method calls ExecuteAsync(...).GetAwaiter().GetResult(), which can lead to deadlocks 
+    /// in certain synchronization contexts (e.g., ASP.NET Core pre-.NET 6 scenarios or when using 
+    /// ConfigureAwait(false) incorrectly). Use ExecuteAsync instead.
+    /// </remarks>
+    [Obsolete("This synchronous method can cause deadlocks. Use ExecuteAsync instead.")]
     public TResult Execute<TResult>(IQuery<TResult> query)
     {
         return ExecuteAsync(query).GetAwaiter().GetResult();
