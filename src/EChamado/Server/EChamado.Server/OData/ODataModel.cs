@@ -61,9 +61,9 @@ public static class ODataModel
         orders.EntityType.Property(o => o.CategoryId);
         orders.EntityType.Property(o => o.SubCategoryId);
         orders.EntityType.Property(o => o.DepartmentId);
-        orders.EntityType.Property(o => o.CreatedAt);
-        orders.EntityType.Property(o => o.UpdatedAt);
-        orders.EntityType.Property(o => o.DeletedAt);
+        orders.EntityType.Property(o => o.CreatedAtUtc);
+        orders.EntityType.Property(o => o.UpdatedAtUtc);
+        orders.EntityType.Property(o => o.DeletedAtUtc);
         orders.EntityType.Property(o => o.IsDeleted);
 
         // Relationships
@@ -85,9 +85,9 @@ public static class ODataModel
         // Properties
         categories.EntityType.Property(c => c.Name);
         categories.EntityType.Property(c => c.Description);
-        categories.EntityType.Property(c => c.CreatedAt);
-        categories.EntityType.Property(c => c.UpdatedAt);
-        categories.EntityType.Property(c => c.DeletedAt);
+        categories.EntityType.Property(c => c.CreatedAtUtc);
+        categories.EntityType.Property(c => c.UpdatedAtUtc);
+        categories.EntityType.Property(c => c.DeletedAtUtc);
         categories.EntityType.Property(c => c.IsDeleted);
 
         // Relationships
@@ -106,9 +106,9 @@ public static class ODataModel
         subCategories.EntityType.Property(sc => sc.Name);
         subCategories.EntityType.Property(sc => sc.Description);
         subCategories.EntityType.Property(sc => sc.CategoryId);
-        subCategories.EntityType.Property(sc => sc.CreatedAt);
-        subCategories.EntityType.Property(sc => sc.UpdatedAt);
-        subCategories.EntityType.Property(sc => sc.DeletedAt);
+        subCategories.EntityType.Property(sc => sc.CreatedAtUtc);
+        subCategories.EntityType.Property(sc => sc.UpdatedAtUtc);
+        subCategories.EntityType.Property(sc => sc.DeletedAtUtc);
         subCategories.EntityType.Property(sc => sc.IsDeleted);
 
         // Relationships
@@ -126,9 +126,9 @@ public static class ODataModel
         // Properties
         departments.EntityType.Property(d => d.Name);
         departments.EntityType.Property(d => d.Description);
-        departments.EntityType.Property(d => d.CreatedAt);
-        departments.EntityType.Property(d => d.UpdatedAt);
-        departments.EntityType.Property(d => d.DeletedAt);
+        departments.EntityType.Property(d => d.CreatedAtUtc);
+        departments.EntityType.Property(d => d.UpdatedAtUtc);
+        departments.EntityType.Property(d => d.DeletedAtUtc);
         departments.EntityType.Property(d => d.IsDeleted);
 
         // Ignore domain events
@@ -143,9 +143,9 @@ public static class ODataModel
         // Properties
         orderTypes.EntityType.Property(ot => ot.Name);
         orderTypes.EntityType.Property(ot => ot.Description);
-        orderTypes.EntityType.Property(ot => ot.CreatedAt);
-        orderTypes.EntityType.Property(ot => ot.UpdatedAt);
-        orderTypes.EntityType.Property(ot => ot.DeletedAt);
+        orderTypes.EntityType.Property(ot => ot.CreatedAtUtc);
+        orderTypes.EntityType.Property(ot => ot.UpdatedAtUtc);
+        orderTypes.EntityType.Property(ot => ot.DeletedAtUtc);
         orderTypes.EntityType.Property(ot => ot.IsDeleted);
 
         // Ignore domain events
@@ -160,9 +160,9 @@ public static class ODataModel
         // Properties
         statusTypes.EntityType.Property(st => st.Name);
         statusTypes.EntityType.Property(st => st.Description);
-        statusTypes.EntityType.Property(st => st.CreatedAt);
-        statusTypes.EntityType.Property(st => st.UpdatedAt);
-        statusTypes.EntityType.Property(st => st.DeletedAt);
+        statusTypes.EntityType.Property(st => st.CreatedAtUtc);
+        statusTypes.EntityType.Property(st => st.UpdatedAtUtc);
+        statusTypes.EntityType.Property(st => st.DeletedAtUtc);
         statusTypes.EntityType.Property(st => st.IsDeleted);
 
         // Ignore domain events
@@ -179,9 +179,9 @@ public static class ODataModel
         comments.EntityType.Property(c => c.OrderId);
         comments.EntityType.Property(c => c.UserId);
         comments.EntityType.Property(c => c.UserEmail);
-        comments.EntityType.Property(c => c.CreatedAt);
-        comments.EntityType.Property(c => c.UpdatedAt);
-        comments.EntityType.Property(c => c.DeletedAt);
+        comments.EntityType.Property(c => c.CreatedAtUtc);
+        comments.EntityType.Property(c => c.UpdatedAtUtc);
+        comments.EntityType.Property(c => c.DeletedAtUtc);
         comments.EntityType.Property(c => c.IsDeleted);
 
         // Relationships

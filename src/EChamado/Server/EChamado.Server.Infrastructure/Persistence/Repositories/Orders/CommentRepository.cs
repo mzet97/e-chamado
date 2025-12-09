@@ -16,7 +16,7 @@ public class CommentRepository : Repository<Comment>, ICommentRepository
     {
         return await DbSet
             .Where(c => c.OrderId == orderId && !c.IsDeleted)
-            .OrderByDescending(c => c.CreatedAt)
+            .OrderByDescending(c => c.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
 }

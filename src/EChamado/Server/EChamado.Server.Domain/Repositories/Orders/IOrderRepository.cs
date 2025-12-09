@@ -4,4 +4,5 @@ namespace EChamado.Server.Domain.Repositories.Orders;
 
 public interface IOrderRepository : IRepository<Order>
 {
+    Task<Order?> GetByIdWithIncludesAsync(Guid id);
 }

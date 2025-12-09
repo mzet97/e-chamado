@@ -96,7 +96,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         updatedCategory.Should().NotBeNull();
         updatedCategory!.Name.Should().Be("Updated Name");
         updatedCategory.Description.Should().Be("Updated Description");
-        updatedCategory.UpdatedAt.Should().NotBeNull();
+        updatedCategory.UpdatedAtUtc.Should().NotBeNull();
     }
 
     [Fact]

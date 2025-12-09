@@ -8,13 +8,9 @@
 
   <ItemGroup>
     <Folder Include="Common\Caching\" />
-    <Folder Include="UseCases\Categories\Commands\Handlers\" />
     <Folder Include="UseCases\Categories\Notifications\Handlers\" />
-    <Folder Include="UseCases\Categories\Queries\Handlers\" />
     <Folder Include="UseCases\Categories\ViewModels\" />
-    <Folder Include="UseCases\Orders\Commands\Handlers\" />
     <Folder Include="UseCases\Orders\Notifications\Handlers\" />
-    <Folder Include="UseCases\Orders\Queries\Handlers\" />
     <Folder Include="UseCases\Orders\ViewModels\" />
     <Folder Include="UseCases\Roles\Notifications\Handlers\" />
     <Folder Include="UseCases\StatusType\Commands\Handlers\" />
@@ -23,7 +19,6 @@
     <Folder Include="UseCases\StatusType\ViewModels\" />
     <Folder Include="UseCases\SubCategories\Commands\Handlers\" />
     <Folder Include="UseCases\SubCategories\Notifications\Handlers\" />
-    <Folder Include="UseCases\SubCategories\Queries\Handlers\" />
     <Folder Include="UseCases\SubCategories\ViewModels\" />
     <Folder Include="UseCases\Users\Commands\Handlers\" />
     <Folder Include="UseCases\Users\Notifications\Handlers\" />

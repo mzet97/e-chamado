@@ -33,16 +33,27 @@ public class CommentMapping : IEntityTypeConfiguration<Comment>
             .HasForeignKey(x => x.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(x => x.CreatedAt)
+        builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAtUtc);
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAtUtc);
 
         builder.Property(x => x.IsDeleted)
             .IsRequired();
 
-        builder.HasIndex(x => x.OrderId);
+        // Indexes for Gridify query performance
+        builder.HasIndex(x => x.OrderId)
+            .HasDatabaseName("IX_Comment_OrderId");
+
+        builder.HasIndex(x => x.UserId)
+            .HasDatabaseName("IX_Comment_UserId");
+
+        builder.HasIndex(x => x.CreatedAtUtc)
+            .HasDatabaseName("IX_Comment_CreatedAtUtc");
+
+        builder.HasIndex(x => x.IsDeleted)
+            .HasDatabaseName("IX_Comment_IsDeleted");
     }
 }

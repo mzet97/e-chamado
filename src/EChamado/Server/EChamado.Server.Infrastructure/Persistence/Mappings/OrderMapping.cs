@@ -8,6 +8,8 @@ public class OrderMapping : IEntityTypeConfiguration<Order>
 {
     public void Configure(EntityTypeBuilder<Order> builder)
     {
+        builder.ToTable("Order");
+
         builder.HasKey(o => o.Id);
 
         builder.Property(o => o.Description)
@@ -21,8 +23,7 @@ public class OrderMapping : IEntityTypeConfiguration<Order>
         builder.Property(o => o.Evaluation)
             .HasMaxLength(1000);
 
-        builder.Property(o => o.OpeningDate)
-            .IsRequired();
+        builder.Property(o => o.OpeningDate);
 
         builder.Property(o => o.ClosingDate);
 
@@ -76,12 +77,12 @@ public class OrderMapping : IEntityTypeConfiguration<Order>
             .WithMany()
             .HasForeignKey(o => o.DepartmentId);
 
-        builder.Property(o => o.CreatedAt)
+        builder.Property(o => o.CreatedAtUtc)
             .IsRequired();
 
-        builder.Property(o => o.UpdatedAt);
+        builder.Property(o => o.UpdatedAtUtc);
 
-        builder.Property(o => o.DeletedAt);
+        builder.Property(o => o.DeletedAtUtc);
 
         builder.Property(o => o.IsDeleted)
             .IsRequired();
@@ -117,16 +118,14 @@ public class OrderMapping : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.DueDate)
             .HasDatabaseName("IX_Order_DueDate");
 
-        builder.HasIndex(o => o.CreatedAt)
-            .HasDatabaseName("IX_Order_CreatedAt");
+        builder.HasIndex(o => o.CreatedAtUtc)
+            .HasDatabaseName("IX_Order_CreatedAtUtc");
 
         builder.HasIndex(o => o.IsDeleted)
             .HasDatabaseName("IX_Order_IsDeleted");
 
         // Composite index for common filtering scenario
-        builder.HasIndex(o => new { o.IsDeleted, o.StatusId, o.CreatedAt })
-            .HasDatabaseName("IX_Order_IsDeleted_StatusId_CreatedAt");
-
-        builder.ToTable("Order");
+        builder.HasIndex(o => new { o.IsDeleted, o.StatusId, o.CreatedAtUtc })
+            .HasDatabaseName("IX_Order_IsDeleted_StatusId_CreatedAtUtc");
     }
 }

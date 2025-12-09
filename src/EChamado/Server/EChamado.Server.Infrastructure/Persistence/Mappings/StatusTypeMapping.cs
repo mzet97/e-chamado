@@ -22,12 +22,12 @@ public class StatusTypeMapping : IEntityTypeConfiguration<StatusType>
             .HasColumnType("varchar")
             .HasMaxLength(500);
 
-        builder.Property(x => x.CreatedAt)
+        builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAtUtc);
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAtUtc);
 
         builder.Property(x => x.IsDeleted)
             .IsRequired();
@@ -36,8 +36,8 @@ public class StatusTypeMapping : IEntityTypeConfiguration<StatusType>
         builder.HasIndex(x => x.Name)
             .HasDatabaseName("IX_StatusType_Name");
 
-        builder.HasIndex(x => x.CreatedAt)
-            .HasDatabaseName("IX_StatusType_CreatedAt");
+        builder.HasIndex(x => x.CreatedAtUtc)
+            .HasDatabaseName("IX_StatusType_CreatedAtUtc");
 
         builder.HasIndex(x => x.IsDeleted)
             .HasDatabaseName("IX_StatusType_IsDeleted");

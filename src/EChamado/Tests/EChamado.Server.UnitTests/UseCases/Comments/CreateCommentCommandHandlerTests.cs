@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Paramore.Brighter;
 using Xunit;
+using EChamado.Server.Application.UseCases.Comments.Commands.Handlers;
 
 namespace EChamado.Server.UnitTests.UseCases.Comments;
 

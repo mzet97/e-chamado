@@ -22,12 +22,12 @@ namespace EChamado.Server.Infrastructure.Persistence.Mappings
                 .HasColumnType("varchar")
                 .HasMaxLength(500);
 
-            builder.Property(x => x.CreatedAt)
-            .IsRequired();
+            builder.Property(x => x.CreatedAtUtc)
+                .IsRequired();
 
-            builder.Property(x => x.UpdatedAt);
+            builder.Property(x => x.UpdatedAtUtc);
 
-            builder.Property(x => x.DeletedAt);
+            builder.Property(x => x.DeletedAtUtc);
 
             builder.Property(x => x.IsDeleted)
                 .IsRequired();
@@ -36,8 +36,8 @@ namespace EChamado.Server.Infrastructure.Persistence.Mappings
             builder.HasIndex(x => x.Name)
                 .HasDatabaseName("IX_Department_Name");
 
-            builder.HasIndex(x => x.CreatedAt)
-                .HasDatabaseName("IX_Department_CreatedAt");
+            builder.HasIndex(x => x.CreatedAtUtc)
+                .HasDatabaseName("IX_Department_CreatedAtUtc");
 
             builder.HasIndex(x => x.IsDeleted)
                 .HasDatabaseName("IX_Department_IsDeleted");
