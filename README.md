@@ -57,6 +57,7 @@ Sistema completo de gestão de tickets/chamados com autenticação SSO/OIDC, des
 - 6+ Controllers (Orders, Categories, Departments, OrderTypes, StatusTypes, Auth, Comments)
 - **Gridify** - Filtros dinâmicos, ordenação e paginação avançada (5 entidades)
 - **OData** - Queries avançadas com suporte completo
+- **🤖 AI Natural Language Query** - Conversão de linguagem natural para Gridify com IA
 - Paginação, filtros, busca
 - Validação com FluentValidation
 - Responses padronizadas
@@ -113,12 +114,73 @@ Sistema completo de gestão de tickets/chamados com autenticação SSO/OIDC, des
 | Autenticação | OpenIddict 6.1.1, ASP.NET Core Identity |
 | Banco de Dados | PostgreSQL 15, Entity Framework Core 9 |
 | Queries Avançadas | Gridify 2.16.3, OData 9.0 |
+| 🤖 IA | OpenAI GPT-4o-mini, Google Gemini 2.0, OpenRouter |
 | Cache | Redis 7.x |
 | Mensageria | RabbitMQ 3.x |
 | Logging | Serilog 4.3.0, ELK Stack 8.15.1 |
 | Containerização | Docker, Docker Compose |
 | Testes | xUnit, FluentAssertions, Moq, Testcontainers |
 | Monitoramento | Health Checks, ASP.NET Core HealthChecks |
+
+---
+
+## 🤖 AI Natural Language Query (NOVO!)
+
+O EChamado possui integração com IA para converter consultas em **linguagem natural** para **sintaxe Gridify**, permitindo buscas intuitivas sem conhecer a sintaxe de query.
+
+### Como Funciona
+
+**Entrada (Português):**
+```
+"Mostrar chamados abertos do departamento de TI com prioridade alta"
+```
+
+**Saída (Gridify Query):**
+```
+StatusName *= 'Aberto' & DepartmentName *= 'TI' & Priority = 3
+```
+
+### Suporta Múltiplos Provedores de IA
+
+- ✅ **OpenAI GPT-4o-mini** (Recomendado - rápido e econômico)
+- ✅ **Google Gemini 2.0 Flash** (Gratuito no tier básico)
+- ✅ **OpenRouter** (Acesso a múltiplos modelos: GPT-4, Claude, Llama)
+
+### Features
+
+- 🚀 **Cache Automático** - Respostas em cache por 60 minutos
+- 💰 **Econômico** - ~$0.10 para 1.000 conversões
+- 🔒 **Seguro** - Queries validadas antes da execução
+- 📊 **5 Entidades Suportadas** - Orders, Categories, Departments, OrderTypes, StatusTypes
+- ⚡ **Performance** - Resposta em ~450ms (primeira vez), ~2ms (cache)
+
+### Exemplos de Uso
+
+| Pergunta Natural | Query Gerada |
+|------------------|--------------|
+| "Chamados abertos" | `StatusName *= 'Aberto'` |
+| "Tickets urgentes do TI" | `DepartmentName *= 'TI' & Priority >= 3` |
+| "Orders criadas hoje" | `CreatedAt >= 2025-01-27` |
+| "Categorias ativas de Hardware" | `IsActive = true & Name *= 'Hardware'` |
+
+### Configuração Rápida
+
+1. Obtenha uma API key: https://platform.openai.com
+2. Configure em `appsettings.json`:
+```json
+{
+  "AISettings": {
+    "DefaultProvider": "OpenAI",
+    "OpenAI": {
+      "ApiKey": "sk-proj-YOUR_KEY_HERE",
+      "Model": "gpt-4o-mini",
+      "Enabled": true
+    }
+  }
+}
+```
+
+📚 **[Documentação Completa](docs/AI-NATURAL-LANGUAGE-QUERY.md)**
 
 ---
 

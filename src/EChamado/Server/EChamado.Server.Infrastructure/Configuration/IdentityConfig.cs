@@ -1,7 +1,7 @@
 using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Infrastructure.OpenIddict;
 using EChamado.Server.Infrastructure.Persistence;
-using EChamado.Shared.Shared.Settings;
+using EChamado.Shared.Domain.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;

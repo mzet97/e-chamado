@@ -26,11 +26,19 @@ public class GetCategoryByIdQueryHandler(
             category.Id,
             category.Name,
             category.Description,
+            category.CreatedAtUtc,
+            category.UpdatedAtUtc,
+            category.DeletedAtUtc,
+            category.IsDeleted,
             category.SubCategories.Select(sc => new SubCategoryViewModel(
                 sc.Id,
                 sc.Name,
                 sc.Description,
-                sc.CategoryId
+                sc.CategoryId,
+                sc.CreatedAtUtc,
+                sc.UpdatedAtUtc,
+                sc.DeletedAtUtc,
+                sc.IsDeleted
             )).ToList()
         );
 

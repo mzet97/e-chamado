@@ -233,6 +233,6 @@ public class StatusTypeTests : UnitTestBase
         var statusType = StatusType.Create("Test Status", "Test Description", _dateTimeProvider);
 
         // Assert
-        statusType.Should().BeAssignableTo<EChamado.Shared.Shared.Entity>();
+        statusType.Should().BeAssignableTo<Shared.Domain.Entity>();
     }
 }

@@ -1,4 +1,4 @@
-﻿using EChamado.Shared.Shared;
+﻿using EChamado.Shared.Domain;
 using FluentValidation;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities.Validations;
@@ -7,7 +7,7 @@ public class OrderTypeValidation : AbstractValidator<OrderType>
 {
     public OrderTypeValidation()
     {
-        Include(new EntityValidation());
+        Include(new EntityValidation<OrderType>());
 
         RuleFor(orderType => orderType.Name)
             .Must(name => !string.IsNullOrWhiteSpace(name))

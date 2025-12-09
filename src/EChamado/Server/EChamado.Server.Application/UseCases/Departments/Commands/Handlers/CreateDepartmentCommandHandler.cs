@@ -26,7 +26,7 @@ public class CreateDepartmentCommandHandler(
         if (!entity.IsValid())
         {
             logger.LogError("Validate Department has error");
-            throw new ValidationException("Validate Department has error", entity.GetErrors());
+            throw new ValidationException("Validate Department has error", entity.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -41,3 +41,4 @@ public class CreateDepartmentCommandHandler(
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+

@@ -6,5 +6,6 @@ public record CommentViewModel(
     Guid OrderId,
     Guid UserId,
     string UserEmail,
-    DateTime CreatedAt
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc
 );

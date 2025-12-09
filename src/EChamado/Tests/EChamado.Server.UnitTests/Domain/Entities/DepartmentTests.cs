@@ -167,7 +167,7 @@ public class DepartmentTests : UnitTestBase
         var department = Department.Create("Test Department", "Test Description", _dateTimeProvider);
 
         // Assert
-        department.Should().BeAssignableTo<EChamado.Shared.Shared.Entity>();
+        department.Should().BeAssignableTo<Shared.Domain.Entity>();
     }
 
     [Fact]

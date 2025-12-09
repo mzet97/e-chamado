@@ -33,7 +33,7 @@ public class UpdateOrderTypeCommandHandler(
         if (!orderType.IsValid())
         {
             logger.LogError("Validate OrderType has error");
-            throw new ValidationException("Validate OrderType has error", orderType.GetErrors());
+            throw new ValidationException("Validate OrderType has error", orderType.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -50,3 +50,4 @@ public class UpdateOrderTypeCommandHandler(
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+

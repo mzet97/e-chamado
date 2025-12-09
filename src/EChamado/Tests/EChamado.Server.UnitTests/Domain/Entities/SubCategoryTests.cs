@@ -203,7 +203,7 @@ public class SubCategoryTests : UnitTestBase
         var subCategory = SubCategory.Create("Test", "Description", Guid.NewGuid(), _dateTimeProvider);
 
         // Assert
-        subCategory.Should().BeAssignableTo<EChamado.Shared.Shared.Entity>();
+        subCategory.Should().BeAssignableTo<Shared.Domain.Entity>();
     }
 
     [Fact]

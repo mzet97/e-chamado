@@ -30,9 +30,10 @@ public class GridifyDepartmentQueryHandler : IRequestHandler<GridifyDepartmentQu
         // 3. Mapeia as entidades para ViewModels
         var viewModels = result.Data.Select(department => new DepartmentViewModel(
             department.Id,
-            department.CreatedAt,
-            department.UpdatedAt,
-            department.DeletedAt,
+            department.CreatedAtUtc,
+            department.UpdatedAtUtc,
+            department.DeletedAtUtc,
+            department.IsDeleted,
             department.Name,
             department.Description
         )).ToList();

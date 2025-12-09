@@ -40,14 +40,14 @@
     <PackageReference Include="MediatR" Version="13.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
     <PackageReference Include="Mscc.GenerativeAI" Version="1.7.1" />
-    <PackageReference Include="Paramore.Brighter" Version="10.0.2" />
+    <PackageReference Include="Paramore.Brighter" Version="10.0.3" />
     <PackageReference Include="Paramore.Brighter.Extensions.DependencyInjection" Version="10.0.2" />
     <PackageReference Include="Paramore.Darker" Version="4.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="10.0.0" />
     <PackageReference Include="OpenIddict.Server.AspNetCore" Version="7.1.0" />
   </ItemGroup>
 

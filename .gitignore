@@ -400,3 +400,15 @@ FodyWeavers.xsd
 /.dotnetcli
 /_out
 *.env
+
+
+appsettings.json
+appsettings.*.json
+
+**/appsettings.json
+**/**/appsettings.json
+**/**/**/appsettings.json
+
+**/appsettings.*.json
+**/**/appsettings.*.json
+**/**/**/appsettings.*.json

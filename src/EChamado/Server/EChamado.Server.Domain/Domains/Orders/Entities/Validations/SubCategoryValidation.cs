@@ -1,4 +1,4 @@
-﻿using EChamado.Shared.Shared;
+﻿using EChamado.Shared.Domain;
 using FluentValidation;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities.Validations;
@@ -7,7 +7,7 @@ public class SubCategoryValidation : AbstractValidator<SubCategory>
 {
     public SubCategoryValidation()
     {
-        Include(new EntityValidation());
+        Include(new EntityValidation<SubCategory>());
 
         RuleFor(subCategory => subCategory.Name)
             .Must(name => !string.IsNullOrWhiteSpace(name))

@@ -1,52 +1,39 @@
 using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.Comments;
+using EChamado.Shared.Domain;
 using EChamado.Shared.Services;
-using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
 
-public class Comment : Entity
+public class Comment : SoftDeletableEntity<Comment>
 {
-    public string Text { get; private set; }
+    public string Text { get; private set; } = string.Empty;
     public Guid OrderId { get; private set; }
     public Guid UserId { get; private set; }
-    public string UserEmail { get; private set; }
+    public string UserEmail { get; private set; } = string.Empty;
 
-    // EF navigation property
     public Order Order { get; set; } = null!;
 
-    public Comment(
+    private Comment() : base(new CommentValidation()) { }
+
+    private Comment(
         Guid id,
         string text,
         Guid orderId,
         Guid userId,
         string userEmail,
-        DateTime createdAt,
-        DateTime? updatedAt,
-        DateTime? deletedAt,
-        bool isDeleted) : base(id, createdAt, updatedAt, deletedAt, isDeleted)
+        IDateTimeProvider dateTimeProvider)
+        : base(new CommentValidation())
     {
+        Id = id;
+
         Text = text;
         OrderId = orderId;
         UserId = userId;
         UserEmail = userEmail;
-        Validate();
-    }
 
-    public override void Validate()
-    {
-        var validator = new CommentValidation();
-        var result = validator.Validate(this);
-        if (!result.IsValid)
-        {
-            _errors = result.Errors.Select(x => x.ErrorMessage);
-            _isValid = false;
-        }
-        else
-        {
-            _errors = Enumerable.Empty<string>();
-            _isValid = true;
-        }
+        MarkCreated(dateTimeProvider.UtcNow);
+        Validate();
     }
 
     public static Comment Create(
@@ -62,13 +49,24 @@ public class Comment : Entity
             orderId,
             userId,
             userEmail,
-            dateTimeProvider.UtcNow,
-            null,
-            null,
-            false);
+            dateTimeProvider);
 
-        comment.AddEvent(new CommentCreated(comment));
-
+        comment.AddEvent(new CommentCreated(
+            comment.Id,
+            comment.OrderId,
+            comment.UserId,
+            comment.UserEmail,
+            comment.Text
+        ));
         return comment;
+    }
+
+    public override void Validate()
+    {
+        var validator = new CommentValidation();
+        var result = validator.Validate(this);
+
+        _errors = result.Errors.Select(x => x.ErrorMessage);
+        _isValid = result.IsValid;
     }
 }

@@ -31,7 +31,7 @@ public class CreateOrderTypeCommandHandler(
         if (!entity.IsValid())
         {
             logger.LogError("Validate OrderType has error");
-            throw new ValidationException("Validate OrderType has error", entity.GetErrors());
+            throw new ValidationException("Validate OrderType has error", entity.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -48,3 +48,4 @@ public class CreateOrderTypeCommandHandler(
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+

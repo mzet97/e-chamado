@@ -33,7 +33,7 @@ public class UpdateStatusTypeCommandHandler(
         if (!statusType.IsValid())
         {
             logger.LogError("Validate StatusType has error");
-            throw new ValidationException("Validate StatusType has error", statusType.GetErrors());
+            throw new ValidationException("Validate StatusType has error", statusType.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -50,3 +50,4 @@ public class UpdateStatusTypeCommandHandler(
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+

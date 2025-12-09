@@ -41,7 +41,7 @@ public class UpdateSubCategoryCommandHandler(
         if (!subCategory.IsValid())
         {
             logger.LogError("Validate SubCategory has error");
-            throw new ValidationException("Validate SubCategory has error", subCategory.GetErrors());
+            throw new ValidationException("Validate SubCategory has error", subCategory.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();

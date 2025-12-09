@@ -30,17 +30,17 @@ public class SearchStatusTypesQueryHandler(IUnitOfWork unitOfWork) :
 
         if (query.CreatedAt != default)
         {
-            filter = filter.And(x => x.CreatedAt == query.CreatedAt);
+            filter = filter.And(x => x.CreatedAtUtc == query.CreatedAt);
         }
 
         if (query.UpdatedAt != default)
         {
-            filter = filter.And(x => x.UpdatedAt == query.UpdatedAt);
+            filter = filter.And(x => x.UpdatedAtUtc == query.UpdatedAt);
         }
 
         if (query.DeletedAt != new DateTime())
         {
-            filter = filter.And(x => x.DeletedAt == query.DeletedAt);
+            filter = filter.And(x => x.DeletedAtUtc == query.DeletedAt);
         }
 
         if (!string.IsNullOrWhiteSpace(query.Order))
@@ -60,15 +60,15 @@ public class SearchStatusTypesQueryHandler(IUnitOfWork unitOfWork) :
                     break;
 
                 case "CreatedAt":
-                    orderBy = x => x.OrderBy(n => n.CreatedAt);
+                    orderBy = x => x.OrderBy(n => n.CreatedAtUtc);
                     break;
 
                 case "UpdatedAt":
-                    orderBy = x => x.OrderBy(n => n.UpdatedAt);
+                    orderBy = x => x.OrderBy(n => n.UpdatedAtUtc);
                     break;
 
                 case "DeletedAt":
-                    orderBy = x => x.OrderBy(n => n.DeletedAt);
+                    orderBy = x => x.OrderBy(n => n.DeletedAtUtc);
                     break;
 
                 default:
@@ -87,7 +87,11 @@ public class SearchStatusTypesQueryHandler(IUnitOfWork unitOfWork) :
         var items = result.Data.Select(st => new StatusTypeViewModel(
             st.Id,
             st.Name,
-            st.Description
+            st.Description,
+            st.CreatedAtUtc,
+            st.UpdatedAtUtc,
+            st.DeletedAtUtc,
+            st.IsDeleted
         )).ToList();
 
         query.Result = new BaseResultList<StatusTypeViewModel>(items, result.PagedResult);

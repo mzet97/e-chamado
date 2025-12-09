@@ -1,45 +1,28 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.Categories;
+using EChamado.Shared.Domain;
 using EChamado.Shared.Services;
-using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
 
-public class Category : Entity
+public class Category : SoftDeletableEntity<Category>
 {
-    public string Name { get; private set; }
-    public string Description { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
 
-    public IEnumerable<SubCategory> SubCategories { get; set; } = new List<SubCategory>(); // ef navigation property
+    public IEnumerable<SubCategory> SubCategories { get; set; } = new List<SubCategory>();
 
-    public Category(
-        Guid id,
-        string name,
-        string description,
-        DateTime createdAt,
-        DateTime? updatedAt,
-        DateTime? deletedAt,
-        bool isDeleted) : base(id, createdAt, updatedAt, deletedAt, isDeleted)
+    private Category() : base(new CategoryValidation()) { }
+
+    private Category(Guid id, string name, string description, IDateTimeProvider dateTimeProvider)
+        : base(new CategoryValidation())
     {
+        Id = id;
         Name = name;
         Description = description;
-        Validate();
-    }
 
-    public override void Validate()
-    {
-        var validator = new CategoryValidation();
-        var result = validator.Validate(this);
-        if (!result.IsValid)
-        {
-            _errors = result.Errors.Select(x => x.ErrorMessage);
-            _isValid = false;
-        }
-        else
-        {
-            _errors = Enumerable.Empty<string>();
-            _isValid = true;
-        }
+        MarkCreated(dateTimeProvider.UtcNow);
+        Validate();
     }
 
     public static Category Create(
@@ -47,31 +30,28 @@ public class Category : Entity
         string description,
         IDateTimeProvider dateTimeProvider)
     {
-        var category =
-            new Category(
-                Guid.NewGuid(),
-                name,
-                description,
-                dateTimeProvider.UtcNow,
-                null, null, false);
-
-        category.AddEvent(
-            new CategoryCreated(category));
-
+        var category = new Category(Guid.NewGuid(), name, description, dateTimeProvider);
+        category.AddEvent(new CategoryCreated(category.Id, category.Name, category.Description));
         return category;
     }
 
-    public void Update(
-        string name,
-        string description,
-        IDateTimeProvider dateTimeProvider)
+    public void Update(string name, string description, IDateTimeProvider dateTimeProvider)
     {
         Name = name;
         Description = description;
 
-        Update(dateTimeProvider); // Chama base.Update() que define UpdatedAt
+        MarkUpdated(dateTimeProvider.UtcNow);
+        Validate();
 
-        AddEvent(
-            new CategoryUpdated(this));
+        AddEvent(new CategoryUpdated(Id, Name, Description));
+    }
+
+    public override void Validate()
+    {
+        var validator = new CategoryValidation();
+        var result = validator.Validate(this);
+
+        _errors = result.Errors.Select(x => x.ErrorMessage);
+        _isValid = result.IsValid;
     }
 }

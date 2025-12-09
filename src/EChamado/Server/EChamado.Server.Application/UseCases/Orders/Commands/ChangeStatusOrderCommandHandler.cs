@@ -39,7 +39,7 @@ public class ChangeStatusOrderCommandHandler(
         if (!order.IsValid())
         {
             logger.LogError("Validate Order has error");
-            throw new ValidationException("Validate Order has error", order.GetErrors());
+            throw new ValidationException("Validate Order has error", order.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -54,3 +54,4 @@ public class ChangeStatusOrderCommandHandler(
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+

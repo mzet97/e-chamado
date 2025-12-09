@@ -26,7 +26,11 @@ public class GetSubCategoryByIdQueryHandler(
             subCategory.Id,
             subCategory.Name,
             subCategory.Description,
-            subCategory.CategoryId
+            subCategory.CategoryId,
+            subCategory.CreatedAtUtc,
+            subCategory.UpdatedAtUtc,
+            subCategory.DeletedAtUtc,
+            subCategory.IsDeleted
         );
 
         logger.LogInformation("SubCategory {SubCategoryId} retrieved successfully", query.SubCategoryId);

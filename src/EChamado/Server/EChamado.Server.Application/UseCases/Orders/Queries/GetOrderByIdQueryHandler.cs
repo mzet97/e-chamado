@@ -60,8 +60,10 @@ public class GetOrderByIdQueryHandler(
             order.RequestingUserEmail,
             order.ResponsibleUserId,
             order.ResponsibleUserEmail,
-            order.CreatedAt,
-            order.UpdatedAt
+            order.CreatedAtUtc,
+            order.UpdatedAtUtc,
+            order.DeletedAtUtc,
+            order.IsDeleted
         );
 
         logger.LogInformation("Order {OrderId} retrieved successfully", query.OrderId);

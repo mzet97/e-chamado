@@ -6,7 +6,6 @@ using EChamado.Server.Infrastructure.Configuration;
 using EChamado.Server.Infrastructure.MessageBus;
 using EChamado.Server.Infrastructure.Persistence;
 using EChamado.Server.Infrastructure.Users;
-using EChamado.Shared.Shared.Settings;
 using Echamado.Auth.Components;
 using Echamado.Auth;
 using Microsoft.AspNetCore.Components;
@@ -24,6 +23,7 @@ using OpenIddict.Core;
 using OpenIddict.EntityFrameworkCore;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using EChamado.Shared.Domain.Settings;
 
 try
 {

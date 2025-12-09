@@ -1,5 +1,5 @@
 using EChamado.Server.Infrastructure.Persistence;
-using EChamado.Shared.Shared.Settings;
+using EChamado.Shared.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;

@@ -4,6 +4,10 @@ public record CategoryViewModel(
     Guid Id,
     string Name,
     string Description,
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc,
+    DateTime? DeletedAtUtc,
+    bool IsDeleted,
     List<SubCategoryViewModel> SubCategories
 );
 
@@ -11,5 +15,9 @@ public record SubCategoryViewModel(
     Guid Id,
     string Name,
     string Description,
-    Guid CategoryId
+    Guid CategoryId,
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc,
+    DateTime? DeletedAtUtc,
+    bool IsDeleted
 );

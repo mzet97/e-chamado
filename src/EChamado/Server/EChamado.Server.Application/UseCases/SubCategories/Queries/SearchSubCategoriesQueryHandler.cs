@@ -35,17 +35,17 @@ public class SearchSubCategoriesQueryHandler(IUnitOfWork unitOfWork) :
 
         if (query.CreatedAt != default)
         {
-            filter = filter.And(x => x.CreatedAt == query.CreatedAt);
+            filter = filter.And(x => x.CreatedAtUtc == query.CreatedAt);
         }
 
         if (query.UpdatedAt != default)
         {
-            filter = filter.And(x => x.UpdatedAt == query.UpdatedAt);
+            filter = filter.And(x => x.UpdatedAtUtc == query.UpdatedAt);
         }
 
         if (query.DeletedAt != new DateTime())
         {
-            filter = filter.And(x => x.DeletedAt == query.DeletedAt);
+            filter = filter.And(x => x.DeletedAtUtc == query.DeletedAt);
         }
 
         if (!string.IsNullOrWhiteSpace(query.Order))
@@ -69,15 +69,15 @@ public class SearchSubCategoriesQueryHandler(IUnitOfWork unitOfWork) :
                     break;
 
                 case "CreatedAt":
-                    orderBy = x => x.OrderBy(n => n.CreatedAt);
+                    orderBy = x => x.OrderBy(n => n.CreatedAtUtc);
                     break;
 
                 case "UpdatedAt":
-                    orderBy = x => x.OrderBy(n => n.UpdatedAt);
+                    orderBy = x => x.OrderBy(n => n.UpdatedAtUtc);
                     break;
 
                 case "DeletedAt":
-                    orderBy = x => x.OrderBy(n => n.DeletedAt);
+                    orderBy = x => x.OrderBy(n => n.DeletedAtUtc);
                     break;
 
                 default:
@@ -97,7 +97,11 @@ public class SearchSubCategoriesQueryHandler(IUnitOfWork unitOfWork) :
             sc.Id,
             sc.Name,
             sc.Description,
-            sc.CategoryId
+            sc.CategoryId,
+            sc.CreatedAtUtc,
+            sc.UpdatedAtUtc,
+            sc.DeletedAtUtc,
+            sc.IsDeleted
         )).ToList();
 
         query.Result = new BaseResultList<SubCategoryViewModel>(items, result.PagedResult);

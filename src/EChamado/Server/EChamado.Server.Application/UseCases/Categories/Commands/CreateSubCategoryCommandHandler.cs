@@ -34,7 +34,7 @@ public class CreateSubCategoryCommandHandler(
         if (!entity.IsValid())
         {
             logger.LogError("Validate SubCategory has error");
-            throw new ValidationException("Validate SubCategory has error", entity.GetErrors());
+            throw new ValidationException("Validate SubCategory has error", entity.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();

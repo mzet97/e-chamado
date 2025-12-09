@@ -1,48 +1,35 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.SubCategories;
+using EChamado.Shared.Domain;
 using EChamado.Shared.Services;
-using EChamado.Shared.Shared;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
 
-public class SubCategory : Entity
+public class SubCategory : SoftDeletableEntity<SubCategory>
 {
-    public string Name { get; private set; }
-    public string Description { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
 
     public Guid CategoryId { get; private set; }
-    public Category Category { get; set; } = null!; // ef navigation property
+    public Category Category { get; set; } = null!;
 
-    public SubCategory(
+    private SubCategory() : base(new SubCategoryValidation()) { }
+
+    private SubCategory(
         Guid id,
         string name,
         string description,
         Guid categoryId,
-        DateTime createdAt,
-        DateTime? updatedAt,
-        DateTime? deletedAt,
-        bool isDeleted) : base(id, createdAt, updatedAt, deletedAt, isDeleted)
+        IDateTimeProvider dateTimeProvider)
+        : base(new SubCategoryValidation())
     {
+        Id = id;
         Name = name;
         Description = description;
         CategoryId = categoryId;
-        Validate();
-    }
 
-    public override void Validate()
-    {
-        var validator = new SubCategoryValidation();
-        var result = validator.Validate(this);
-        if (!result.IsValid)
-        {
-            _errors = result.Errors.Select(x => x.ErrorMessage);
-            _isValid = false;
-        }
-        else
-        {
-            _errors = Enumerable.Empty<string>();
-            _isValid = true;
-        }
+        MarkCreated(dateTimeProvider.UtcNow);
+        Validate();
     }
 
     public static SubCategory Create(
@@ -51,18 +38,13 @@ public class SubCategory : Entity
         Guid categoryId,
         IDateTimeProvider dateTimeProvider)
     {
-        var subCategory =
-            new SubCategory(
-                Guid.NewGuid(),
-                name,
-                description,
-                categoryId,
-                dateTimeProvider.UtcNow,
-                null, null, false);
-
-        subCategory.AddEvent(
-            new SubCategoryCreated(subCategory));
-
+        var subCategory = new SubCategory(Guid.NewGuid(), name, description, categoryId, dateTimeProvider);
+        subCategory.AddEvent(new SubCategoryCreated(
+            subCategory.Id,
+            subCategory.CategoryId,
+            subCategory.Name,
+            subCategory.Description
+        ));
         return subCategory;
     }
 
@@ -76,11 +58,23 @@ public class SubCategory : Entity
         Description = description;
         CategoryId = categoryId;
 
-        Update(dateTimeProvider);
+        MarkUpdated(dateTimeProvider.UtcNow);
         Validate();
 
+        AddEvent(new SubCategoryUpdated(
+            Id,
+            CategoryId,
+            Name,
+            Description
+        ));
+    }
 
-        AddEvent(
-            new SubCategoryUpdated(this));
+    public override void Validate()
+    {
+        var validator = new SubCategoryValidation();
+        var result = validator.Validate(this);
+
+        _errors = result.Errors.Select(x => x.ErrorMessage);
+        _isValid = result.IsValid;
     }
 }

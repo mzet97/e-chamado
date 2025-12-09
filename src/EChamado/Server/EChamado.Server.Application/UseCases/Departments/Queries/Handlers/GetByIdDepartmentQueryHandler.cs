@@ -23,9 +23,10 @@ public class GetByIdDepartmentQueryHandler(IUnitOfWork unitOfWork) :
 
         var viewModel = new DepartmentViewModel(
             department.Id,
-            department.CreatedAt,
-            department.UpdatedAt,
-            department.DeletedAt,
+            department.CreatedAtUtc,
+            department.UpdatedAtUtc,
+            department.DeletedAtUtc,
+            department.IsDeleted,
             department.Name,
             department.Description);
 

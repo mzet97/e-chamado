@@ -1,5 +1,5 @@
-﻿using EChamado.Shared.Responses;
-using EChamado.Shared.Shared;
+﻿using EChamado.Shared.Domain;
+using EChamado.Shared.Responses;
 using System.Linq.Expressions;
 
 namespace EChamado.Server.Domain.Repositories;

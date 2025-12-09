@@ -1,6 +1,6 @@
 ﻿using EChamado.Server.Domain.Services.Interface;
 using EChamado.Server.Infrastructure.MessageBus;
-using EChamado.Shared.Shared.Settings;
+using EChamado.Shared.Domain.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

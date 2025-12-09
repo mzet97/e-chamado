@@ -56,8 +56,10 @@ public class GridifyOrderQueryHandler : IRequestHandler<GridifyOrderQuery, BaseR
             order.RequestingUserEmail,
             order.ResponsibleUserId,
             order.ResponsibleUserEmail,
-            order.CreatedAt,
-            order.UpdatedAt
+            order.CreatedAtUtc,
+            order.UpdatedAtUtc,
+            order.DeletedAtUtc,
+            order.IsDeleted
         )).ToList();
 
         // 4. Retorna resultado paginado com ViewModels

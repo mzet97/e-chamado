@@ -39,7 +39,7 @@ public class CreateCommentCommandHandler(
         if (!entity.IsValid())
         {
             logger.LogError("Validate Comment has error");
-            throw new ValidationException("Validate Comment has error", entity.GetErrors());
+            throw new ValidationException("Validate Comment has error", entity.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -62,3 +62,4 @@ public class CreateCommentCommandHandler(
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+

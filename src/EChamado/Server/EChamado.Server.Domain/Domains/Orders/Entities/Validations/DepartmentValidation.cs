@@ -1,4 +1,4 @@
-﻿using EChamado.Shared.Shared;
+﻿using EChamado.Shared.Domain;
 using FluentValidation;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities.Validations;
@@ -7,7 +7,7 @@ public class DepartmentValidation : AbstractValidator<Department>
 {
     public DepartmentValidation()
     {
-        Include(new EntityValidation());
+        Include(new EntityValidation<Department>());
 
         RuleFor(department => department.Name)
             .Must(name => !string.IsNullOrWhiteSpace(name))

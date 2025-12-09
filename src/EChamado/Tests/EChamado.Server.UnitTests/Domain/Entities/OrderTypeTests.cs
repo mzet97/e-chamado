@@ -220,7 +220,7 @@ public class OrderTypeTests : UnitTestBase
         var orderType = OrderType.Create("Test Type", "Test Description", _dateTimeProvider);
 
         // Assert
-        orderType.Should().BeAssignableTo<EChamado.Shared.Shared.Entity>();
+        orderType.Should().BeAssignableTo<Shared.Domain.Entity>();
     }
 
     [Theory]

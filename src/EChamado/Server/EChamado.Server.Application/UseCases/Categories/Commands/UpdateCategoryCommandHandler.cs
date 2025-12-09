@@ -33,7 +33,7 @@ public class UpdateCategoryCommandHandler(
         if (!category.IsValid())
         {
             logger.LogError("Validate Category has error");
-            throw new ValidationException("Validate Category has error", category.GetErrors());
+            throw new ValidationException("Validate Category has error", category.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();

@@ -30,17 +30,17 @@ public class SearchDepartmentQueryHandler(IUnitOfWork unitOfWork) :
 
         if (query.CreatedAt != default)
         {
-            filter = filter.And(x => x.CreatedAt == query.CreatedAt);
+            filter = filter.And(x => x.CreatedAtUtc == query.CreatedAt);
         }
 
         if (query.UpdatedAt != default)
         {
-            filter = filter.And(x => x.UpdatedAt == query.UpdatedAt);
+            filter = filter.And(x => x.UpdatedAtUtc == query.UpdatedAt);
         }
 
         if (query.DeletedAt != new DateTime())
         {
-            filter = filter.And(x => x.DeletedAt == query.DeletedAt);
+            filter = filter.And(x => x.DeletedAtUtc == query.DeletedAt);
         }
 
         if (!string.IsNullOrWhiteSpace(query.Order))
@@ -60,15 +60,15 @@ public class SearchDepartmentQueryHandler(IUnitOfWork unitOfWork) :
                     break;
 
                 case "CreatedAt":
-                    ordeBy = x => x.OrderBy(n => n.CreatedAt);
+                    ordeBy = x => x.OrderBy(n => n.CreatedAtUtc);
                     break;
 
                 case "UpdatedAt":
-                    ordeBy = x => x.OrderBy(n => n.UpdatedAt);
+                    ordeBy = x => x.OrderBy(n => n.UpdatedAtUtc);
                     break;
 
                 case "DeletedAt":
-                    ordeBy = x => x.OrderBy(n => n.DeletedAt);
+                    ordeBy = x => x.OrderBy(n => n.DeletedAtUtc);
                     break;
 
                 default:

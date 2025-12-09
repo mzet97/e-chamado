@@ -38,7 +38,7 @@ public class UpdateDepartmentCommandHandler(IUnitOfWork unitOfWork,
             logger.LogError("Validate Department has error");
             throw new ValidationException(
                 "Validate Department has error",
-                entityDb.GetErrors());
+                entityDb.Errors);
         }
 
         await unitOfWork
@@ -59,3 +59,4 @@ public class UpdateDepartmentCommandHandler(IUnitOfWork unitOfWork,
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+

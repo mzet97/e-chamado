@@ -26,7 +26,7 @@ public class CreateCategoryCommandHandler(
         if (!entity.IsValid())
         {
             logger.LogError("Validate Category has error");
-            throw new ValidationException("Validate Category has error", entity.GetErrors());
+            throw new ValidationException("Validate Category has error", entity.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();

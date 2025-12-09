@@ -1,7 +1,6 @@
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
 using EChamado.Shared.Services;
-using EChamado.Shared.Shared;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 

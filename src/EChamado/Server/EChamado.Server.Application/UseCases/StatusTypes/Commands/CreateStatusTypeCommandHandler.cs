@@ -26,7 +26,7 @@ public class CreateStatusTypeCommandHandler(
         if (!entity.IsValid())
         {
             logger.LogError("Validate StatusType has error");
-            throw new ValidationException("Validate StatusType has error", entity.GetErrors());
+            throw new ValidationException("Validate StatusType has error", entity.Errors);
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -43,3 +43,4 @@ public class CreateStatusTypeCommandHandler(
         return await base.HandleAsync(command, cancellationToken);
     }
 }
+
