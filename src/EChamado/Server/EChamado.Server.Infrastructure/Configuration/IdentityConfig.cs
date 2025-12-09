@@ -28,6 +28,8 @@ namespace EChamado.Server.Infrastructure.Configuration
                 var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
                 options.UseLoggerFactory(loggerFactory);
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
+                var interceptor = serviceProvider.GetRequiredService<DomainEventsSaveChangesInterceptor>();
+                options.AddInterceptors(interceptor);
 
                 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
                 {
