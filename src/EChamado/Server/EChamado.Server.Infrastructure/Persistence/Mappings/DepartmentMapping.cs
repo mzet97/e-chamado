@@ -22,15 +22,29 @@ namespace EChamado.Server.Infrastructure.Persistence.Mappings
                 .HasColumnType("varchar")
                 .HasMaxLength(500);
 
-            builder.Property(x => x.CreatedAt)
-            .IsRequired();
+            builder.Property(x => x.CreatedAtUtc)
+                .IsRequired();
 
-            builder.Property(x => x.UpdatedAt);
+            builder.Property(x => x.UpdatedAtUtc);
 
-            builder.Property(x => x.DeletedAt);
+            builder.Property(x => x.DeletedAtUtc);
 
             builder.Property(x => x.IsDeleted)
                 .IsRequired();
+
+            // Indexes for Gridify query performance
+            builder.HasIndex(x => x.Name)
+                .HasDatabaseName("IX_Department_Name");
+
+            builder.HasIndex(x => x.CreatedAtUtc)
+                .HasDatabaseName("IX_Department_CreatedAtUtc");
+
+            builder.HasIndex(x => x.IsDeleted)
+                .HasDatabaseName("IX_Department_IsDeleted");
+
+            // Composite index for common filtering scenario
+            builder.HasIndex(x => new { x.IsDeleted, x.Name })
+                .HasDatabaseName("IX_Department_IsDeleted_Name");
         }
     }
 }

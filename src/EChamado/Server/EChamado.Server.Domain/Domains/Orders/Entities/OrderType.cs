@@ -1,69 +1,60 @@
 ﻿using EChamado.Server.Domain.Domains.Orders.Entities.Validations;
 using EChamado.Server.Domain.Domains.Orders.Events.OrderTypes;
-using EChamado.Shared.Shared;
+using EChamado.Shared.Domain;
+using EChamado.Shared.Services;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities;
 
-public class OrderType : Entity
+public class OrderType : SoftDeletableEntity<OrderType>
 {
-    public string Name { get; private set; }
-    public string Description { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
 
-    public OrderType(
-        Guid id,
-        string name,
-        string description,
-        DateTime createdAt,
-        DateTime? updatedAt,
-        DateTime? deletedAt,
-        bool isDeleted) : base(id, createdAt, updatedAt, deletedAt, isDeleted)
+    private OrderType() : base(new OrderTypeValidation()) { }
+
+    private OrderType(Guid id, string name, string description, IDateTimeProvider dateTimeProvider)
+        : base(new OrderTypeValidation())
+    {
+        Id = id;
+        Name = name;
+        Description = description;
+
+        MarkCreated(dateTimeProvider.UtcNow);
+        Validate();
+    }
+
+    public static OrderType Create(string name, string description, IDateTimeProvider dateTimeProvider)
+    {
+        var orderType = new OrderType(Guid.NewGuid(), name, description, dateTimeProvider);
+        orderType.AddEvent(new OrderTypeCreated(
+            orderType.Id,
+            orderType.Name,
+            orderType.Description
+        ));
+        return orderType;
+    }
+
+    public void Update(string name, string description, IDateTimeProvider dateTimeProvider)
     {
         Name = name;
         Description = description;
+
+        MarkUpdated(dateTimeProvider.UtcNow);
         Validate();
+
+        AddEvent(new OrderTypeUpdated(
+            Id,
+            Name,
+            Description
+        ));
     }
 
     public override void Validate()
     {
         var validator = new OrderTypeValidation();
         var result = validator.Validate(this);
-        if (!result.IsValid)
-        {
-            _errors = result.Errors.Select(x => x.ErrorMessage);
-            _isValid = false;
-        }
-        else
-        {
-            _errors = Enumerable.Empty<string>();
-            _isValid = true;
-        }
-    }
 
-    public static OrderType Create(
-        string name,
-        string description)
-    {
-        var orderType =
-            new OrderType(
-                Guid.NewGuid(),
-                name,
-                description,
-                DateTime.Now,
-                null, null, false);
-
-        orderType.AddEvent(
-            new OrderTypeCreated(orderType));
-        return orderType;
-    }
-
-    public void Update(
-        string name,
-        string description)
-    {
-        Name = name;
-        Description = description;
-        Validate();
-        AddEvent(
-            new OrderTypeUpdated(this));
+        _errors = result.Errors.Select(x => x.ErrorMessage);
+        _isValid = result.IsValid;
     }
 }

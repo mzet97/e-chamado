@@ -1,0 +1,213 @@
+@page "/admin/subcategories/create"
+@page "/admin/subcategories/{Id:guid}/edit"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject SubCategoryService SubCategoryService
+@inject CategoryService CategoryService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>@(IsEdit ? "Editar Subcategoria" : "Nova Subcategoria") - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">
+    @if (Loading)
+    {
+        <MudCard Elevation="3">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudSkeleton Width="200px" Height="20px" />
+                    <MudSkeleton Width="100px" Height="15px" />
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudSkeleton Height="50px" Class="mb-3" />
+                <MudSkeleton Height="50px" Class="mb-3" />
+                <MudSkeleton Height="100px" />
+            </MudCardContent>
+        </MudCard>
+    }
+    else
+    {
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@(IsEdit ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" Color="Color.Primary" Size="Size.Large" />
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(IsEdit ? "Editar Subcategoria" : "Nova Subcategoria")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Preencha os dados abaixo</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudSelect T="Guid" @bind-Value="Model.CategoryId"
+                                       Label="Categoria"
+                                       Variant="Variant.Outlined"
+                                       Required="true"
+                                       RequiredError="Categoria é obrigatória"
+                                       Adornment="Adornment.Start"
+                                       AdornmentIcon="@Icons.Material.Filled.Category"
+                                       AnchorOrigin="Origin.BottomCenter">
+                                @foreach (var category in categories)
+                                {
+                                    <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Name"
+                                          Label="Nome"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          RequiredError="Nome é obrigatório"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.SubdirectoryArrowRight" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Description"
+                                          Label="Descrição"
+                                          Variant="Variant.Outlined"
+                                          Lines="3"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Description" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions Class="pa-4 justify-end">
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Secondary" 
+                               OnClick="GoBack"
+                               Class="mr-2">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="!IsValid || Saving"
+                               OnClick="Submit"
+                               StartIcon="@Icons.Material.Filled.Save">
+                        @if (Saving)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Salvando...</span>
+                        }
+                        else
+                        {
+                            <span>@(IsEdit ? "Salvar" : "Criar")</span>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudForm>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsEdit => Id.HasValue;
+    private SubCategoryRequest Model { get; set; } = new(Guid.Empty, string.Empty, string.Empty);
+    private MudForm Form = null!;
+    private bool IsValid;
+    private bool Loading = true;
+    private bool Saving;
+    private List<CategoryResponse> categories = new();
+
+    private class SubCategoryRequest
+    {
+        public Guid CategoryId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+
+        public SubCategoryRequest(Guid categoryId, string name, string description)
+        {
+            CategoryId = categoryId;
+            Name = name;
+            Description = description;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+        
+        if (IsEdit)
+        {
+            await LoadSubCategory();
+        }
+
+        Loading = false;
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await CategoryService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar categorias: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadSubCategory()
+    {
+        try
+        {
+            var subcategory = await SubCategoryService.GetByIdAsync(Id!.Value);
+            if (subcategory == null)
+            {
+                Snackbar.Add("Subcategoria não encontrada", Severity.Error);
+                GoBack();
+                return;
+            }
+
+            Model = new SubCategoryRequest(subcategory.CategoryId, subcategory.Name ?? string.Empty, subcategory.Description ?? string.Empty);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar subcategoria: {ex.Message}", Severity.Error);
+            GoBack();
+        }
+    }
+
+    private async Task Submit()
+    {
+        await Form.Validate();
+        if (!IsValid)
+            return;
+
+        Saving = true;
+        try
+        {
+            if (IsEdit)
+            {
+                await SubCategoryService.UpdateAsync(Id!.Value, new UpdateSubCategoryRequest(Model.Name, Model.Description, Model.CategoryId));
+                Snackbar.Add("Subcategoria atualizada com sucesso!", Severity.Success);
+            }
+            else
+            {
+                await SubCategoryService.CreateAsync(new CreateSubCategoryRequest(Model.Name, Model.Description, Model.CategoryId));
+                Snackbar.Add("Subcategoria criada com sucesso!", Severity.Success);
+            }
+
+            GoBack();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar subcategoria: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            Saving = false;
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/admin/subcategories");
+}

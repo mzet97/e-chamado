@@ -1,7 +1,19 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Queries;
 
-public record GetStatusTypeByIdQuery(Guid StatusTypeId) : IRequest<BaseResult<StatusTypeViewModel>>;
+public class GetStatusTypeByIdQuery : BrighterRequest<BaseResult<StatusTypeViewModel>>
+{
+    public Guid Id { get; set; }
+
+    public GetStatusTypeByIdQuery()
+    {
+    }
+
+    public GetStatusTypeByIdQuery(Guid id)
+    {
+        Id = id;
+    }
+}

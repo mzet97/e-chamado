@@ -1,0 +1,177 @@
+@page "/admin/statustypes/create"
+@page "/admin/statustypes/{Id:guid}/edit"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject LookupService LookupService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>@(IsEdit ? "Editar Status" : "Novo Status") - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">
+    @if (Loading)
+    {
+        <MudCard Elevation="3">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudSkeleton Width="200px" Height="20px" />
+                    <MudSkeleton Width="100px" Height="15px" />
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudSkeleton Height="50px" Class="mb-3" />
+                <MudSkeleton Height="100px" />
+            </MudCardContent>
+        </MudCard>
+    }
+    else
+    {
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@(IsEdit ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" Color="Color.Primary" Size="Size.Large" />
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(IsEdit ? "Editar Status" : "Novo Status")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Preencha os dados abaixo</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Name"
+                                          Label="Nome"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          RequiredError="Nome é obrigatório"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Flag" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Description"
+                                          Label="Descrição"
+                                          Variant="Variant.Outlined"
+                                          Lines="3"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Description" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions Class="pa-4 justify-end">
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Secondary" 
+                               OnClick="GoBack"
+                               Class="mr-2">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="!IsValid || Saving"
+                               OnClick="Submit"
+                               StartIcon="@Icons.Material.Filled.Save">
+                        @if (Saving)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Salvando...</span>
+                        }
+                        else
+                        {
+                            <span>@(IsEdit ? "Salvar" : "Criar")</span>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudForm>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsEdit => Id.HasValue;
+    private StatusRequest Model { get; set; } = new(string.Empty, string.Empty);
+    private MudForm Form = null!;
+    private bool IsValid;
+    private bool Loading = true;
+    private bool Saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEdit)
+        {
+            try
+            {
+                var statuses = await LookupService.GetStatusTypesAsync(forceRefresh: true);
+                var item = statuses.FirstOrDefault(x => x.Id == Id);
+                if (item == null)
+                {
+                    Snackbar.Add("Status não encontrado", Severity.Error);
+                    GoBack();
+                    return;
+                }
+
+                Model = new StatusRequest(item.Name ?? string.Empty, item.Description ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao carregar status: {ex.Message}", Severity.Error);
+                GoBack();
+                return;
+            }
+        }
+
+        Loading = false;
+    }
+
+    private async Task Submit()
+    {
+        await Form.Validate();
+        if (!IsValid)
+            return;
+
+        Saving = true;
+        try
+        {
+            if (IsEdit)
+            {
+                await LookupService.UpdateStatusTypeAsync(Id!.Value, new UpdateStatusTypeRequest(Model.Name, Model.Description));
+                Snackbar.Add("Status atualizado com sucesso!", Severity.Success);
+            }
+            else
+            {
+                await LookupService.CreateStatusTypeAsync(new CreateStatusTypeRequest(Model.Name, Model.Description));
+                Snackbar.Add("Status criado com sucesso!", Severity.Success);
+            }
+
+            LookupService.ClearCache();
+            GoBack();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar status: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            Saving = false;
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/admin/statustypes");
+
+    private class StatusRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+
+        public StatusRequest(string name, string description)
+        {
+            Name = name;
+            Description = description;
+        }
+    }
+}

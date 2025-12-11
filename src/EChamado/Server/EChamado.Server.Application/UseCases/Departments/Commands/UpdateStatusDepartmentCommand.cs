@@ -1,11 +1,20 @@
-﻿using EChamado.Shared.Responses;
-using MediatR;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Shared.Responses;
 
 namespace EChamado.Server.Application.UseCases.Departments.Commands;
 
-public class UpdateStatusDepartmentCommand : IRequest<BaseResult>
+public class UpdateStatusDepartmentCommand : BrighterRequest<BaseResult>
 {
-    public IEnumerable<Item> Items { get; set; }
+    public IEnumerable<Item> Items { get; set; } = default!;
+
+    public UpdateStatusDepartmentCommand()
+    {
+    }
+
+    public UpdateStatusDepartmentCommand(IEnumerable<Item> items)
+    {
+        Items = items;
+    }
 }
 
 public class Item

@@ -22,14 +22,28 @@ public class StatusTypeMapping : IEntityTypeConfiguration<StatusType>
             .HasColumnType("varchar")
             .HasMaxLength(500);
 
-        builder.Property(x => x.CreatedAt)
+        builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAtUtc);
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAtUtc);
 
         builder.Property(x => x.IsDeleted)
             .IsRequired();
+
+        // Indexes for Gridify query performance
+        builder.HasIndex(x => x.Name)
+            .HasDatabaseName("IX_StatusType_Name");
+
+        builder.HasIndex(x => x.CreatedAtUtc)
+            .HasDatabaseName("IX_StatusType_CreatedAtUtc");
+
+        builder.HasIndex(x => x.IsDeleted)
+            .HasDatabaseName("IX_StatusType_IsDeleted");
+
+        // Composite index for common filtering scenario
+        builder.HasIndex(x => new { x.IsDeleted, x.Name })
+            .HasDatabaseName("IX_StatusType_IsDeleted_Name");
     }
 }

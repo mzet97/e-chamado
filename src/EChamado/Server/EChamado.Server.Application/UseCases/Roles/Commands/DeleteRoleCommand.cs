@@ -1,14 +1,18 @@
-﻿using EChamado.Shared.Responses;
-using MediatR;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Shared.Responses;
 
 namespace EChamado.Server.Application.UseCases.Roles.Commands;
 
-public class DeleteRoleCommand : IRequest<BaseResult>
+public class DeleteRoleCommand : BrighterRequest<BaseResult>
 {
+    public Guid Id { get; set; } = default!;
+
+    public DeleteRoleCommand()
+    {
+    }
+
     public DeleteRoleCommand(Guid id)
     {
         Id = id;
     }
-
-    public Guid Id { get; set; }
 }

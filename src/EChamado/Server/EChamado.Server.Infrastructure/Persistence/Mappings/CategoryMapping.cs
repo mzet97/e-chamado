@@ -26,14 +26,28 @@ public class CategoryMapping : IEntityTypeConfiguration<Category>
             .WithOne(x => x.Category)
             .HasForeignKey(x => x.CategoryId);
 
-        builder.Property(x => x.CreatedAt)
+        builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAtUtc);
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAtUtc);
 
         builder.Property(x => x.IsDeleted)
             .IsRequired();
+
+        // Indexes for Gridify query performance
+        builder.HasIndex(x => x.Name)
+            .HasDatabaseName("IX_Category_Name");
+
+        builder.HasIndex(x => x.CreatedAtUtc)
+            .HasDatabaseName("IX_Category_CreatedAtUtc");
+
+        builder.HasIndex(x => x.IsDeleted)
+            .HasDatabaseName("IX_Category_IsDeleted");
+
+        // Composite index for common filtering scenario
+        builder.HasIndex(x => new { x.IsDeleted, x.Name })
+            .HasDatabaseName("IX_Category_IsDeleted_Name");
     }
 }

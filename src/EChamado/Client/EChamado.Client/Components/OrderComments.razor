@@ -1,0 +1,165 @@
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@inject CommentService CommentService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ISnackbar Snackbar
+
+<MudPaper Class="pa-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-3">Comentários</MudText>
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+    }
+    else if (comments?.Any() == true)
+    {
+        @foreach (var comment in comments.OrderByDescending(c => c.CreatedAt))
+        {
+            <MudPaper Class="pa-3 mb-3" Outlined="true">
+                <div class="d-flex justify-space-between align-center mb-2">
+                    <MudText Typo="Typo.body1" Class="font-weight-bold">
+                        @comment.UserEmail
+                    </MudText>
+                    <div class="d-flex align-center gap-2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </MudText>
+                        @if (IsCommentOwner(comment.UserId))
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DeleteComment(comment.Id))" />
+                        }
+                    </div>
+                </div>
+                <MudText Style="white-space: pre-wrap;">@comment.Text</MudText>
+            </MudPaper>
+        }
+    }
+    else
+    {
+        <MudText Color="Color.Secondary">Nenhum comentário ainda</MudText>
+    }
+
+    <!-- Formulário de novo comentário -->
+    <MudDivider Class="my-4" />
+    <MudText Typo="Typo.subtitle1" Class="mb-2">Adicionar Comentário</MudText>
+    <MudTextField @bind-Value="newCommentText"
+                  Label="Comentário"
+                  Variant="Variant.Outlined"
+                  Lines="3"
+                  MaxLength="2000" />
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               Class="mt-2"
+               Disabled="@(string.IsNullOrWhiteSpace(newCommentText) || isAdding)"
+               OnClick="AddComment">
+        @if (isAdding)
+        {
+            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+            <span>Adicionando...</span>
+        }
+        else
+        {
+            <span>Adicionar Comentário</span>
+        }
+    </MudButton>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired]
+    public Guid OrderId { get; set; }
+
+    private List<CommentResponse> comments = new();
+    private bool loading = false;
+    private bool isAdding = false;
+    private string newCommentText = string.Empty;
+    private string? currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        await LoadComments();
+    }
+
+    private async Task LoadComments()
+    {
+        loading = true;
+        try
+        {
+            comments = await CommentService.GetByOrderIdAsync(OrderId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar comentários: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private bool IsCommentOwner(Guid commentUserId)
+    {
+        if (string.IsNullOrEmpty(currentUserId))
+            return false;
+
+        return Guid.TryParse(currentUserId, out var userId) && userId == commentUserId;
+    }
+
+    private async Task AddComment()
+    {
+        if (string.IsNullOrWhiteSpace(newCommentText))
+            return;
+
+        isAdding = true;
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userEmail = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                ?? authState.User.Identity?.Name ?? "Usuário";
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                Snackbar.Add("Não foi possível identificar o usuário", Severity.Error);
+                return;
+            }
+
+            var request = new CreateCommentRequest(OrderId, newCommentText, Guid.Parse(userId), userEmail);
+            await CommentService.CreateAsync(OrderId, request);
+
+            Snackbar.Add("Comentário adicionado com sucesso!", Severity.Success);
+            newCommentText = string.Empty;
+
+            await LoadComments();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao adicionar comentário: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isAdding = false;
+        }
+    }
+
+    private async Task DeleteComment(Guid commentId)
+    {
+        try
+        {
+            await CommentService.DeleteAsync(commentId);
+            Snackbar.Add("Comentário deletado com sucesso!", Severity.Success);
+            await LoadComments();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao deletar comentário: {ex.Message}", Severity.Error);
+        }
+    }
+}

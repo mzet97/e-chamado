@@ -1,0 +1,35 @@
+@page "/authentication/register"
+@using EChamado.Client.Services
+@using EChamado.Client.Authentication
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Registro - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8" Width="100%">
+        <div class="d-flex flex-column align-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+            <MudText Typo="Typo.h5" GutterBottom="true">Redirecionando para cadastro...</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                Você será redirecionado para criar sua conta no servidor seguro.
+            </MudText>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    protected override void OnInitialized()
+    {
+        try
+        {
+            var registerUrl = AuthService.InitiateRegisterAsync();
+            NavigationManager.NavigateTo(registerUrl);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao iniciar cadastro: {ex.Message}", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,174 @@
+@using EChamado.Client.Services
+@inject INLQueryService NLQueryService
+@inject ILogger<NLQueryInput> Logger
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h6" Class="mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.Psychology" Class="mr-2" />
+            Consulta com Linguagem Natural (AI)
+        </MudText>
+
+        <MudTextField @bind-Value="@naturalLanguageQuery"
+                     Label="Pergunte em português"
+                     Variant="Variant.Outlined"
+                     HelperText="Exemplo: 'Mostre orders abertas com prioridade alta'"
+                     Placeholder="Digite sua pergunta..."
+                     Lines="2"
+                     Disabled="@isConverting" />
+
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudButton Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      OnClick="ConvertQueryAsync"
+                      Disabled="@(string.IsNullOrWhiteSpace(naturalLanguageQuery) || isConverting)"
+                      StartIcon="@Icons.Material.Filled.AutoAwesome">
+                @if (isConverting)
+                {
+                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                    <span>Convertendo...</span>
+                }
+                else
+                {
+                    <span>Converter para Gridify</span>
+                }
+            </MudButton>
+
+            @if (!string.IsNullOrWhiteSpace(gridifyQuery))
+            {
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Success"
+                          OnClick="ApplyQuery"
+                          StartIcon="@Icons.Material.Filled.Search">
+                    Aplicar Filtro
+                </MudButton>
+
+                <MudButton Variant="Variant.Text"
+                          Color="Color.Default"
+                          OnClick="ClearQuery"
+                          StartIcon="@Icons.Material.Filled.Clear">
+                    Limpar
+                </MudButton>
+            }
+        </MudStack>
+
+        @if (!string.IsNullOrWhiteSpace(gridifyQuery))
+        {
+            <MudAlert Severity="Severity.Success" Dense="true" Class="mt-2">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.body2"><strong>Query Gridify:</strong></MudText>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                        <code>@gridifyQuery</code>
+                    </MudChip>
+                    @if (conversionResult is not null)
+                    {
+                        <MudText Typo="Typo.caption">
+                            Provider: @conversionResult.Provider (@conversionResult.Model) |
+                            Tempo: @conversionResult.ResponseTimeMs ms |
+                            Tokens: @conversionResult.TokensUsed
+                            @if (conversionResult.FromCache) { <text> | ⚡ Do cache</text> }
+                        </MudText>
+                    }
+                </MudStack>
+            </MudAlert>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">
+                @errorMessage
+            </MudAlert>
+        }
+
+        <MudExpansionPanels>
+            <MudExpansionPanel Text="💡 Exemplos de consultas">
+                <MudList T="string" Dense="true">
+                    <MudListItem T="string" Icon="@Icons.Material.Filled.Circle" IconSize="Size.Small">
+                        "Mostrar orders abertas"
+                    </MudListItem>
+                    <MudListItem T="string" Icon="@Icons.Material.Filled.Circle" IconSize="Size.Small">
+                        "Tickets de suporte com prioridade alta"
+                    </MudListItem>
+                    <MudListItem T="string" Icon="@Icons.Material.Filled.Circle" IconSize="Size.Small">
+                        "Orders do departamento de TI criadas hoje"
+                    </MudListItem>
+                    <MudListItem T="string" Icon="@Icons.Material.Filled.Circle" IconSize="Size.Small">
+                        "Chamados atribuídos para mim que estão atrasados"
+                    </MudListItem>
+                    <MudListItem T="string" Icon="@Icons.Material.Filled.Circle" IconSize="Size.Small">
+                        "Categorias ativas com Hardware no nome"
+                    </MudListItem>
+                </MudList>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public required string EntityName { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnQueryGenerated { get; set; }
+
+    private string naturalLanguageQuery = string.Empty;
+    private string gridifyQuery = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool isConverting = false;
+    private NLToGridifyResult? conversionResult;
+
+    private async Task ConvertQueryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(naturalLanguageQuery))
+            return;
+
+        isConverting = true;
+        errorMessage = string.Empty;
+        gridifyQuery = string.Empty;
+        conversionResult = null;
+
+        try
+        {
+            Logger.LogInformation("Converting NL query: {Query}", naturalLanguageQuery);
+
+            var result = await NLQueryService.ConvertToGridifyAsync(EntityName, naturalLanguageQuery);
+
+            if (result is not null && result.Success)
+            {
+                gridifyQuery = result.GridifyQuery;
+                conversionResult = result;
+                Logger.LogInformation("Conversion successful: {Query}", gridifyQuery);
+            }
+            else
+            {
+                errorMessage = result?.ErrorMessage ?? "Erro ao converter consulta. Tente reformular sua pergunta.";
+                Logger.LogWarning("Conversion failed: {Error}", errorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during NL query conversion");
+            errorMessage = $"Erro ao processar consulta: {ex.Message}";
+        }
+        finally
+        {
+            isConverting = false;
+        }
+    }
+
+    private async Task ApplyQuery()
+    {
+        if (!string.IsNullOrWhiteSpace(gridifyQuery) && OnQueryGenerated.HasDelegate)
+        {
+            await OnQueryGenerated.InvokeAsync(gridifyQuery);
+        }
+    }
+
+    private void ClearQuery()
+    {
+        naturalLanguageQuery = string.Empty;
+        gridifyQuery = string.Empty;
+        errorMessage = string.Empty;
+        conversionResult = null;
+    }
+}

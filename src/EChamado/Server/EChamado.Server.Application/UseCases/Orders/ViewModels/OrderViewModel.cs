@@ -22,6 +22,8 @@ public record OrderViewModel(
     string RequestingUserEmail,
     Guid? ResponsibleUserId,
     string? ResponsibleUserEmail,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc,
+    DateTime? DeletedAtUtc,
+    bool IsDeleted
 );

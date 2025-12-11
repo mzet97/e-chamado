@@ -1,4 +1,4 @@
-﻿using EChamado.Shared.Shared;
+﻿using EChamado.Shared.Domain;
 using FluentValidation;
 
 namespace EChamado.Server.Domain.Domains.Orders.Validations;
@@ -7,7 +7,7 @@ public class OrderValidation : AbstractValidator<Order>
 {
     public OrderValidation()
     {
-        Include(new EntityValidation());
+        Include(new EntityValidation<Order>());
 
         RuleFor(order => order.Description)
             .NotEmpty().WithMessage("Description is required.")

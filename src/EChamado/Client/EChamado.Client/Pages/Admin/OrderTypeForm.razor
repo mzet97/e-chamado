@@ -1,0 +1,177 @@
+@page "/admin/ordertypes/create"
+@page "/admin/ordertypes/{Id:guid}/edit"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@inject LookupService LookupService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>@(IsEdit ? "Editar Tipo de Chamado" : "Novo Tipo de Chamado") - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">
+    @if (Loading)
+    {
+        <MudCard Elevation="3">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudSkeleton Width="200px" Height="20px" />
+                    <MudSkeleton Width="100px" Height="15px" />
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudSkeleton Height="50px" Class="mb-3" />
+                <MudSkeleton Height="100px" />
+            </MudCardContent>
+        </MudCard>
+    }
+    else
+    {
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@(IsEdit ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" Color="Color.Primary" Size="Size.Large" />
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(IsEdit ? "Editar Tipo de Chamado" : "Novo Tipo de Chamado")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Preencha os dados abaixo</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Name"
+                                          Label="Nome"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          RequiredError="Nome é obrigatório"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Title" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Description"
+                                          Label="Descrição"
+                                          Variant="Variant.Outlined"
+                                          Lines="3"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Description" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions Class="pa-4 justify-end">
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Secondary" 
+                               OnClick="GoBack"
+                               Class="mr-2">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="!IsValid || Saving"
+                               OnClick="Submit"
+                               StartIcon="@Icons.Material.Filled.Save">
+                        @if (Saving)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Salvando...</span>
+                        }
+                        else
+                        {
+                            <span>@(IsEdit ? "Salvar" : "Criar")</span>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudForm>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsEdit => Id.HasValue;
+    private OrderTypeRequest Model { get; set; } = new(string.Empty, string.Empty);
+    private MudForm Form = null!;
+    private bool IsValid;
+    private bool Loading = true;
+    private bool Saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEdit)
+        {
+            try
+            {
+                var type = await LookupService.GetOrderTypesAsync(forceRefresh: true);
+                var item = type.FirstOrDefault(x => x.Id == Id);
+                if (item == null)
+                {
+                    Snackbar.Add("Tipo de chamado não encontrado", Severity.Error);
+                    GoBack();
+                    return;
+                }
+
+                Model = new OrderTypeRequest(item.Name ?? string.Empty, item.Description ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao carregar tipo de chamado: {ex.Message}", Severity.Error);
+                GoBack();
+                return;
+            }
+        }
+
+        Loading = false;
+    }
+
+    private async Task Submit()
+    {
+        await Form.Validate();
+        if (!IsValid)
+            return;
+
+        Saving = true;
+        try
+        {
+            if (IsEdit)
+            {
+                await LookupService.UpdateOrderTypeAsync(Id!.Value, new UpdateOrderTypeRequest(Model.Name, Model.Description));
+                Snackbar.Add("Tipo de chamado atualizado com sucesso!", Severity.Success);
+            }
+            else
+            {
+                await LookupService.CreateOrderTypeAsync(new CreateOrderTypeRequest(Model.Name, Model.Description));
+                Snackbar.Add("Tipo de chamado criado com sucesso!", Severity.Success);
+            }
+
+            LookupService.ClearCache();
+            GoBack();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar tipo de chamado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            Saving = false;
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/admin/ordertypes");
+
+    private class OrderTypeRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+
+        public OrderTypeRequest(string name, string description)
+        {
+            Name = name;
+            Description = description;
+        }
+    }
+}

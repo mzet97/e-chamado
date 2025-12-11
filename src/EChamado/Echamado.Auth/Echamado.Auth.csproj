@@ -8,16 +8,23 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.2" />
-    <PackageReference Include="MudBlazor" Version="8.*" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="9.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="MudBlazor" Version="8.1.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="OpenIddict.AspNetCore" Version="7.2.0" />
   </ItemGroup>
 
 
   <ItemGroup>
     <ProjectReference Include="..\EChamado.Shared\EChamado.Shared.csproj" />
     <ProjectReference Include="..\Server\EChamado.Server.Domain\EChamado.Server.Domain.csproj" />
+    <ProjectReference Include="..\Server\EChamado.Server.Application\EChamado.Server.Application.csproj" />
     <ProjectReference Include="..\Server\EChamado.Server.Infrastructure\EChamado.Server.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
