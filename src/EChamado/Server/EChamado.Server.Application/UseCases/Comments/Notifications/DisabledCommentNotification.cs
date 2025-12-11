@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace EChamado.Server.Application.UseCases.Comments.Notifications;
 
-public class DeletedCommentNotification : IRequest
+public class DisabledCommentNotification : IRequest
 {
     public Id Id { get; set; }
     public Id CorrelationId { get; set; } = new Id(Guid.NewGuid().ToString());
@@ -12,12 +12,12 @@ public class DeletedCommentNotification : IRequest
     public string UserEmail { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
 
-    public DeletedCommentNotification()
+    public DisabledCommentNotification()
     {
         Id = new Id(Guid.NewGuid().ToString());
     }
 
-    public DeletedCommentNotification(Guid id, Guid orderId, Guid userId, string userEmail, string text)
+    public DisabledCommentNotification(Guid id, Guid orderId, Guid userId, string userEmail, string text)
     {
         Id = new Id(id.ToString());
         OrderId = orderId;

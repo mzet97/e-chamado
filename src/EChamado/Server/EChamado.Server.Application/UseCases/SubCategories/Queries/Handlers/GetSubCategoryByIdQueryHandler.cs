@@ -1,4 +1,4 @@
-using EChamado.Server.Application.UseCases.Categories.ViewModels;
+using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
@@ -14,12 +14,12 @@ public class GetSubCategoryByIdQueryHandler(
 {
     public override async Task<GetSubCategoryByIdQuery> HandleAsync(GetSubCategoryByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(query.SubCategoryId);
+        var subCategory = await unitOfWork.SubCategories.GetByIdAsync(query.Id);
 
         if (subCategory == null)
         {
-            logger.LogError("SubCategory {SubCategoryId} not found", query.SubCategoryId);
-            throw new NotFoundException($"SubCategory {query.SubCategoryId} not found");
+            logger.LogError("SubCategory {SubCategoryId} not found", query.Id);
+            throw new NotFoundException($"SubCategory {query.Id} not found");
         }
 
         var viewModel = new SubCategoryViewModel(
@@ -33,7 +33,7 @@ public class GetSubCategoryByIdQueryHandler(
             subCategory.IsDeleted
         );
 
-        logger.LogInformation("SubCategory {SubCategoryId} retrieved successfully", query.SubCategoryId);
+        logger.LogInformation("SubCategory {SubCategoryId} retrieved successfully", query.Id);
 
         query.Result = new BaseResult<SubCategoryViewModel>(viewModel);
 

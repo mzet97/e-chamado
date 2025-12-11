@@ -6,14 +6,14 @@ namespace EChamado.Server.Application.UseCases.StatusTypes.Queries;
 
 public class GetStatusTypeByIdQuery : BrighterRequest<BaseResult<StatusTypeViewModel>>
 {
-    public Guid StatusTypeId { get; set; }
+    public Guid Id { get; set; }
 
     public GetStatusTypeByIdQuery()
     {
     }
 
-    public GetStatusTypeByIdQuery(Guid statusTypeId)
+    public GetStatusTypeByIdQuery(Guid id)
     {
-        StatusTypeId = statusTypeId;
+        Id = id;
     }
 }

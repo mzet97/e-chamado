@@ -7,5 +7,7 @@ public record CommentViewModel(
     Guid UserId,
     string UserEmail,
     DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc
+    DateTime? UpdatedAtUtc,
+    DateTime? DeletedAtUtc,
+    bool IsDeleted
 );

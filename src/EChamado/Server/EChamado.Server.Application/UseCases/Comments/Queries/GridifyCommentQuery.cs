@@ -1,30 +1,39 @@
 using EChamado.Server.Application.Common;
-using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
+using EChamado.Server.Application.UseCases.Comments.ViewModels;
 
-namespace EChamado.Server.Application.UseCases.StatusTypes.Queries;
+namespace EChamado.Server.Application.UseCases.Comments.Queries;
 
 /// <summary>
-/// Query para busca de status types com Gridify
+/// Query para busca de comments com Gridify
 /// Suporta filtros avançados, ordenação e paginação usando sintaxe Gridify
 /// </summary>
-public class GridifyStatusTypeQuery : GridifySearchQuery<StatusTypeViewModel>
+public class GridifyCommentQuery : GridifySearchQuery<CommentViewModel>
 {
     /// <summary>
-    /// Filtro por ID do status type
+    /// Filtro por ID do comment
     /// </summary>
     public Guid? Id { get; set; }
 
     /// <summary>
-    /// Filtro por nome do status type
-    /// Suporta operadores Gridify: name=*aberto*, name^=Em, name$=Fechado
+    /// Filtro por texto do comment
+    /// Suporta operadores Gridify: text=*problema*, text^=Olá, text$=adeus
     /// </summary>
-    public string? Name { get; set; }
+    public string? Text { get; set; }
 
     /// <summary>
-    /// Filtro por descrição do status type
-    /// Suporta operadores Gridify: description=*andamento*, description^=Status
+    /// Filtro por ID da order
     /// </summary>
-    public string? Description { get; set; }
+    public Guid? OrderId { get; set; }
+
+    /// <summary>
+    /// Filtro por ID do usuário
+    /// </summary>
+    public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// Filtro por email do usuário
+    /// </summary>
+    public string? UserEmail { get; set; }
 
     /// <summary>
     /// Filtro por data de criação

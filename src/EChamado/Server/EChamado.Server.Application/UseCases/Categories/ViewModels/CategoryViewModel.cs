@@ -1,3 +1,5 @@
+using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
+
 namespace EChamado.Server.Application.UseCases.Categories.ViewModels;
 
 public record CategoryViewModel(
@@ -9,15 +11,4 @@ public record CategoryViewModel(
     DateTime? DeletedAtUtc,
     bool IsDeleted,
     List<SubCategoryViewModel> SubCategories
-);
-
-public record SubCategoryViewModel(
-    Guid Id,
-    string Name,
-    string Description,
-    Guid CategoryId,
-    DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc,
-    DateTime? DeletedAtUtc,
-    bool IsDeleted
 );

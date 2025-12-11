@@ -14,12 +14,12 @@ public class GetStatusTypeByIdQueryHandler(
 {
     public override async Task<GetStatusTypeByIdQuery> HandleAsync(GetStatusTypeByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(query.StatusTypeId);
+        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(query.Id);
 
         if (statusType == null)
         {
-            logger.LogError("StatusType {StatusTypeId} not found", query.StatusTypeId);
-            throw new NotFoundException($"StatusType {query.StatusTypeId} not found");
+            logger.LogError("StatusType {StatusTypeId} not found", query.Id);
+            throw new NotFoundException($"StatusType {query.Id} not found");
         }
 
         var viewModel = new StatusTypeViewModel(
@@ -32,7 +32,7 @@ public class GetStatusTypeByIdQueryHandler(
             statusType.IsDeleted
         );
 
-        logger.LogInformation("StatusType {StatusTypeId} retrieved successfully", query.StatusTypeId);
+        logger.LogInformation("StatusType {StatusTypeId} retrieved successfully", query.Id);
 
         query.Result = new BaseResult<StatusTypeViewModel>(viewModel);
 

@@ -1,30 +1,35 @@
 using EChamado.Server.Application.Common;
-using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
+using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
 
-namespace EChamado.Server.Application.UseCases.StatusTypes.Queries;
+namespace EChamado.Server.Application.UseCases.SubCategories.Queries;
 
 /// <summary>
-/// Query para busca de status types com Gridify
+/// Query para busca de sub-categories com Gridify
 /// Suporta filtros avançados, ordenação e paginação usando sintaxe Gridify
 /// </summary>
-public class GridifyStatusTypeQuery : GridifySearchQuery<StatusTypeViewModel>
+public class GridifySubCategoryQuery : GridifySearchQuery<SubCategoryViewModel>
 {
     /// <summary>
-    /// Filtro por ID do status type
+    /// Filtro por ID da sub-category
     /// </summary>
     public Guid? Id { get; set; }
 
     /// <summary>
-    /// Filtro por nome do status type
-    /// Suporta operadores Gridify: name=*aberto*, name^=Em, name$=Fechado
+    /// Filtro por nome da sub-category
+    /// Suporta operadores Gridify: name=*TI*, name^=Suporte, name$=Vendas
     /// </summary>
     public string? Name { get; set; }
 
     /// <summary>
-    /// Filtro por descrição do status type
-    /// Suporta operadores Gridify: description=*andamento*, description^=Status
+    /// Filtro por descrição da sub-category
+    /// Suporta operadores Gridify: description=*atendimento*, description^=Dep
     /// </summary>
     public string? Description { get; set; }
+
+    /// <summary>
+    /// Filtro por ID da categoria
+    /// </summary>
+    public Guid? CategoryId { get; set; }
 
     /// <summary>
     /// Filtro por data de criação

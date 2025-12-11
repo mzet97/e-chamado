@@ -60,3 +60,31 @@ public class DeletedCommentNotificationHandler(
         return await base.HandleAsync(notification, cancellationToken);
     }
 }
+
+public class DisabledCommentNotificationHandler(
+    IMessageBusClient messageBusClient,
+    ILogger<DisabledCommentNotificationHandler> logger) :
+    RequestHandlerAsync<DisabledCommentNotification>
+{
+    public override async Task<DisabledCommentNotification> HandleAsync(
+        DisabledCommentNotification notification,
+        CancellationToken cancellationToken = default)
+    {
+        if (notification == null)
+        {
+            logger.LogError("DisabledCommentNotification is null");
+            return await base.HandleAsync(notification, cancellationToken);
+        }
+
+        await messageBusClient.Publish(
+            notification.ToString(),
+            "comment.disabled",
+            "comment-exchange",
+            "direct",
+            "disable-comment");
+
+        logger.LogInformation("DisabledCommentNotification: {Notification}", notification);
+
+        return await base.HandleAsync(notification, cancellationToken);
+    }
+}

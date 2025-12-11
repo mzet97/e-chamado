@@ -3,15 +3,15 @@ using EChamado.Shared.Responses;
 
 namespace EChamado.Server.Application.UseCases.Comments.Commands;
 
-public class DeleteCommentCommand : BrighterRequest<BaseResult>
+public class DisableCommentCommand : BrighterRequest<BaseResult>
 {
     public Guid Id { get; set; } = default!;
 
-    public DeleteCommentCommand()
+    public DisableCommentCommand()
     {
     }
 
-    public DeleteCommentCommand(Guid id)
+    public DisableCommentCommand(Guid id)
     {
         Id = id;
     }

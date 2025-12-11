@@ -21,8 +21,8 @@ public static class StatusTypeDTOExtensions
         );
     }
 
-    public static DeleteStatusTypeCommand ToCommand(this DeleteStatusTypeRequest request)
+    public static DeletesStatusTypeCommand ToCommand(this DeleteStatusTypeRequest request)
     {
-        return new DeleteStatusTypeCommand(request.Id);
+        return new DeletesStatusTypeCommand(new[] { request.Id });
     }
 }

@@ -18,12 +18,12 @@ public class DeleteCommentCommandHandler(
     [RequestValidation(1, HandlerTiming.Before)]
     public override async Task<DeleteCommentCommand> HandleAsync(DeleteCommentCommand command, CancellationToken cancellationToken = default)
     {
-        var comment = await unitOfWork.Comments.GetByIdAsync(command.CommentId);
+        var comment = await unitOfWork.Comments.GetByIdAsync(command.Id);
 
         if (comment == null)
         {
-            logger.LogError("Comment {CommentId} not found", command.CommentId);
-            throw new NotFoundException($"Comment {command.CommentId} not found");
+            logger.LogError("Comment {CommentId} not found", command.Id);
+            throw new NotFoundException($"Comment {command.Id} not found");
         }
 
         await unitOfWork.BeginTransactionAsync();
@@ -34,9 +34,12 @@ public class DeleteCommentCommandHandler(
 
         await commandProcessor.PublishAsync(new DeletedCommentNotification(
             comment.Id,
-            comment.OrderId), cancellationToken: cancellationToken);
+            comment.OrderId,
+            comment.UserId,
+            comment.UserEmail,
+            comment.Text), cancellationToken: cancellationToken);
 
-        logger.LogInformation("Comment {CommentId} deleted successfully", command.CommentId);
+        logger.LogInformation("Comment {CommentId} deleted successfully", command.Id);
 
         command.Result = new BaseResult();
         return await base.HandleAsync(command, cancellationToken);
