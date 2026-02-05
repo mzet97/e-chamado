@@ -10,11 +10,12 @@ public class DepartmentViewModel : BaseViewModel
 
     public DepartmentViewModel(
         Guid id,
-        DateTime createdAt,
-        DateTime? updatedAt,
-        DateTime? deletedAt,
+        DateTime createdAtUtc,
+        DateTime? updatedAtUtc,
+        DateTime? deletedAtUtc,
+        bool isDeleted,
         string name,
-        string description) : base(id, createdAt, updatedAt, deletedAt)
+        string description) : base(id, createdAtUtc, updatedAtUtc, deletedAtUtc, isDeleted)
     {
         Name = name;
         Description = description;
@@ -24,9 +25,10 @@ public class DepartmentViewModel : BaseViewModel
     {
         return new DepartmentViewModel(
             entity.Id,
-            entity.CreatedAt,
-            entity.UpdatedAt,
-            entity.DeletedAt,
+            entity.CreatedAtUtc,
+            entity.UpdatedAtUtc,
+            entity.DeletedAtUtc,
+            entity.IsDeleted,
             entity.Name,
             entity.Description);
     }

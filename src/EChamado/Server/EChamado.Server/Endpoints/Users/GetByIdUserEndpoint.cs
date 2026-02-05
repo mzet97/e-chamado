@@ -1,8 +1,9 @@
-﻿using EChamado.Server.Application.UseCases.Users.Queries;
+using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Users.Queries;
 using EChamado.Server.Application.UseCases.Users.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Users;
@@ -10,24 +11,29 @@ namespace EChamado.Server.Endpoints.Users;
 public class GetByIdUserEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-    => app.MapGet("/{id:guid}", HandleAsync)
-        .WithName("Obtem user pelo id")
-        .WithSummary("Obtem user pelo id")
-        .WithDescription("Obtem user pelo id")
-        .WithOrder(2)
-        .Produces<BaseResult<ApplicationUserViewModel>>();
+        => app.MapGet("/{id:guid}", HandleAsync)
+            .WithName("Buscar usuário por ID")
+            .Produces<BaseResult<ApplicationUserViewModel>>();
 
-    private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        [FromRoute] Guid id)
+    public static async Task<IResult> HandleAsync(
+        Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await mediator.Send(new GetByIdUserQuery(id));
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var query = new GetByIdUserQuery(id);
+            await commandProcessor.SendAsync(query);
 
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.NotFound(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<ApplicationUserViewModel>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

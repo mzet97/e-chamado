@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace EChamado.Infrastructure.Persistence.Migrations
+namespace EChamado.Server.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -18,7 +18,7 @@ namespace EChamado.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("public")
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -81,6 +81,9 @@ namespace EChamado.Infrastructure.Persistence.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -88,6 +91,10 @@ namespace EChamado.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("FullName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -218,6 +225,260 @@ namespace EChamado.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", "public");
                 });
 
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Category_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Category_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Category_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_Category_IsDeleted_Name");
+
+                    b.ToTable("Category", "public");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Comment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("Comment", "public");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Department", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Department_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Department_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Department_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_Department_IsDeleted_Name");
+
+                    b.ToTable("Department", "public");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.OrderType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_OrderType_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_OrderType_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_OrderType_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_OrderType_IsDeleted_Name");
+
+                    b.ToTable("OrderType", "public");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.StatusType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_StatusType_CreatedAt");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_StatusType_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_StatusType_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_StatusType_IsDeleted_Name");
+
+                    b.ToTable("StatusType", "public");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.SubCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("SubCategory", "public");
+                });
+
             modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -248,7 +509,6 @@ namespace EChamado.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Evaluation")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
@@ -293,182 +553,46 @@ namespace EChamado.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("IX_Order_CategoryId");
 
-                    b.HasIndex("DepartmentId");
+                    b.HasIndex("ClosingDate")
+                        .HasDatabaseName("IX_Order_ClosingDate");
 
-                    b.HasIndex("StatusId");
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Order_CreatedAt");
 
-                    b.HasIndex("SubCategoryId");
+                    b.HasIndex("DepartmentId")
+                        .HasDatabaseName("IX_Order_DepartmentId");
 
-                    b.HasIndex("TypeId");
+                    b.HasIndex("DueDate")
+                        .HasDatabaseName("IX_Order_DueDate");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Order_IsDeleted");
+
+                    b.HasIndex("OpeningDate")
+                        .HasDatabaseName("IX_Order_OpeningDate");
+
+                    b.HasIndex("RequestingUserId")
+                        .HasDatabaseName("IX_Order_RequestingUserId");
+
+                    b.HasIndex("ResponsibleUserId")
+                        .HasDatabaseName("IX_Order_ResponsibleUserId");
+
+                    b.HasIndex("StatusId")
+                        .HasDatabaseName("IX_Order_StatusId");
+
+                    b.HasIndex("SubCategoryId")
+                        .HasDatabaseName("IX_Order_SubCategoryId");
+
+                    b.HasIndex("TypeId")
+                        .HasDatabaseName("IX_Order_TypeId");
+
+                    b.HasIndex("IsDeleted", "StatusId", "CreatedAt")
+                        .HasDatabaseName("IX_Order_IsDeleted_StatusId_CreatedAt");
 
                     b.ToTable("Order", "public");
-                });
-
-            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.ValueObjects.Category", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Category", "public");
-                });
-
-            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.ValueObjects.Department", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Department", "public");
-                });
-
-            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.ValueObjects.OrderType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("OrderType", "public");
-                });
-
-            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.ValueObjects.StatusType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("StatusType", "public");
-                });
-
-            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.ValueObjects.SubCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("SubCategory", "public");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication", b =>
@@ -664,8 +788,8 @@ namespace EChamado.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(400)");
 
                     b.Property<string>("Type")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.HasKey("Id");
 
@@ -728,28 +852,48 @@ namespace EChamado.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Comment", b =>
+                {
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.SubCategory", b =>
+                {
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.Category", "Category")
+                        .WithMany("SubCategories")
+                        .HasForeignKey("CategoryId")
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Order", b =>
                 {
-                    b.HasOne("EChamado.Server.Domain.Domains.Orders.ValueObjects.Category", "Category")
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .IsRequired();
 
-                    b.HasOne("EChamado.Server.Domain.Domains.Orders.ValueObjects.Department", "Department")
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.Department", "Department")
                         .WithMany()
                         .HasForeignKey("DepartmentId")
                         .IsRequired();
 
-                    b.HasOne("EChamado.Server.Domain.Domains.Orders.ValueObjects.StatusType", "Status")
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.StatusType", "Status")
                         .WithMany()
                         .HasForeignKey("StatusId")
                         .IsRequired();
 
-                    b.HasOne("EChamado.Server.Domain.Domains.Orders.ValueObjects.SubCategory", "SubCategory")
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.SubCategory", "SubCategory")
                         .WithMany()
                         .HasForeignKey("SubCategoryId");
 
-                    b.HasOne("EChamado.Server.Domain.Domains.Orders.ValueObjects.OrderType", "Type")
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.OrderType", "Type")
                         .WithMany()
                         .HasForeignKey("TypeId")
                         .IsRequired();
@@ -763,16 +907,6 @@ namespace EChamado.Infrastructure.Persistence.Migrations
                     b.Navigation("SubCategory");
 
                     b.Navigation("Type");
-                });
-
-            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.ValueObjects.SubCategory", b =>
-                {
-                    b.HasOne("EChamado.Server.Domain.Domains.Orders.ValueObjects.Category", "Category")
-                        .WithMany("SubCategories")
-                        .HasForeignKey("CategoryId")
-                        .IsRequired();
-
-                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreAuthorization", b =>
@@ -817,7 +951,7 @@ namespace EChamado.Infrastructure.Persistence.Migrations
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.ValueObjects.Category", b =>
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Category", b =>
                 {
                     b.Navigation("SubCategories");
                 });

@@ -1,9 +1,10 @@
-﻿using EChamado.Server.Common.Api;
-using EChamado.Server.Endpoints.Auth;
+using EChamado.Server.Common.Api;
+using EChamado.Server.Endpoints.AI;
 using EChamado.Server.Endpoints.Categories;
+using EChamado.Server.Endpoints.Comments;
 using EChamado.Server.Endpoints.Departments;
-using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.OrderTypes;
+using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.Roles;
 using EChamado.Server.Endpoints.StatusTypes;
 using EChamado.Server.Endpoints.SubCategories;
@@ -38,118 +39,114 @@ public static class Endpoint
                 return Results.Ok(new { Message = "Este é um exemplo de cache", Timestamp = DateTime.UtcNow });
             }).CacheOutput("DefaultPolicy");
 
-        endpoints.MapGroup("v1/auth")
-            .WithTags("auth")
-            .MapEndpoint<RegisterUserEndpoint>()
-            .MapEndpoint<LoginUserEndpoint>();
+        // VERSION 1 ENDPOINTS (V1)
+        // TODOS OS ENDPOINTS ESTÃO NA V1 AGORA
 
-        endpoints.MapGroup("v1/roles")
-           .WithTags("role")
-           .RequireAuthorization()
-           .MapEndpoint<GetAllRolesEndpoint>();
+        // Auth v1 - MIGRADO PARA OPENIDDICT
+        // Use /connect/token no Auth Server (porta 7132) para autenticação
+        // Exemplos: ver arquivos test-openiddict-login.sh, test-openiddict-login.ps1, test-openiddict-login.py
 
+        // Roles v1
         endpoints.MapGroup("v1/role")
            .WithTags("role")
            .RequireAuthorization()
+           .MapEndpoint<GetAllRolesEndpoint>()
            .MapEndpoint<GetRoleByIdEndpoint>()
            .MapEndpoint<GetRoleByNameEndpoint>()
            .MapEndpoint<CreateRoleEndpoint>()
            .MapEndpoint<UpdateRoleEndpoint>()
            .MapEndpoint<DeleteRoleEndpoint>();
 
+        // Users v1
         endpoints.MapGroup("v1/users")
-          .WithTags("user")
-          .RequireAuthorization()
-          .MapEndpoint<GetAllUsersEndpoint>();
+            .WithTags("user")
+            .RequireAuthorization()
+            .MapEndpoint<GetAllUsersEndpoint>()
+            .MapEndpoint<GetByIdUserEndpoint>()
+            .MapEndpoint<GetByEmailUserEndpoint>();
 
-        endpoints.MapGroup("v1/user")
-           .WithTags("user")
-           .RequireAuthorization()
-           .MapEndpoint<GetByIdUserEndpoint>()
-           .MapEndpoint<GetByEmailUserEndpoint>();
-
+        // Departments v1
         endpoints.MapGroup("v1/departments")
             .WithTags("Department")
             .RequireAuthorization()
             .MapEndpoint<SearchDepartmentEndpoint>()
-            .MapEndpoint<DeletesDepartmentEndpoint>()
-            .MapEndpoint<UpdateStatusDepartmentEndpoint>();
-
-        endpoints.MapGroup("v1/department")
-            .WithTags("Department")
-            .RequireAuthorization()
+            .MapEndpoint<GridifyDepartmentsEndpoint>()
+            .MapEndpoint<DeleteDepartmentEndpoint>()
+            .MapEndpoint<UpdateStatusDepartmentEndpoint>()
             .MapEndpoint<GetByIdDepartmentEndpoint>()
             .MapEndpoint<CreateDepartmentEndpoint>()
             .MapEndpoint<UpdateDepartmentEndpoint>();
 
+        // Categories v1
         endpoints.MapGroup("v1/categories")
             .WithTags("Category")
-            .RequireAuthorization()
-            .MapEndpoint<SearchCategoriesEndpoint>();
-
-        endpoints.MapGroup("v1/category")
-            .WithTags("Category")
-            .RequireAuthorization()
+            .RequireAuthorization() // TEMPORÁRIAMENTE DESABILITADO
             .MapEndpoint<GetCategoryByIdEndpoint>()
+            .MapEndpoint<GridifyCategoriesEndpoint>()
             .MapEndpoint<CreateCategoryEndpoint>()
             .MapEndpoint<UpdateCategoryEndpoint>()
-            .MapEndpoint<DeleteCategoryEndpoint>();
+            .MapEndpoint<DeleteCategoryEndpoint>()
+            .MapEndpoint<SearchCategoriesEndpoint>();
 
+        // SubCategories v1
         endpoints.MapGroup("v1/subcategories")
             .WithTags("SubCategory")
             .RequireAuthorization()
-            .MapEndpoint<SearchSubCategoriesEndpoint>();
-
-        endpoints.MapGroup("v1/subcategory")
-            .WithTags("SubCategory")
-            .RequireAuthorization()
+            .MapEndpoint<SearchSubCategoriesEndpoint>()
             .MapEndpoint<GetSubCategoryByIdEndpoint>()
             .MapEndpoint<CreateSubCategoryEndpoint>()
             .MapEndpoint<UpdateSubCategoryEndpoint>()
             .MapEndpoint<DeleteSubCategoryEndpoint>();
 
+
+        // OrderTypes v1
         endpoints.MapGroup("v1/ordertypes")
             .WithTags("OrderType")
             .RequireAuthorization()
-            .MapEndpoint<SearchOrderTypesEndpoint>();
-
-        endpoints.MapGroup("v1/ordertype")
-            .WithTags("OrderType")
-            .RequireAuthorization()
+            .MapEndpoint<SearchOrderTypesEndpoint>()
+            .MapEndpoint<GridifyOrderTypesEndpoint>()
             .MapEndpoint<GetOrderTypeByIdEndpoint>()
             .MapEndpoint<CreateOrderTypeEndpoint>()
             .MapEndpoint<UpdateOrderTypeEndpoint>()
             .MapEndpoint<DeleteOrderTypeEndpoint>();
 
+        // StatusTypes v1
         endpoints.MapGroup("v1/statustypes")
             .WithTags("StatusType")
             .RequireAuthorization()
-            .MapEndpoint<SearchStatusTypesEndpoint>();
-
-        endpoints.MapGroup("v1/statustype")
-            .WithTags("StatusType")
-            .RequireAuthorization()
+            .MapEndpoint<SearchStatusTypesEndpoint>()
+            .MapEndpoint<GridifyStatusTypesEndpoint>()
             .MapEndpoint<GetStatusTypeByIdEndpoint>()
             .MapEndpoint<CreateStatusTypeEndpoint>()
             .MapEndpoint<UpdateStatusTypeEndpoint>()
             .MapEndpoint<DeleteStatusTypeEndpoint>();
 
+        // Orders v1
         endpoints.MapGroup("v1/orders")
             .WithTags("Order")
             .RequireAuthorization()
-            .MapEndpoint<SearchOrdersEndpoint>();
-
-        endpoints.MapGroup("v1/order")
-            .WithTags("Order")
-            .RequireAuthorization()
+            .MapEndpoint<SearchOrdersEndpoint>()
+            .MapEndpoint<GridifyOrdersEndpoint>()
             .MapEndpoint<GetOrderByIdEndpoint>()
             .MapEndpoint<CreateOrderEndpoint>()
             .MapEndpoint<UpdateOrderEndpoint>()
             .MapEndpoint<AssignOrderEndpoint>()
-            .MapEndpoint<CloseOrderEndpoint>()
-            .MapEndpoint<ChangeStatusOrderEndpoint>();
+            .MapEndpoint<ChangeStatusOrderEndpoint>()
+            .MapEndpoint<CloseOrderEndpoint>();
 
+        // Comments v1
+        endpoints.MapGroup("v1/comments")
+            .WithTags("Comment")
+            .RequireAuthorization()
+            .MapEndpoint<CreateCommentEndpoint>()
+            .MapEndpoint<GetCommentsByOrderIdEndpoint>()
+            .MapEndpoint<DeleteCommentEndpoint>();
 
+        // AI v1 - Natural Language to Gridify conversion
+        endpoints.MapGroup("v1/ai")
+            .WithTags("AI")
+            .RequireAuthorization()
+            .MapEndpoint<ConvertNLToGridifyEndpoint>();
     }
 
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)

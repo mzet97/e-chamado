@@ -20,7 +20,7 @@ public class ApplicationUserViewModel
 
     public ApplicationUserViewModel()
     {
-        
+
     }
 
     public ApplicationUserViewModel(

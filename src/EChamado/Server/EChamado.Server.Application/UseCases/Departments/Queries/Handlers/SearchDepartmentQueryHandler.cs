@@ -3,54 +3,49 @@ using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
 using LinqKit;
-using MediatR;
+using Paramore.Brighter;
 using System.Linq.Expressions;
 
 namespace EChamado.Server.Application.UseCases.Departments.Queries.Handlers;
 
-public class SearchDepartmentQueryHandler(IUnitOfWork unitOfWork) : 
-    IRequestHandler<SearchDepartmentQuery, BaseResultList<DepartmentViewModel>>
+public class SearchDepartmentQueryHandler(IUnitOfWork unitOfWork) :
+    RequestHandlerAsync<SearchDepartmentQuery>
 {
-    public async Task<BaseResultList<DepartmentViewModel>> Handle(
-        SearchDepartmentQuery request, 
-        CancellationToken cancellationToken)
+    public override async Task<SearchDepartmentQuery> HandleAsync(
+        SearchDepartmentQuery query,
+        CancellationToken cancellationToken = default)
     {
         Expression<Func<Department, bool>>? filter = PredicateBuilder.New<Department>(true);
         Func<IQueryable<Department>, IOrderedQueryable<Department>>? ordeBy = null;
 
-        if (!string.IsNullOrWhiteSpace(request.Name))
+        if (!string.IsNullOrWhiteSpace(query.Name))
         {
-            filter = filter.And(x => x.Name == request.Name);
+            filter = filter.And(x => x.Name == query.Name);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Description))
+        if (!string.IsNullOrWhiteSpace(query.Description))
         {
-            filter = filter.And(x => x.Description == request.Description);
+            filter = filter.And(x => x.Description == query.Description);
         }
 
-        if (request.Id != Guid.Empty)
+        if (query.CreatedAt != default)
         {
-            filter = filter.And(x => x.Id == request.Id);
+            filter = filter.And(x => x.CreatedAtUtc == query.CreatedAt);
         }
 
-        if (request.CreatedAt != default)
+        if (query.UpdatedAt != default)
         {
-            filter = filter.And(x => x.CreatedAt == request.CreatedAt);
+            filter = filter.And(x => x.UpdatedAtUtc == query.UpdatedAt);
         }
 
-        if (request.UpdatedAt != default)
+        if (query.DeletedAt != new DateTime())
         {
-            filter = filter.And(x => x.UpdatedAt == request.UpdatedAt);
+            filter = filter.And(x => x.DeletedAtUtc == query.DeletedAt);
         }
 
-        if (request.DeletedAt != new DateTime())
+        if (!string.IsNullOrWhiteSpace(query.Order))
         {
-            filter = filter.And(x => x.DeletedAt == request.DeletedAt);
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Order))
-        {
-            switch (request.Order)
+            switch (query.Order)
             {
                 case "Id":
                     ordeBy = x => x.OrderBy(n => n.Id);
@@ -65,15 +60,15 @@ public class SearchDepartmentQueryHandler(IUnitOfWork unitOfWork) :
                     break;
 
                 case "CreatedAt":
-                    ordeBy = x => x.OrderBy(n => n.CreatedAt);
+                    ordeBy = x => x.OrderBy(n => n.CreatedAtUtc);
                     break;
 
                 case "UpdatedAt":
-                    ordeBy = x => x.OrderBy(n => n.UpdatedAt);
+                    ordeBy = x => x.OrderBy(n => n.UpdatedAtUtc);
                     break;
 
                 case "DeletedAt":
-                    ordeBy = x => x.OrderBy(n => n.DeletedAt);
+                    ordeBy = x => x.OrderBy(n => n.DeletedAtUtc);
                     break;
 
                 default:
@@ -86,10 +81,12 @@ public class SearchDepartmentQueryHandler(IUnitOfWork unitOfWork) :
           .SearchAsync(
               filter,
               ordeBy,
-              request.PageSize,
-              request.PageIndex);
+              query.PageSize,
+              query.PageIndex);
 
-        return new BaseResultList<DepartmentViewModel>(
+        query.Result = new BaseResultList<DepartmentViewModel>(
             result.Data.Select(x => DepartmentViewModel.FromEntity(x)).ToList(), result.PagedResult);
+
+        return await base.HandleAsync(query, cancellationToken);
     }
 }

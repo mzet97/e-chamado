@@ -1,0 +1,187 @@
+@page "/admin/statustypes"
+@page "/admin/status"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using EChamado.Client.Components
+@using MudBlazor
+@inject LookupService LookupService
+@inject IODataService ODataService
+@inject INLQueryService NLQueryService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject ILogger<StatusTypes> Logger
+@attribute [Authorize]
+
+<PageTitle>Gerenciar Status - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Gerenciar Status de Chamado</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/admin/statustypes/create">
+            Novo Status
+        </MudButton>
+    </div>
+
+    <!-- AI Natural Language Query Component -->
+    <NLQueryInput EntityName="StatusType"
+                  OnQueryGenerated="HandleAIQueryGenerated" />
+
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+        <MudDataGrid T="StatusTypeResponse"
+                     Items="@statusTypes"
+                     Sortable="true"
+                     Filterable="true"
+                     QuickFilter="@QuickFilter"
+                     Hover="true"
+                     Dense="true"
+                     Striped="true"
+                     Bordered="true"
+                     Loading="@loading"
+                     PageSize="10"
+                     PageSizeOptions="@(new int[] { 5, 10, 20, 50 })">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Status de Chamados</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Buscar status..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Nome" Sortable="true" Filterable="true" />
+                <PropertyColumn Property="x => x.Description" Title="Descrição" Sortable="true" Filterable="true" />
+                <TemplateColumn CellClass="d-flex justify-end" Title="Ações" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/admin/statustypes/{context.Item.Id}/edit")" />
+                        <MudIconButton Size="@Size.Small"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteStatusType(context.Item.Id))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="StatusTypeResponse" PageSizeOptions="@(new int[] { 5, 10, 20, 50 })" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Nenhum status encontrado
+                </MudText>
+            </NoRecordsContent>
+        </MudDataGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<StatusTypeResponse> statusTypes = new();
+    private bool loading = true;
+    private string searchString = "";
+    private string? currentODataFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatusTypes();
+    }
+
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated Gridify query for StatusTypes: {Query}", gridifyQuery);
+
+        // Convert Gridify to OData filter (simplified - in production you'd need proper conversion)
+        // For now, we'll use it directly as OData filter with some basic conversions
+        currentODataFilter = ConvertGridifyToOData(gridifyQuery);
+
+        await LoadStatusTypesWithFilter();
+    }
+
+    private string ConvertGridifyToOData(string gridifyQuery)
+    {
+        // Basic conversion: Gridify uses *= for contains, OData uses contains()
+        var odataQuery = gridifyQuery
+            .Replace("*=", "contains")
+            .Replace("&", "and")
+            .Replace("|", "or");
+
+        return odataQuery;
+    }
+
+    private async Task LoadStatusTypes()
+    {
+        currentODataFilter = null;
+        await LoadStatusTypesWithFilter();
+    }
+
+    private async Task LoadStatusTypesWithFilter()
+    {
+        loading = true;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(currentODataFilter))
+            {
+                Logger.LogInformation("Loading status types with OData filter: {Filter}", currentODataFilter);
+                statusTypes = (await ODataService.GetStatusTypesAsync(
+                    filter: currentODataFilter,
+                    orderBy: "Name",
+                    top: 100
+                )).ToList();
+            }
+            else
+            {
+                statusTypes = await LookupService.GetStatusTypesAsync(forceRefresh: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading status types");
+            Snackbar.Add($"Erro ao carregar status: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private Func<StatusTypeResponse, bool> QuickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        var lowerSearch = searchString.ToLower();
+        return x.Name?.ToLower().Contains(lowerSearch) == true ||
+               x.Description?.ToLower().Contains(lowerSearch) == true;
+    };
+
+    private async Task DeleteStatusType(Guid id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Tem certeza que deseja excluir este status?" },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+        // se houver dialog provider, poderia usar; por simplicidade excluir direto
+        try
+        {
+            await LookupService.DeleteStatusTypeAsync(id);
+            Snackbar.Add("Status excluído com sucesso!", Severity.Success);
+            await LoadStatusTypes();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao excluir status: {ex.Message}", Severity.Error);
+        }
+    }
+}

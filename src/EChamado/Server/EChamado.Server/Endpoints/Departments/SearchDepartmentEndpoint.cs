@@ -1,9 +1,10 @@
-﻿using EChamado.Server.Application.UseCases.Departments.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Departments.Queries;
 using EChamado.Server.Application.UseCases.Departments.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Departments;
 
@@ -18,30 +19,37 @@ public class SearchDepartmentEndpoint : IEndpoint
            .Produces<BaseResultList<DepartmentViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
+        [FromServices] IAmACommandProcessor commandProcessor,
         [AsParameters] SearchDepartment search)
     {
-        var query = new SearchDepartmentQuery
+        try
         {
-            Name = search.Name ?? "",
-            Description = search.Description ?? "",
-            Id = search.Id ?? Guid.Empty,
-            CreatedAt = search.CreatedAt ?? default,
-            UpdatedAt = search.UpdatedAt ?? default,
-            DeletedAt = search.DeletedAt ?? default,
-            Order = search.Order ?? "",
-            PageIndex = search.PageIndex ?? 1,
-            PageSize = search.PageSize ?? 10,
-        };
+            var query = new SearchDepartmentQuery
+            {
+                Name = search.Name ?? "",
+                Description = search.Description ?? "",
+                CreatedAt = search.CreatedAt ?? default,
+                UpdatedAt = search.UpdatedAt ?? default,
+                DeletedAt = search.DeletedAt ?? default,
+                Order = search.Order ?? "",
+                PageIndex = search.PageIndex ?? 1,
+                PageSize = search.PageSize ?? 10,
+            };
 
-        var result = await mediator.Send(query);
+            await commandProcessor.SendAsync(query);
 
-        if (result.Success)
-        {
-            return TypedResults.Ok(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.BadRequest(query.Result);
         }
-
-        return TypedResults.BadRequest(result);
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResultList<DepartmentViewModel>(
+                new List<DepartmentViewModel>(),
+                null,
+                false,
+                $"Erro interno: {ex.Message}"));
+        }
     }
 }
 

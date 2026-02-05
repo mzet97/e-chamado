@@ -1,283 +1,254 @@
 @page "/"
 @using EChamado.Client.Services
 @using EChamado.Client.Models
+@using EChamado.Client.Authentication
+@using EChamado.Client.Components.Dialogs
+@using System.Security.Claims
 @inject OrderService OrderService
 @inject LookupService LookupService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IDialogService DialogService
 @attribute [Authorize]
 
 <PageTitle>Dashboard - EChamado</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-8">
+    <!-- Header with Welcome & Debug -->
+    <div class="d-flex justify-space-between align-center mb-6">
+        <div>
+            <MudText Typo="Typo.h4" GutterBottom="true" Style="font-weight: 700;">Dashboard</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                Bem-vindo de volta, <b>@userName</b>! 👋
+            </MudText>
+        </div>
+        <div>
+             <MudTooltip Text="Informações de Debug">
+                <MudIconButton Icon="@Icons.Material.Filled.BugReport" 
+                               Color="Color.Warning" 
+                               Variant="Variant.Outlined"
+                               OnClick="OpenDebugDialog" />
+            </MudTooltip>
+        </div>
+    </div>
 
     @if (isLoading)
     {
+        <!-- Skeleton Loading -->
         <MudGrid>
             @for (int i = 0; i < 4; i++)
             {
                 <MudItem xs="12" sm="6" md="3">
-                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" />
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="140px" Class="rounded-lg" />
                 </MudItem>
             }
+            <MudItem xs="12" md="8">
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="400px" Class="rounded-lg mt-4" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="400px" Class="rounded-lg mt-4" />
+            </MudItem>
         </MudGrid>
     }
     else if (errorMessage != null)
     {
-        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="my-4">@errorMessage</MudAlert>
     }
     else
     {
-        <!-- Cards de Estatísticas -->
-        <MudGrid Class="mb-4">
+        <!-- KPI Cards -->
+        <MudGrid Class="mb-6">
             <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="2">
-                    <MudCardContent>
-                        <div class="d-flex justify-space-between">
-                            <div>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">Total de Chamados</MudText>
-                                <MudText Typo="Typo.h4">@stats.TotalTickets</MudText>
-                            </div>
-                            <MudIcon Icon="@Icons.Material.Filled.ConfirmationNumber" Size="Size.Large" Color="Color.Primary" />
-                        </div>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="2">
-                    <MudCardContent>
-                        <div class="d-flex justify-space-between">
-                            <div>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">Meus Chamados</MudText>
-                                <MudText Typo="Typo.h4">@stats.MyTickets</MudText>
-                            </div>
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large" Color="Color.Info" />
-                        </div>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="2">
-                    <MudCardContent>
-                        <div class="d-flex justify-space-between">
-                            <div>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">Atribuídos a Mim</MudText>
-                                <MudText Typo="Typo.h4">@stats.AssignedToMe</MudText>
-                            </div>
-                            <MudIcon Icon="@Icons.Material.Filled.Assignment" Size="Size.Large" Color="Color.Success" />
-                        </div>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="2">
-                    <MudCardContent>
-                        <div class="d-flex justify-space-between">
-                            <div>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">Vencidos</MudText>
-                                <MudText Typo="Typo.h4" Color="Color.Error">@stats.OverdueTickets</MudText>
-                            </div>
-                            <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Large" Color="Color.Error" />
-                        </div>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-        </MudGrid>
-
-        <!-- Gráficos -->
-        <MudGrid Class="mb-4">
-            <MudItem xs="12" md="6">
-                <MudPaper Class="pa-4" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-4">Chamados por Status</MudText>
-                    @if (chartDataByStatus.Any())
-                    {
-                        <MudChart ChartType="ChartType.Donut"
-                                  InputData="@chartDataByStatus"
-                                  InputLabels="@chartLabelsByStatus"
-                                  Width="100%"
-                                  Height="300px" />
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum dado disponível</MudText>
-                    }
+                <MudPaper Elevation="3" Class="pa-4 d-flex flex-column justify-space-between rounded-lg mud-width-full" Style="border-left: 5px solid var(--mud-palette-primary); height: 140px;">
+                    <div class="d-flex justify-space-between align-start">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">TOTAL DE CHAMADOS</MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.ConfirmationNumber" Color="Color.Primary" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.h3"><b>@stats.TotalTickets</b></MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Chamados registrados</MudText>
+                    </div>
                 </MudPaper>
             </MudItem>
 
-            <MudItem xs="12" md="6">
-                <MudPaper Class="pa-4" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-4">Chamados por Departamento</MudText>
-                    @if (chartDataByDepartment.Any())
-                    {
-                        <MudChart ChartType="ChartType.Bar"
-                                  ChartSeries="@chartSeriesByDepartment"
-                                  XAxisLabels="@chartLabelsByDepartment"
-                                  Width="100%"
-                                  Height="300px" />
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum dado disponível</MudText>
-                    }
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="3" Class="pa-4 d-flex flex-column justify-space-between rounded-lg mud-width-full" Style="border-left: 5px solid var(--mud-palette-info); height: 140px;">
+                    <div class="d-flex justify-space-between align-start">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">MEUS CHAMADOS</MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Info" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.h3"><b>@stats.MyTickets</b></MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Criados por mim</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="3" Class="pa-4 d-flex flex-column justify-space-between rounded-lg mud-width-full" Style="border-left: 5px solid var(--mud-palette-success); height: 140px;">
+                    <div class="d-flex justify-space-between align-start">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">ATRIBUÍDOS A MIM</MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Color="Color.Success" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.h3"><b>@stats.AssignedToMe</b></MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Aguardando ação</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="3" Class="pa-4 d-flex flex-column justify-space-between rounded-lg mud-width-full" Style="border-left: 5px solid var(--mud-palette-error); height: 140px;">
+                    <div class="d-flex justify-space-between align-start">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">VENCIDOS</MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.h3" Color="Color.Error"><b>@stats.OverdueTickets</b></MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Error">Requer atenção imediata</MudText>
+                    </div>
                 </MudPaper>
             </MudItem>
         </MudGrid>
 
-        <!-- Últimos Chamados -->
-        <MudPaper Class="pa-4" Elevation="2">
-            <div class="d-flex justify-space-between align-center mb-4">
-                <MudText Typo="Typo.h6">Últimos Chamados</MudText>
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Primary"
-                           EndIcon="@Icons.Material.Filled.ArrowForward"
-                           Href="/orders">
-                    Ver Todos
-                </MudButton>
-            </div>
+        <!-- Content Grid -->
+        <MudGrid>
+            <!-- Left Column: Recent Tickets -->
+            <MudItem xs="12" lg="8">
+                <MudPaper Elevation="2" Class="pa-4 rounded-lg h-100">
+                    <div class="d-flex justify-space-between align-center mb-4">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.History" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Últimos Chamados</MudText>
+                        </div>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" EndIcon="@Icons.Material.Filled.ArrowForward" Href="/orders">
+                            Ver Todos
+                        </MudButton>
+                    </div>
 
-            @if (recentTickets.Any())
-            {
-                <MudTable Items="@recentTickets" Hover="true" Dense="true" Elevation="0">
-                    <HeaderContent>
-                        <MudTh>Título</MudTh>
-                        <MudTh>Status</MudTh>
-                        <MudTh>Departamento</MudTh>
-                        <MudTh>Data</MudTh>
-                        <MudTh>Ações</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Título">@context.Title</MudTd>
-                        <MudTd DataLabel="Status">
-                            <MudChip Size="Size.Small" Color="GetStatusColor(context.StatusName)">
-                                @context.StatusName
-                            </MudChip>
-                        </MudTd>
-                        <MudTd DataLabel="Departamento">@context.DepartmentName</MudTd>
-                        <MudTd DataLabel="Data">@context.OpeningDate.ToString("dd/MM/yyyy")</MudText>
-                        <MudTd DataLabel="Ações">
-                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Href="@($"/orders/{context.Id}")" />
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-            }
-            else
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum chamado encontrado</MudText>
-            }
-        </MudPaper>
+                    @if (recentTickets.Any())
+                    {
+                        <MudDataGrid T="OrderListViewModel"
+                                     Items="@recentTickets"
+                                     QuickFilter="@RecentQuickFilter"
+                                     Hover="true"
+                                     Dense="true"
+                                     Striped="true"
+                                     Elevation="0">
+                            <ToolBarContent>
+                                <MudTextField @bind-Value="recentSearch"
+                                              Placeholder="Buscar..."
+                                              Adornment="Adornment.Start"
+                                              AdornmentIcon="@Icons.Material.Filled.Search"
+                                              IconSize="Size.Small"
+                                              Class="mt-0"
+                                              Margin="Margin.Dense" 
+                                              Variant="Variant.Outlined" />
+                            </ToolBarContent>
+                            <Columns>
+                                <PropertyColumn Property="x => x.Title" Title="Título" />
+                                <TemplateColumn Title="Status">
+                                    <CellTemplate>
+                                        <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.Item.StatusName)" Variant="Variant.Text">
+                                            @context.Item.StatusName
+                                        </MudChip>
+                                    </CellTemplate>
+                                </TemplateColumn>
+                                <PropertyColumn Property="x => x.DepartmentName" Title="Departamento" />
+                                <TemplateColumn Title="Data" Property="x => x.OpeningDate">
+                                    <CellTemplate>
+                                        <MudText Typo="Typo.body2">@context.Item.OpeningDate.ToString("dd/MM")</MudText>
+                                    </CellTemplate>
+                                </TemplateColumn>
+                                <TemplateColumn CellClass="d-flex justify-end">
+                                    <CellTemplate>
+                                        <MudIconButton Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Href="@($"/orders/{context.Item.Id}")" Color="Color.Primary" />
+                                    </CellTemplate>
+                                </TemplateColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column align-center justify-center py-8">
+                            <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                            <MudText Color="Color.Secondary">Nenhum chamado recente encontrado.</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
 
-        <!-- Atalhos Rápidos -->
-        <MudGrid Class="mt-4">
-            <MudItem xs="12" sm="6" md="4">
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Add"
-                           FullWidth="true"
-                           Size="Size.Large"
-                           Href="/orders/create">
-                    Criar Novo Chamado
-                </MudButton>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="4">
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Info"
-                           StartIcon="@Icons.Material.Filled.List"
-                           FullWidth="true"
-                           Size="Size.Large"
-                           Href="/orders">
-                    Ver Todos os Chamados
-                </MudButton>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="4">
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Success"
-                           StartIcon="@Icons.Material.Filled.Assignment"
-                           FullWidth="true"
-                           Size="Size.Large"
-                           Href="/orders?assigned=true">
-                    Meus Atribuídos
-                </MudButton>
+            <!-- Right Column: Quick Actions & Charts -->
+            <MudItem xs="12" lg="4">
+                <MudStack Spacing="4">
+                    <!-- Quick Actions -->
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg bg-gradient">
+                        <MudText Typo="Typo.h6" Class="mb-4 text-white">Acesso Rápido</MudText>
+                        <MudStack>
+                            <MudButton Variant="Variant.Filled" Color="Color.Surface" StartIcon="@Icons.Material.Filled.Add" FullWidth="true" Href="/orders/create" Class="justify-start">
+                                Novo Chamado
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Surface" StartIcon="@Icons.Material.Filled.AssignmentInd" FullWidth="true" Href="/orders?assigned=true" Class="justify-start">
+                                Meus Atribuídos
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Surface" StartIcon="@Icons.Material.Filled.List" FullWidth="true" Href="/orders" Class="justify-start">
+                                Listar Todos
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+
+                    <!-- Chart: By Status -->
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Status dos Chamados</b></MudText>
+                         @if (chartDataByStatus.Any())
+                        {
+                            <MudChart ChartType="ChartType.Donut" InputData="@chartDataByStatus" InputLabels="@chartLabelsByStatus" Width="100%" Height="250px" LegendPosition="Position.Bottom" />
+                        }
+                        else
+                        {
+                             <MudText Typo="Typo.caption" Color="Color.Secondary">Sem dados suficientes.</MudText>
+                        }
+                    </MudPaper>
+                </MudStack>
             </MudItem>
         </MudGrid>
     }
 </MudContainer>
 
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%);
+        color: white;
+    }
+</style>
+
 @code {
     private bool isLoading = true;
     private string? errorMessage;
+    private string userName = "Usuário";
+    
+    // Debug info for Dialog
+    private string authState = "Checking...";
+    private string? testToken = null;
+    private int claimsCount = 0;
+    private string userIdentity = "Unknown";
 
     private DashboardStats stats = new();
     private List<OrderListViewModel> recentTickets = new();
+    private string recentSearch = string.Empty;
 
     // Dados para gráficos
     private double[] chartDataByStatus = Array.Empty<double>();
     private string[] chartLabelsByStatus = Array.Empty<string>();
-    private double[] chartDataByDepartment = Array.Empty<double>();
-    private string[] chartLabelsByDepartment = Array.Empty<string>();
-    private List<ChartSeries> chartSeriesByDepartment = new();
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             isLoading = true;
-
-            // Carrega estatísticas em paralelo
-            var allTicketsTask = OrderService.SearchAsync(new SearchOrdersParameters { PageSize = 100 });
-            var myTicketsTask = OrderService.GetMyTicketsAsync(pageSize: 100);
-            var assignedTask = OrderService.GetAssignedToMeAsync(pageSize: 100);
-            var overdueTask = OrderService.SearchAsync(new SearchOrdersParameters { IsOverdue = true, PageSize = 100 });
-            var statusesTask = LookupService.GetStatusTypesAsync();
-
-            await Task.WhenAll(allTicketsTask, myTicketsTask, assignedTask, overdueTask, statusesTask);
-
-            var allTickets = await allTicketsTask;
-            var myTickets = await myTicketsTask;
-            var assigned = await assignedTask;
-            var overdue = await overdueTask;
-            var statuses = await statusesTask;
-
-            // Calcula estatísticas
-            stats = new DashboardStats
-            {
-                TotalTickets = allTickets.TotalCount,
-                MyTickets = myTickets.TotalCount,
-                AssignedToMe = assigned.TotalCount,
-                OverdueTickets = overdue.TotalCount
-            };
-
-            // Últimos chamados
-            recentTickets = allTickets.Items.Take(5).ToList();
-
-            // Dados para gráfico de status
-            var groupedByStatus = allTickets.Items
-                .GroupBy(t => t.StatusName)
-                .Select(g => new { Status = g.Key, Count = g.Count() })
-                .ToList();
-
-            chartLabelsByStatus = groupedByStatus.Select(g => g.Status).ToArray();
-            chartDataByStatus = groupedByStatus.Select(g => (double)g.Count).ToArray();
-
-            // Dados para gráfico de departamento
-            var groupedByDepartment = allTickets.Items
-                .Where(t => !string.IsNullOrEmpty(t.DepartmentName))
-                .GroupBy(t => t.DepartmentName!)
-                .Select(g => new { Department = g.Key, Count = g.Count() })
-                .ToList();
-
-            chartLabelsByDepartment = groupedByDepartment.Select(g => g.Department).ToArray();
-            chartDataByDepartment = groupedByDepartment.Select(g => (double)g.Count).ToArray();
-
-            chartSeriesByDepartment = new List<ChartSeries>
-            {
-                new ChartSeries { Name = "Chamados", Data = chartDataByDepartment }
-            };
+            await LoadUserData();
+            await LoadDashboardData();
         }
         catch (Exception ex)
         {
@@ -289,11 +260,151 @@
         }
     }
 
-    private Color GetStatusColor(string status) => status.ToLower() switch
+    private async Task LoadUserData()
     {
-        var s when s.Contains("aberto") || s.Contains("open") => Color.Info,
-        var s when s.Contains("andamento") || s.Contains("progress") => Color.Warning,
-        var s when s.Contains("fechado") || s.Contains("closed") || s.Contains("resolvido") => Color.Success,
+        var authStateResult = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authStateResult.User;
+        
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            userName = user.Identity.Name ?? "Usuário";
+            userIdentity = userName;
+            claimsCount = user.Claims.Count();
+            authState = "✅ Authenticated";
+        }
+        else
+        {
+            authState = "❌ Not Authenticated";
+        }
+        
+        testToken = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+    }
+
+    private async Task LoadDashboardData()
+    {
+        var authStateResult = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userIdStr = authStateResult.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")?.Value;
+        Guid.TryParse(userIdStr, out Guid userId);
+
+        // Parallel data loading
+        var allTicketsTask = OrderService.SearchAsync(new SearchOrdersParameters { PageSize = 100 });
+        var overdueTask = OrderService.SearchAsync(new SearchOrdersParameters { IsOverdue = true, PageSize = 100 });
+        
+        // Conditional tasks if we have userId
+        Task<PagedResult<OrderListViewModel>>? myTicketsTask = userId != Guid.Empty 
+            ? OrderService.GetMyTicketsAsync(userId, 1, 100) 
+            : null;
+            
+        Task<PagedResult<OrderListViewModel>>? assignedToMeTask = userId != Guid.Empty 
+            ? OrderService.GetAssignedToMeAsync(userId, 1, 100) 
+            : null;
+
+        await Task.WhenAll(
+            allTicketsTask, 
+            overdueTask, 
+            myTicketsTask ?? Task.FromResult(new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0)), 
+            assignedToMeTask ?? Task.FromResult(new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0))
+        );
+
+        var allTickets = await allTicketsTask;
+        var overdue = await overdueTask;
+        var myTickets = myTicketsTask != null ? await myTicketsTask : new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0);
+        var assignedToMe = assignedToMeTask != null ? await assignedToMeTask : new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0);
+
+        stats = new DashboardStats
+        {
+            TotalTickets = allTickets.TotalCount,
+            MyTickets = myTickets.TotalCount,
+            AssignedToMe = assignedToMe.TotalCount,
+            OverdueTickets = overdue.TotalCount
+        };
+
+        // Recent tickets (from all tickets for now, or could use specific endpoint)
+        recentTickets = allTickets.Items.Take(10).ToList();
+
+        // Charts
+        var groupedByStatus = allTickets.Items
+            .GroupBy(t => t.StatusName)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .Select(g => new { Status = string.IsNullOrEmpty(g.Status) ? "Desconhecido" : g.Status, Count = g.Count })
+            .ToList();
+
+        chartLabelsByStatus = groupedByStatus.Select(g => g.Status).ToArray();
+        chartDataByStatus = groupedByStatus.Select(g => (double)g.Count).ToArray();
+    }
+
+    private void OpenDebugDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            { "AuthState", authState },
+            { "TestToken", testToken },
+            { "ClaimsCount", claimsCount },
+            { "UserIdentity", userIdentity },
+            { "OnTestAuthState", EventCallback.Factory.Create(this, TestAuthState) },
+            { "OnForceLogout", EventCallback.Factory.Create(this, ForceLogout) },
+            { "OnTestLogin", EventCallback.Factory.Create(this, TestLogin) },
+            { "OnDownloadLogs", EventCallback.Factory.Create(this, DownloadLogs) },
+            { "OnClearLogs", EventCallback.Factory.Create(this, ClearLogs) }
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        DialogService.Show<DebugInfoDialog>("Debug Info", parameters, options);
+    }
+
+    private async Task TestAuthState()
+    {
+        await LoadUserData();
+        StateHasChanged();
+    }
+
+    private async Task ForceLogout()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "refreshToken");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_code_verifier");
+            NavigationManager.NavigateTo("/authentication/login", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Logout error: {ex.Message}");
+        }
+    }
+
+    private async Task TestLogin()
+    {
+        if (AuthStateProvider is CookieAuthenticationStateProvider cookieProvider)
+        {
+            var success = await cookieProvider.LoginAsync("admin@admin.com", "Admin@123");
+            if (success) await TestAuthState();
+        }
+    }
+    
+    private async Task DownloadLogs()
+    {
+        await JS.InvokeVoidAsync("window.EChamadoLogger.downloadLogs", "echamado-auth-debug.log");
+    }
+
+    private async Task ClearLogs()
+    {
+        await JS.InvokeVoidAsync("window.EChamadoLogger.clearLogs");
+    }
+
+    private Func<OrderListViewModel, bool> RecentQuickFilter => order =>
+    {
+        if (string.IsNullOrWhiteSpace(recentSearch)) return true;
+        var term = recentSearch.ToLowerInvariant();
+        return (order.Title?.ToLowerInvariant().Contains(term) ?? false)
+            || (order.StatusName?.ToLowerInvariant().Contains(term) ?? false);
+    };
+
+    private Color GetStatusColor(string status) => status?.ToLower() switch
+    {
+        var s when s?.Contains("aberto") == true || s?.Contains("open") == true => Color.Info,
+        var s when s?.Contains("andamento") == true || s?.Contains("progress") == true => Color.Warning,
+        var s when s?.Contains("fechado") == true || s?.Contains("closed") == true || s?.Contains("resolvido") == true => Color.Success,
         _ => Color.Default
     };
 

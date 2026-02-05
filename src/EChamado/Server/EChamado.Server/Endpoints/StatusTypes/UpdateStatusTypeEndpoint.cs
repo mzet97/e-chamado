@@ -1,37 +1,45 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.StatusTypes.Commands;
+using EChamado.Server.Endpoints.StatusTypes.DTOs;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.StatusTypes;
 
 public class UpdateStatusTypeEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-        => app.MapPut("/{id:guid}", HandleAsync)
-            .WithName("Atualizar um status de chamado")
+        => app.MapPut("/{id}", HandleAsync)
+            .WithName("Atualizar um status")
             .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        Guid id,
-        UpdateStatusTypeRequest request)
+        [FromRoute] Guid id,
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] UpdateStatusTypeRequest request)
     {
-        var command = new UpdateStatusTypeCommand(
-            id,
-            request.Name,
-            request.Description
-        );
+        try
+        {
+            // Atribui o ID da rota ao request
+            request.Id = id;
 
-        var result = await mediator.Send(command);
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
 
-        if (result.Success)
-            return TypedResults.Ok(result);
+            var result = command.Result;
 
-        return TypedResults.BadRequest(result);
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }
-
-public record UpdateStatusTypeRequest(
-    string Name,
-    string Description
-);

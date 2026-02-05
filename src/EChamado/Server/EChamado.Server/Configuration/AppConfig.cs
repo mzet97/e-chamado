@@ -1,4 +1,4 @@
-﻿using EChamado.Server.Extensions;
+using EChamado.Server.Extensions;
 using EChamado.Server.Middlewares;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +11,7 @@ public static class AppConfig
     {
         app.UseResponseCompression();
         app.UseHttpsRedirection();
+        app.UseSecurityHeaders();
         app.UseAuthentication();
 
         app.UseExceptionHandler(new ExceptionHandlerOptions

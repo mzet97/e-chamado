@@ -1,9 +1,20 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Commands;
 
-public record CreateOrderTypeCommand(
-    string Name,
-    string Description
-) : IRequest<BaseResult<Guid>>;
+public class CreateOrderTypeCommand : BrighterRequest<BaseResult<Guid>>
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+
+    public CreateOrderTypeCommand()
+    {
+    }
+
+    public CreateOrderTypeCommand(string name, string description)
+    {
+        Name = name;
+        Description = description;
+    }
+}

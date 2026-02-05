@@ -1,25 +1,23 @@
-﻿using EChamado.Shared.Responses;
-using EChamado.Shared.Shared;
+﻿using EChamado.Shared.Domain;
+using EChamado.Shared.Responses;
 using System.Linq.Expressions;
 
 namespace EChamado.Server.Domain.Repositories;
 
-public interface IRepository<TEntity> : IDisposable where TEntity : IEntity
+public interface IRepository<TEntity> : IDisposable
+    where TEntity : class, IEntity
 {
     Task AddAsync(TEntity entity);
-
-    Task<TEntity?> GetByIdAsync(Guid id);
-
-    Task<IEnumerable<TEntity>> GetAllAsync();
-
-    Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
-
     Task UpdateAsync(TEntity entity);
-
     Task RemoveAsync(Guid id);
+
     Task DisableAsync(Guid id);
     Task ActiveAsync(Guid id);
     Task ActiveOrDisableAsync(Guid id, bool active);
+
+    Task<TEntity?> GetByIdAsync(Guid id);
+    Task<IEnumerable<TEntity>> GetAllAsync();
+    Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
 
     Task<BaseResultList<TEntity>> SearchAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
@@ -33,6 +31,7 @@ public interface IRepository<TEntity> : IDisposable where TEntity : IEntity
         int pageSize = 10, int page = 1);
 
     Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null);
-
     Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate);
+
+    IQueryable<TEntity> GetAllQueryable();
 }

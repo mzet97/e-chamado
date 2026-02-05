@@ -1,99 +1,64 @@
-﻿using Serilog;
-using System.Security.Claims;
-using System.Text.Json;
+using System.Diagnostics;
 
 namespace EChamado.Server.Middlewares;
 
+/// <summary>
+/// Middleware para logar todas as requisições HTTP com detalhes
+/// </summary>
 public class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<RequestLoggingMiddleware> _logger;
 
-    public RequestLoggingMiddleware(RequestDelegate next)
+    public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
-    public async Task Invoke(HttpContext context)
+    public async Task InvokeAsync(HttpContext context)
     {
-        context.Request.EnableBuffering();
+        var stopwatch = Stopwatch.StartNew();
+        var requestId = Guid.NewGuid().ToString();
 
-        if (context.Request.Body == null)
+        // Log da requisição
+        _logger.LogInformation(
+            "HTTP {Method} {Path} started - RequestId: {RequestId}, IP: {IP}, UserAgent: {UserAgent}",
+            context.Request.Method,
+            context.Request.Path,
+            requestId,
+            context.Connection.RemoteIpAddress,
+            context.Request.Headers["User-Agent"].ToString());
+
+        try
         {
+            // Executa o próximo middleware
             await _next(context);
-            return;
+
+            stopwatch.Stop();
+
+            // Log da resposta
+            _logger.LogInformation(
+                "HTTP {Method} {Path} completed - RequestId: {RequestId}, StatusCode: {StatusCode}, Duration: {Duration}ms",
+                context.Request.Method,
+                context.Request.Path,
+                requestId,
+                context.Response.StatusCode,
+                stopwatch.ElapsedMilliseconds);
         }
-
-        if (context.Request.Path.StartsWithSegments("/swagger") || context.Request.Path.StartsWithSegments("/health"))
+        catch (Exception ex)
         {
-            await _next(context);
-            return;
+            stopwatch.Stop();
+
+            _logger.LogError(ex,
+                "HTTP {Method} {Path} failed - RequestId: {RequestId}, Duration: {Duration}ms, Error: {Error}",
+                context.Request.Method,
+                context.Request.Path,
+                requestId,
+                stopwatch.ElapsedMilliseconds,
+                ex.Message);
+
+            throw;
         }
-
-        string body = string.Empty;
-        if (context.Request.ContentLength > 0)
-        {
-            body = await new StreamReader(context.Request.Body).ReadToEndAsync();
-            context.Request.Body.Position = 0;
-        }
-
-        bool isAuthenticated = context.User.Identity?.IsAuthenticated ?? false;
-        var userClaims = isAuthenticated
-            ? context.User.Claims.Select(c => new { c.Type, c.Value }).ToList()
-            : null;
-
-        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var userName = context.User.Identity?.Name;
-
-        var headers = context.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString());
-        var clientIp = context.Connection.RemoteIpAddress?.ToString();
-        var userAgent = context.Request.Headers["User-Agent"].FirstOrDefault();
-
-        if (isAuthenticated)
-        {
-            Log.Information("Usuário autenticado: {UserName} ({UserId})", userName, userId);
-        }
-        else
-        {
-            Log.Information("Usuário não autenticado");
-        }
-
-        var entityLog = new EntityLog
-        {
-            Method = context.Request.Method,
-            Path = context.Request.Path,
-            QueryString = context.Request.QueryString.ToString(),
-            Body = body,
-            Headers = JsonSerializer.Serialize(headers),
-            ClientIp = clientIp,
-            UserAgent = userAgent,
-            UserName = userName,
-            UserClaims = JsonSerializer.Serialize(userClaims),
-            IsAuthenticated = isAuthenticated
-        };
-
-        Log.Information("HTTP Request Information: {entityLog}",
-            entityLog);
-
-        await _next(context);
-    }
-
-}
-
-public record EntityLog
-{
-    public string Method { get; init; }
-    public string Path { get; init; }
-    public string QueryString { get; init; }
-    public string Body { get; init; }
-    public string Headers { get; init; }
-    public string ClientIp { get; init; }
-    public string UserAgent { get; init; }
-    public string UserName { get; init; }
-    public string UserClaims { get; init; }
-    public bool IsAuthenticated { get; init; }
-
-    public override string? ToString()
-    {
-        return @$"IsAuthenticated: {IsAuthenticated}, Method: {Method}, Path: {Path}, QueryString: {QueryString}, Body: {Body}, Headers: {Headers}, ClientIp: {ClientIp}, UserAgent: {UserAgent}, UserName: {UserName}, UserClaims: {UserClaims}";
     }
 }

@@ -1,7 +1,10 @@
-using EChamado.Server.Application.UseCases.Categories.ViewModels;
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.SubCategories.Queries;
+using EChamado.Server.Endpoints.SubCategories.DTOs;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using EChamado.Shared.ViewModels;
+using Paramore.Brighter;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.SubCategories;
@@ -11,45 +14,28 @@ public class SearchSubCategoriesEndpoint : IEndpoint
     public static void Map(IEndpointRouteBuilder app)
         => app.MapGet("/", HandleAsync)
             .WithName("Buscar subcategorias")
-            .Produces<BaseResultList<SubCategoryViewModel>>();
+            .Produces<BaseResultList<BaseViewModel>>();
 
-    private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        [AsParameters] SearchSubCategoriesParameters parameters)
+    public static async Task<IResult> HandleAsync(
+        [AsParameters] SearchSubCategoriesRequest request,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var query = new SearchSubCategoriesQuery
+        try
         {
-            Id = parameters.Id,
-            Name = parameters.Name ?? string.Empty,
-            Description = parameters.Description ?? string.Empty,
-            CategoryId = parameters.CategoryId,
-            CreatedAt = parameters.CreatedAt,
-            UpdatedAt = parameters.UpdatedAt,
-            DeletedAt = parameters.DeletedAt,
-            Order = parameters.Order,
-            PageIndex = parameters.PageIndex,
-            PageSize = parameters.PageSize
-        };
+            var query = request.ToQuery();
+            await commandProcessor.SendAsync(query);
 
-        var result = await mediator.Send(query);
-
-        if (result.Success)
-            return TypedResults.Ok(result);
-
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.BadRequest(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResultList<BaseViewModel>(
+                data: new List<BaseViewModel>(),
+                pagedResult: new PagedResult { CurrentPage = 0, PageCount = 0, PageSize = 10, RowCount = 0 },
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
-}
-
-public class SearchSubCategoriesParameters
-{
-    [FromQuery] public Guid Id { get; set; }
-    [FromQuery] public string? Name { get; set; }
-    [FromQuery] public string? Description { get; set; }
-    [FromQuery] public Guid? CategoryId { get; set; }
-    [FromQuery] public DateTime CreatedAt { get; set; }
-    [FromQuery] public DateTime UpdatedAt { get; set; }
-    [FromQuery] public DateTime? DeletedAt { get; set; }
-    [FromQuery] public string? Order { get; set; }
-    [FromQuery] public int PageIndex { get; set; } = 1;
-    [FromQuery] public int PageSize { get; set; } = 10;
 }

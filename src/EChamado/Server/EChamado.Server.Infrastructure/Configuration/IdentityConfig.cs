@@ -1,8 +1,10 @@
 using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Infrastructure.OpenIddict;
 using EChamado.Server.Infrastructure.Persistence;
-using EChamado.Shared.Shared.Settings;
+using EChamado.Shared.Domain.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +28,8 @@ namespace EChamado.Server.Infrastructure.Configuration
                 var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
                 options.UseLoggerFactory(loggerFactory);
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
+                var interceptor = serviceProvider.GetRequiredService<DomainEventsSaveChangesInterceptor>();
+                options.AddInterceptors(interceptor);
 
                 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
                 {
@@ -43,8 +47,8 @@ namespace EChamado.Server.Infrastructure.Configuration
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequireUppercase = true;
-                options.Password.RequiredLength = 6;
-                options.Password.RequiredUniqueChars = 1;
+                options.Password.RequiredLength = 12;
+                options.Password.RequiredUniqueChars = 4;
 
                 options.SignIn.RequireConfirmedAccount = false; // Alterado para false para facilitar testes
 
@@ -83,7 +87,8 @@ namespace EChamado.Server.Infrastructure.Configuration
             // -------------------------
             // 4) CONFIGURAÇÃO DATA PROTECTION (para compartilhar cookies entre apps)
             // -------------------------
-            var keysPath = Path.Combine(Path.GetTempPath(), "EChamado-DataProtection-Keys");
+            var keysPath = Environment.GetEnvironmentVariable("DP_KEYS_PATH")
+                             ?? Path.Combine(Path.GetTempPath(), "EChamado-DataProtection-Keys");
             Directory.CreateDirectory(keysPath);
 
             services.AddDataProtection()
@@ -93,12 +98,12 @@ namespace EChamado.Server.Infrastructure.Configuration
             // -------------------------
             // 5) CONFIGURAÇÃO DO AUTH
             // -------------------------
-            // Usamos OpenIddictValidation como esquema de autenticação padrão,
-            // e "External" para redirecionar para aplicação de login Blazor Server.
+            // Usamos OpenIddictValidation como esquema de autenticação padrão
+            // Para APIs REST, retorna 401 Unauthorized
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = "External";
+                options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
             })
             .AddCookie("External", options =>
             {
@@ -113,18 +118,60 @@ namespace EChamado.Server.Infrastructure.Configuration
 
                 options.Events.OnRedirectToLogin = context =>
                 {
-                    // Redireciona para a aplicação Blazor Server de Identity (localhost:7132)
-                    var loginUrl = "https://localhost:7132/Account/Login";
-                    var returnUrl = Uri.EscapeDataString(context.RedirectUri);
-                    context.Response.Redirect($"{loginUrl}?returnUrl={returnUrl}");
+                    var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                    var logger = loggerFactory.CreateLogger("EChamado.Server.Infrastructure.IdentityConfig");
+
+                    try
+                    {
+                        // context.RedirectUri já contém o path completo com query string
+                        // Ex: /Account/Login?ReturnUrl=/connect/authorize?params...
+                        logger.LogInformation("OnRedirectToLogin: Original RedirectUri={RedirectUri}", context.RedirectUri);
+
+                        // Extrai o ReturnUrl dos query params
+                        var queryString = context.RedirectUri.Contains('?')
+                            ? context.RedirectUri.Substring(context.RedirectUri.IndexOf('?'))
+                            : "";
+
+                        var returnUrl = "/connect/authorize";
+                        if (!string.IsNullOrEmpty(queryString))
+                        {
+                            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(queryString);
+                            if (query.TryGetValue("ReturnUrl", out var value))
+                            {
+                                returnUrl = value.ToString();
+                            }
+                        }
+
+                        logger.LogInformation("OnRedirectToLogin: Extracted ReturnUrl={ReturnUrl}", returnUrl);
+
+                        // Constrói URL completa para o servidor OpenIddict (7296)
+                        var fullReturnUrl = $"https://localhost:7296{returnUrl}";
+                        var encodedReturnUrl = Uri.EscapeDataString(fullReturnUrl);
+
+                        // Redireciona para a aplicação Blazor Server de Identity (localhost:7133)
+                        var loginUrl = "https://localhost:7133/Account/Login";
+                        var finalUrl = $"{loginUrl}?returnUrl={encodedReturnUrl}";
+
+                        logger.LogInformation("OnRedirectToLogin: Final URL={FinalUrl}", finalUrl);
+
+                        context.Response.Redirect(finalUrl);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error in OnRedirectToLogin. RedirectUri={RedirectUri}", context.RedirectUri);
+                        // Fallback: redireciona para login sem returnUrl
+                        context.Response.Redirect("https://localhost:7133/Account/Login");
+                    }
+
                     return Task.CompletedTask;
                 };
             });
 
             // -------------------------
-            // 6) CONFIGURAÇÃO OPENIDDICT
+            // 6) CONFIGURAÇÃO OPENIDDICT (SÓ VALIDAÇÃO - API SERVER)
             // -------------------------
             services.AddOpenIddict()
+
                 // -------- CORE --------
                 .AddCore(options =>
                 {
@@ -132,52 +179,30 @@ namespace EChamado.Server.Infrastructure.Configuration
                            .UseDbContext<ApplicationDbContext>();
                 })
 
-                // -------- SERVER --------
-                .AddServer(options =>
-                {
-                    // Endpoints de autorização e token
-                    options.SetAuthorizationEndpointUris("/connect/authorize")
-                           .SetTokenEndpointUris("/connect/token");
-
-                    // Issuer definido em AppSettings.ValidOn
-                    options.SetIssuer(new Uri(appSettings.ValidOn));
-
-                    // Permitir fluxos
-                    options.AllowAuthorizationCodeFlow()
-                           .AllowRefreshTokenFlow()
-                           .AllowClientCredentialsFlow()
-                           .AllowPasswordFlow();
-
-                    // Exigir PKCE no Authorization Code Flow
-                    options.RequireProofKeyForCodeExchange();
-
-                    // Chave de assinatura simétrica
-                    options.AddSigningKey(new SymmetricSecurityKey(key));
-
-                    // Registra escopos adicionais
-                    options.RegisterScopes("openid", "profile", "email", "address", "phone", "roles", "api", "chamados");
-
-                    // Certificados de desenvolvimento (opcional)
-                    options.AddDevelopmentEncryptionCertificate()
-                           .AddDevelopmentSigningCertificate();
-
-                    // Integra com ASP.NET Core
-                    options.UseAspNetCore()
-                           .EnableAuthorizationEndpointPassthrough()
-                           .EnableTokenEndpointPassthrough();
-                })
-
-                // -------- VALIDAÇÃO --------
+                // -------- VALIDAÇÃO (Resource Server - só valida tokens) --------
                 .AddValidation(options =>
                 {
-                    options.UseLocalServer();
+                    // Configura para validar tokens do Auth Server (porta 7133)
+                    options.SetIssuer(new Uri("https://localhost:7133"));
+
+                    // ✅ FORÇA uso de introspecção para tokens criptografados (JWE)
+                    options.UseIntrospection();
+
+                    // Use system HTTP client for token introspection
+                    options.UseSystemNetHttp();
                     options.UseAspNetCore();
+
+                    // Configure introspection client credentials
+                    options.SetClientId("introspection-client");
+                    options.SetClientSecret("echamado_introspection_secret_2024");
                 });
 
             // -------------------------
             // 7) SERVIÇO QUE CONFIGURA OS CLIENTES
             // -------------------------
-            services.AddHostedService<OpenIddictWorker>();
+            // TEMPORARIAMENTE DESABILITADO PARA EVITAR CONCORRÊNCIA
+            // O Auth Server deve ser a única fonte de verdade para configuração dos clientes
+            // // services.AddHostedService<OpenIddictWorker>();
 
             return services;
         }

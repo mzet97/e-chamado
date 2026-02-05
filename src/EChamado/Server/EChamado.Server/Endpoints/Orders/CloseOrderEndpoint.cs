@@ -1,36 +1,41 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Orders.Commands;
+using EChamado.Server.Endpoints.Orders.DTOs;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Orders;
 
 public class CloseOrderEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-    => app.MapPost("/{id}/close", HandleAsync)
-        .WithName("Fechar chamado")
-        .WithSummary("Fechar chamado")
-        .WithDescription("Fechar chamado")
-        .WithOrder(6)
-        .Produces<BaseResult>();
+        => app.MapPost("/close", HandleAsync)
+            .WithName("Fechar uma ordem")
+            .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        Guid id,
-        CloseOrderRequest request)
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] CloseOrderRequest request)
     {
-        var command = new CloseOrderCommand(id, request.Evaluation);
-
-        var result = await mediator.Send(command);
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
 
-        return TypedResults.BadRequest(result);
+            var result = command.Result;
+
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }
-
-public record CloseOrderRequest(int? Evaluation);

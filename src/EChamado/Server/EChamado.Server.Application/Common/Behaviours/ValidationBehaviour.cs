@@ -1,26 +1,49 @@
 ﻿using FluentValidation;
-using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.Common.Behaviours;
 
-public class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
- where TRequest : notnull
+/// <summary>
+/// Attribute to mark handlers that should have validation.
+/// </summary>
+public class RequestValidationAttribute : RequestHandlerAttribute
 {
-    private readonly IEnumerable<IValidator<TRequest>> _validators;
-
-    public ValidationBehaviour(IEnumerable<IValidator<TRequest>> validators)
+    public RequestValidationAttribute(int step, HandlerTiming timing = HandlerTiming.Before)
+        : base(step, timing)
     {
-        _validators = validators;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public override Type GetHandlerType()
     {
-        if (_validators.Any())
+        return typeof(ValidationHandler<>);
+    }
+}
+
+/// <summary>
+/// Validation handler for Brighter pipeline.
+/// Runs FluentValidation validators before the main handler executes.
+/// </summary>
+public class ValidationHandler<TRequest> : RequestHandlerAsync<TRequest>
+    where TRequest : class, IRequest
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public ValidationHandler(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public override async Task<TRequest> HandleAsync(TRequest command, CancellationToken cancellationToken = default)
+    {
+        var validators = _serviceProvider.GetServices<IValidator<TRequest>>();
+
+        if (validators.Any())
         {
-            var context = new ValidationContext<TRequest>(request);
+            var context = new ValidationContext<TRequest>(command);
 
             var validationResults = await Task.WhenAll(
-                _validators.Select(v =>
+                validators.Select(v =>
                     v.ValidateAsync(context, cancellationToken)));
 
             var failures = validationResults
@@ -31,7 +54,8 @@ public class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TReque
             if (failures.Any())
                 throw new ValidationException(failures);
         }
-        return await next();
+
+        return await base.HandleAsync(command, cancellationToken);
     }
 }
 

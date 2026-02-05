@@ -1,9 +1,10 @@
-﻿using EChamado.Server.Application.UseCases.Roles.Queries;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Server.Application.UseCases.Roles.Queries;
 using EChamado.Server.Application.UseCases.Roles.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Endpoints.Roles;
 
@@ -18,16 +19,24 @@ public class GetRoleByNameEndpoint : IEndpoint
         .Produces<BaseResult<RolesViewModel>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        [FromRoute] string name)
+        string name,
+        [FromServices] IAmACommandProcessor commandProcessor)
     {
-        var result = await mediator.Send(new GetRoleByNameQuery(name));
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var query = new GetRoleByNameQuery(name);
+            await commandProcessor.SendAsync(query);
 
-        return TypedResults.BadRequest(result);
+            return query.Result.Success
+                ? TypedResults.Ok(query.Result)
+                : TypedResults.NotFound(query.Result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<RolesViewModel>(
+                data: null,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }

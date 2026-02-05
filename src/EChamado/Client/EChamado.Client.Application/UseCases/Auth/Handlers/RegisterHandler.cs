@@ -6,7 +6,7 @@ using System.Net.Http.Json;
 
 namespace EChamado.Client.Application.UseCases.Auth.Handlers;
 
-public class RegisterHandler(IHttpClientFactory httpClientFactory) 
+public class RegisterHandler(IHttpClientFactory httpClientFactory)
     : IRegisterHandler
 {
     private readonly HttpClient _client = httpClientFactory

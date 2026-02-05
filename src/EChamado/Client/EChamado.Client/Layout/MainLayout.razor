@@ -1,73 +1,128 @@
-﻿@using EChamado.Client
+@using EChamado.Client
 @inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
 
-<MudThemeProvider
-    @ref="_mudThemeProvider"
-    @bind-IsDarkMode="_isDarkMode"
-    Theme="Configuration.Theme" />
+<MudThemeProvider @ref="_mudThemeProvider"
+                  @bind-IsDarkMode="_isDarkMode"
+                  Theme="Configuration.Theme" />
 <MudSnackbarProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+    <MudAppBar Elevation="0" Color="Color.Primary" Fixed="true">
+        <MudIconButton Icon="@Icons.Material.Rounded.Menu"
                        Color="Color.Inherit"
                        Edge="Edge.Start"
                        OnClick="@ToggleDrawer" />
-        <MudText Typo="Typo.h5" Class="ml-3">EChamado</MudText>
+        
+        <MudText Typo="Typo.h6" Class="ml-3" Style="font-weight: 700;">EChamado</MudText>
+        
         <MudSpacer />
-        <MudSwitch Color="Color.Inherit"
-                   @bind-Value="@_isDarkMode"
-                   T="bool"
-                   Class="ma-4"
-                   ThumbIcon="@Icons.Material.TwoTone.DarkMode" />
-        <LoginDisplay />
+        
+        <MudTooltip Text="@(_isDarkMode ? "Modo Claro" : "Modo Escuro")">
+            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Rounded.LightMode : Icons.Material.Rounded.DarkMode)"
+                           Color="Color.Inherit"
+                           OnClick="@(() => _isDarkMode = !_isDarkMode)" />
+        </MudTooltip>
+
+        <AuthorizeView>
+            <Authorized>
+                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" LockScroll="true">
+                    <ActivatorContent>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="ml-4 cursor-pointer">
+                            <MudAvatar Color="Color.Secondary" Variant="Variant.Filled" Size="Size.Medium">
+                                @(context.User.Identity?.Name?.FirstOrDefault().ToString().ToUpper() ?? "U")
+                            </MudAvatar>
+                            <MudStack Spacing="0" Class="d-none d-md-block text-white">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                                    @(context.User.Identity?.Name ?? "Usuário")
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">
+                                    Conectado
+                                </MudText>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Color="Color.Inherit" />
+                        </MudStack>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudMenuItem Icon="@Icons.Material.Rounded.Person">Perfil</MudMenuItem>
+                        <MudDivider />
+                        <MudMenuItem Icon="@Icons.Material.Rounded.Logout" OnClick="BeginLogout">Sair</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="BeginLogin" Class="ml-4">
+                    Entrar
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen"
-               Elevation="2"
-               ClipMode="DrawerClipMode.Always">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">Menu</MudText>
+               Elevation="1"
+               ClipMode="DrawerClipMode.Always"
+               Variant="DrawerVariant.Responsive">
+        <MudDrawerHeader Class="d-flex align-center justify-center py-4">
+             <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Business" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h6" Color="Color.Primary" Style="font-weight: 700;">Gestão</MudText>
+             </MudStack>
         </MudDrawerHeader>
-        <MudNavMenu>
+        
+        <MudNavMenu Class="pt-2">
             <MudNavLink Href="/"
                         Match="NavLinkMatch.All"
-                        Icon="@Icons.Material.Filled.Home">
+                        Icon="@Icons.Material.Rounded.Dashboard">
                 Dashboard
             </MudNavLink>
 
             <MudNavGroup Title="Chamados"
-                         Icon="@Icons.Material.Filled.ConfirmationNumber"
+                         Icon="@Icons.Material.Rounded.ConfirmationNumber"
                          Expanded="true">
                 <MudNavLink Href="/orders"
                             Match="NavLinkMatch.Prefix"
-                            Icon="@Icons.Material.Filled.List">
+                            Icon="@Icons.Material.Rounded.List">
                     Lista de Chamados
                 </MudNavLink>
                 <MudNavLink Href="/orders/create"
-                            Icon="@Icons.Material.Filled.Add">
+                            Icon="@Icons.Material.Rounded.AddCircle">
                     Novo Chamado
                 </MudNavLink>
+                <MudDivider Class="my-1" />
+                <MudNavGroup Title="Busca Avançada"
+                             Icon="@Icons.Material.Rounded.Search"
+                             Expanded="false">
+                    <MudNavLink Href="/orders/ai"
+                                Icon="@Icons.Material.Rounded.Psychology">
+                        Com IA (Linguagem Natural)
+                    </MudNavLink>
+                    <MudNavLink Href="/orders/odata"
+                                Icon="@Icons.Material.Rounded.FilterList">
+                        Com OData
+                    </MudNavLink>
+                </MudNavGroup>
             </MudNavGroup>
 
-            <MudDivider Class="my-2" />
+            <MudDivider Class="my-2 mx-4" />
 
             <MudNavGroup Title="Administração"
-                         Icon="@Icons.Material.Filled.Settings">
+                         Icon="@Icons.Material.Rounded.Settings">
                 <MudNavLink Href="/admin/categories"
-                            Icon="@Icons.Material.Filled.Category">
+                            Icon="@Icons.Material.Rounded.Category">
                     Categorias
                 </MudNavLink>
                 <MudNavLink Href="/admin/departments"
-                            Icon="@Icons.Material.Filled.Business">
+                            Icon="@Icons.Material.Rounded.Business">
                     Departamentos
                 </MudNavLink>
-                <MudNavLink Href="/admin/types"
-                            Icon="@Icons.Material.Filled.Label">
+                <MudNavLink Href="/admin/ordertypes"
+                            Icon="@Icons.Material.Rounded.Label">
                     Tipos de Chamado
                 </MudNavLink>
-                <MudNavLink Href="/admin/status"
-                            Icon="@Icons.Material.Filled.RadioButtonChecked">
+                <MudNavLink Href="/admin/statustypes"
+                            Icon="@Icons.Material.Rounded.RadioButtonChecked">
                     Status
                 </MudNavLink>
             </MudNavGroup>
@@ -75,12 +130,14 @@
     </MudDrawer>
 
     <MudMainContent>
-        @Body
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-8">
+            @Body
+        </MudContainer>
     </MudMainContent>
 </MudLayout>
 
 @code {
-    private bool _isDarkMode = true;
+    private bool _isDarkMode = false;
     private bool _drawerOpen = true;
     private MudThemeProvider _mudThemeProvider = null!;
 
@@ -104,5 +161,15 @@
     private void ToggleDrawer()
     {
         _drawerOpen = !_drawerOpen;
+    }
+
+    private void BeginLogin()
+    {
+        NavigationManager.NavigateTo("authentication/login");
+    }
+
+    private void BeginLogout()
+    {
+        NavigationManager.NavigateTo("authentication/logout");
     }
 }

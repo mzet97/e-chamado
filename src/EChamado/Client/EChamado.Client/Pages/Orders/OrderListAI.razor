@@ -1,0 +1,279 @@
+@page "/orders/ai"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using EChamado.Client.Components
+@inject OrderService OrderService
+@inject INLQueryService NLQueryService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject ILogger<OrderListAI> Logger
+@attribute [Authorize]
+
+<PageTitle>Chamados com AI - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Psychology" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h4">Chamados com AI</MudText>
+            <MudChip T="string" Size="Size.Small" Color="Color.Success">Beta</MudChip>
+        </MudStack>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/orders/create">
+            Novo Chamado
+        </MudButton>
+    </div>
+
+    <MudCard Elevation="3" Class="mb-4">
+        <MudCardContent>
+            <MudAlert Severity="Severity.Info" Class="mb-4" NoIcon="false">
+                Use linguagem natural para buscar chamados! Por exemplo: "Mostrar chamados abertos do TI" ou "Tickets urgentes criados hoje"
+            </MudAlert>
+
+            <!-- Natural Language Query Component -->
+            <NLQueryInput EntityName="Order"
+                          OnQueryGenerated="HandleAIQueryGenerated" />
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Filtro Gridify Manual (opcional) -->
+    <MudExpansionPanels Class="mb-4" Elevation="3">
+        <MudExpansionPanel Text="🔧 Filtro Gridify Manual (Avançado)">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="gridifyFilter"
+                                 Label="Filtro Gridify"
+                                 Variant="Variant.Outlined"
+                                 HelperText="Ex: StatusName *= 'Aberto' & Priority >= 3"
+                                 Placeholder="Digite o filtro Gridify..." 
+                                 Adornment="Adornment.Start"
+                                 AdornmentIcon="@Icons.Material.Filled.FilterAlt"/>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="gridifyOrderBy"
+                                 Label="Ordenação"
+                                 Variant="Variant.Outlined"
+                                 HelperText="Ex: -CreatedAt (descendente) ou Priority, CreatedAt"
+                                 Placeholder="Digite a ordenação..."
+                                 Adornment="Adornment.Start"
+                                 AdornmentIcon="@Icons.Material.Filled.Sort"/>
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-end">
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              OnClick="ApplyManualGridifyFilter"
+                              Disabled="@string.IsNullOrWhiteSpace(gridifyFilter)"
+                              StartIcon="@Icons.Material.Filled.Check">
+                        Aplicar Filtro Manual
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+    <!-- Filtro Atual -->
+    @if (!string.IsNullOrWhiteSpace(currentGridifyFilter))
+    {
+        <MudAlert Severity="Severity.Success" Dense="true" Class="mb-4" Elevation="3">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <div>
+                    <MudText Typo="Typo.body2"><strong>Filtro ativo:</strong> <code>@currentGridifyFilter</code></MudText>
+                    @if (!string.IsNullOrWhiteSpace(currentGridifyOrderBy))
+                    {
+                        <MudText Typo="Typo.caption">Ordenação: <code>@currentGridifyOrderBy</code></MudText>
+                    }
+                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Clear"
+                              Color="Color.Default"
+                              OnClick="ClearFilters"
+                              Size="Size.Small" />
+            </MudStack>
+        </MudAlert>
+    }
+
+    <!-- Loading State -->
+    @if (loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+    }
+
+    <!-- Error Message -->
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+    }
+
+    <!-- Tabela de Resultados -->
+    @if (orders != null && orders.Any())
+    {
+        <MudDataGrid T="OrderListViewModel"
+                     Items="@orders"
+                     Hover="true"
+                     Dense="true"
+                     FixedHeader="true"
+                     Height="600px"
+                     Elevation="3"
+                     Outlined="true">
+            <Columns>
+                <PropertyColumn Property="x => x.Title" Title="Título">
+                    <CellTemplate>
+                        <MudLink Href="@($"/orders/details/{context.Item.Id}")" Color="Color.Primary" Underline="Underline.Hover">
+                            <b>@context.Item.Title</b>
+                        </MudLink>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.StatusName" Title="Status">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.Item.StatusName)" Variant="Variant.Filled">
+                            @context.Item.StatusName
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.TypeName" Title="Tipo" />
+                <PropertyColumn Property="x => x.DepartmentName" Title="Departamento" />
+                <PropertyColumn Property="x => x.IsOverdue" Title="Status Prazo">
+                    <CellTemplate>
+                        @if (context.Item.IsOverdue)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
+                                Vencido
+                            </MudChip>
+                        }
+                        else if (context.Item.DueDate.HasValue)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
+                                No prazo
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.caption">-</MudText>
+                        }
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.OpeningDate" Title="Abertura" Format="dd/MM/yyyy HH:mm" />
+                <PropertyColumn Property="x => x.RequestingUserEmail" Title="Solicitante" />
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="OrderListViewModel" />
+            </PagerContent>
+        </MudDataGrid>
+
+        <MudText Typo="Typo.caption" Class="mt-2 pl-1">
+            Exibindo @orders.Count() chamado(s)
+        </MudText>
+    }
+    else if (!loading && orders != null)
+    {
+        <MudPaper Class="pa-8 d-flex flex-column align-center justify-center" Elevation="3">
+            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" Class="mb-4" style="width: 64px; height: 64px;" />
+            <MudText Typo="Typo.h6" Color="Color.Secondary">Nenhum chamado encontrado</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Tente ajustar sua busca ou os filtros aplicados.</MudText>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private List<OrderListViewModel> orders = new();
+    private string gridifyFilter = string.Empty;
+    private string gridifyOrderBy = "-CreatedAt";
+    private string currentGridifyFilter = string.Empty;
+    private string currentGridifyOrderBy = string.Empty;
+    private bool loading = false;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrdersAsync();
+    }
+
+    private async Task HandleAIQueryGenerated(string gridifyQuery)
+    {
+        Logger.LogInformation("AI generated query: {Query}", gridifyQuery);
+        currentGridifyFilter = gridifyQuery;
+        currentGridifyOrderBy = gridifyOrderBy;
+        await LoadOrdersAsync();
+    }
+
+    private async Task ApplyManualGridifyFilter()
+    {
+        currentGridifyFilter = gridifyFilter;
+        currentGridifyOrderBy = gridifyOrderBy;
+        await LoadOrdersAsync();
+    }
+
+    private async Task ClearFilters()
+    {
+        currentGridifyFilter = string.Empty;
+        currentGridifyOrderBy = "-CreatedAt";
+        gridifyFilter = string.Empty;
+        await LoadOrdersAsync();
+    }
+
+    private async Task LoadOrdersAsync()
+    {
+        loading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            Logger.LogInformation("Loading orders with filter: {Filter}, orderBy: {OrderBy}",
+                currentGridifyFilter, currentGridifyOrderBy);
+
+            if (string.IsNullOrWhiteSpace(currentGridifyFilter))
+            {
+                errorMessage = "Nenhum filtro aplicado. Use a consulta em linguagem natural acima.";
+                orders = new List<OrderListViewModel>();
+            }
+            else
+            {
+                Logger.LogInformation("Executing Gridify query: {Query}", currentGridifyFilter);
+
+                var result = await OrderService.SearchWithGridifyAsync(
+                    filter: currentGridifyFilter,
+                    orderBy: currentGridifyOrderBy,
+                    page: 1,
+                    pageSize: 50
+                );
+
+                if (result.Success)
+                {
+                    orders = result.Items;
+                    Snackbar.Add($"Encontrados {result.TotalCount} chamado(s)", Severity.Success);
+                    Logger.LogInformation("Gridify query successful. Found {Count} orders", result.Items.Count);
+                }
+                else
+                {
+                    errorMessage = $"Erro ao executar query Gridify: {result.ErrorMessage}";
+                    orders = new List<OrderListViewModel>();
+                    Logger.LogError("Gridify query failed: {Error}", result.ErrorMessage);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading orders");
+            errorMessage = $"Erro ao carregar chamados: {ex.Message}";
+            orders = new List<OrderListViewModel>();
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status.ToLowerInvariant() switch
+        {
+            var s when s.Contains("aberto") => Color.Info,
+            var s when s.Contains("andamento") || s.Contains("progresso") => Color.Warning,
+            var s when s.Contains("fechado") || s.Contains("concluído") => Color.Success,
+            var s when s.Contains("cancelado") => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+}

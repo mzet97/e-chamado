@@ -1,36 +1,41 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Orders.Commands;
+using EChamado.Server.Endpoints.Orders.DTOs;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Orders;
 
 public class ChangeStatusOrderEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
-    => app.MapPost("/{id}/status", HandleAsync)
-        .WithName("Alterar status do chamado")
-        .WithSummary("Alterar status do chamado")
-        .WithDescription("Alterar status do chamado")
-        .WithOrder(7)
-        .Produces<BaseResult>();
+        => app.MapPost("/status", HandleAsync)
+            .WithName("Alterar status de uma ordem")
+            .Produces<BaseResult>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        Guid id,
-        ChangeStatusRequest request)
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] ChangeStatusOrderRequest request)
     {
-        var command = new ChangeStatusOrderCommand(id, request.StatusId);
-
-        var result = await mediator.Send(command);
-
-        if (result.Success)
+        try
         {
-            return TypedResults.Ok(result);
-        }
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
 
-        return TypedResults.BadRequest(result);
+            var result = command.Result;
+
+            if (result.Success)
+                return TypedResults.Ok(result);
+
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult(
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }
-
-public record ChangeStatusRequest(Guid StatusId);

@@ -1,0 +1,41 @@
+using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
+using EChamado.Server.Domain.Exceptions;
+using EChamado.Server.Domain.Repositories;
+using EChamado.Shared.Responses;
+using Paramore.Brighter;
+using Microsoft.Extensions.Logging;
+
+namespace EChamado.Server.Application.UseCases.StatusTypes.Queries.Handlers;
+
+public class GetStatusTypeByIdQueryHandler(
+    IUnitOfWork unitOfWork,
+    ILogger<GetStatusTypeByIdQueryHandler> logger) :
+    RequestHandlerAsync<GetStatusTypeByIdQuery>
+{
+    public override async Task<GetStatusTypeByIdQuery> HandleAsync(GetStatusTypeByIdQuery query, CancellationToken cancellationToken = default)
+    {
+        var statusType = await unitOfWork.StatusTypes.GetByIdAsync(query.Id);
+
+        if (statusType == null)
+        {
+            logger.LogError("StatusType {StatusTypeId} not found", query.Id);
+            throw new NotFoundException($"StatusType {query.Id} not found");
+        }
+
+        var viewModel = new StatusTypeViewModel(
+            statusType.Id,
+            statusType.Name,
+            statusType.Description,
+            statusType.CreatedAtUtc,
+            statusType.UpdatedAtUtc,
+            statusType.DeletedAtUtc,
+            statusType.IsDeleted
+        );
+
+        logger.LogInformation("StatusType {StatusTypeId} retrieved successfully", query.Id);
+
+        query.Result = new BaseResult<StatusTypeViewModel>(viewModel);
+
+        return await base.HandleAsync(query, cancellationToken);
+    }
+}

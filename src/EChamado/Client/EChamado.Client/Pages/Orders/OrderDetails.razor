@@ -3,6 +3,7 @@
 @using EChamado.Client.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @inject OrderService OrderService
+@inject CommentService CommentService
 @inject LookupService LookupService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
@@ -11,11 +12,18 @@
 
 <PageTitle>Chamado #@(order?.Id.ToString().Substring(0, 8)) - EChamado</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
     @if (isLoading)
     {
-        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
-        <MudText>Carregando...</MudText>
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudSkeleton Height="200px" Class="mb-4" />
+                <MudSkeleton Height="300px" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSkeleton Height="400px" />
+            </MudItem>
+        </MudGrid>
     }
     else if (order == null)
     {
@@ -23,247 +31,280 @@
     }
     else
     {
-        <!-- Header com título e ações -->
-        <div class="d-flex justify-space-between align-center mb-4">
+        <!-- Header -->
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
             <div>
                 <MudText Typo="Typo.h4">@order.Title</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Criado em @order.OpeningDate.ToString("dd/MM/yyyy HH:mm")
-                </MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                     <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
+                     <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Criado em @order.OpeningDate.ToString("dd/MM/yyyy HH:mm")
+                    </MudText>
+                </MudStack>
             </div>
-            <div>
+            <MudStack Row="true" Spacing="2">
                 <MudButton Variant="Variant.Outlined"
-                           Color="Color.Default"
+                           Color="Color.Secondary"
                            StartIcon="@Icons.Material.Filled.ArrowBack"
-                           Href="/orders"
-                           Class="mr-2">
+                           Href="/orders">
                     Voltar
                 </MudButton>
                 <MudButton Variant="Variant.Filled"
-                           Color="Color.Info"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Edit"
                            Href="@($"/orders/{Id}/edit")">
                     Editar
                 </MudButton>
-            </div>
-        </div>
+            </MudStack>
+        </MudStack>
 
         <MudGrid>
             <!-- Coluna Principal -->
             <MudItem xs="12" md="8">
                 <!-- Informações Principais -->
-                <MudPaper Class="pa-4 mb-4" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-3">Descrição</MudText>
-                    <MudText Style="white-space: pre-wrap;">@order.Description</MudText>
-                </MudPaper>
+                <MudCard Class="mb-4" Elevation="3">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Descrição</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudText Style="white-space: pre-wrap;">@order.Description</MudText>
+                    </MudCardContent>
+                </MudCard>
 
                 <!-- Comentários -->
-                <MudPaper Class="pa-4" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-3">Comentários</MudText>
-
-                    @if (order.Comments?.Any() == true)
-                    {
-                        @foreach (var comment in order.Comments.OrderByDescending(c => c.CreatedAt))
+                <MudCard Elevation="3">
+                    <MudCardHeader>
+                         <CardHeaderAvatar>
+                            <MudIcon Icon="@Icons.Material.Filled.Comment" />
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Comentários</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @if (order.Comments?.Any() == true)
                         {
-                            <MudPaper Class="pa-3 mb-3" Outlined="true">
-                                <div class="d-flex justify-space-between align-center mb-2">
-                                    <MudText Typo="Typo.body1" Class="font-weight-bold">
-                                        @comment.UserEmail
-                                    </MudText>
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                        @comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                                    </MudText>
-                                </div>
-                                <MudText Style="white-space: pre-wrap;">@comment.Content</MudText>
-                            </MudPaper>
-                        }
-                    }
-                    else
-                    {
-                        <MudText Color="Color.Secondary">Nenhum comentário ainda</MudText>
-                    }
-
-                    <!-- Formulário de novo comentário -->
-                    <MudDivider Class="my-4" />
-                    <MudText Typo="Typo.subtitle1" Class="mb-2">Adicionar Comentário</MudText>
-                    <MudTextField @bind-Value="newComment"
-                                  Label="Comentário"
-                                  Variant="Variant.Outlined"
-                                  Lines="3"
-                                  MaxLength="1000" />
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               Class="mt-2"
-                               Disabled="@(string.IsNullOrWhiteSpace(newComment) || isAddingComment)"
-                               OnClick="AddComment">
-                        @if (isAddingComment)
-                        {
-                            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
-                            <span>Adicionando...</span>
+                            <MudTimeline TimelinePosition="TimelinePosition.Start">
+                                @foreach (var comment in order.Comments.OrderByDescending(c => c.CreatedAt))
+                                {
+                                    <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                                        <ItemOpposite>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @comment.CreatedAt.ToString("dd/MM HH:mm")
+                                            </MudText>
+                                        </ItemOpposite>
+                                        <ItemContent>
+                                            <MudPaper Elevation="0" Class="pa-3 grey lighten-5 rounded">
+                                                <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@comment.UserEmail</MudText>
+                                                <MudText Typo="Typo.body2" Style="white-space: pre-wrap;">@comment.Text</MudText>
+                                            </MudPaper>
+                                        </ItemContent>
+                                    </MudTimelineItem>
+                                }
+                            </MudTimeline>
                         }
                         else
                         {
-                            <span>Adicionar Comentário</span>
+                            <div class="d-flex flex-column align-center justify-center py-8">
+                                <MudIcon Icon="@Icons.Material.Filled.ChatBubbleOutline" Size="Size.Large" Color="Color.Secondary" />
+                                <MudText Color="Color.Secondary" Class="mt-2">Nenhum comentário ainda</MudText>
+                            </div>
                         }
-                    </MudButton>
-                </MudPaper>
+                    </MudCardContent>
+                    <MudCardActions Class="d-block pa-4">
+                        <MudTextField @bind-Value="newComment"
+                                      Label="Adicionar Comentário"
+                                      Variant="Variant.Outlined"
+                                      Lines="3"
+                                      MaxLength="1000"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@Icons.Material.Filled.Send"
+                                      OnAdornmentClick="AddComment" />
+                        <div class="d-flex justify-end mt-2">
+                             <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Disabled="@(string.IsNullOrWhiteSpace(newComment) || isAddingComment)"
+                                       OnClick="AddComment"
+                                       StartIcon="@Icons.Material.Filled.Send">
+                                @if (isAddingComment)
+                                {
+                                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                    <MudText Class="ms-2">Enviando...</MudText>
+                                }
+                                else
+                                {
+                                    <MudText>Enviar</MudText>
+                                }
+                            </MudButton>
+                        </div>
+                    </MudCardActions>
+                </MudCard>
             </MudItem>
 
             <!-- Coluna Lateral -->
             <MudItem xs="12" md="4">
                 <!-- Status e Informações -->
-                <MudPaper Class="pa-4 mb-4" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-3">Informações</MudText>
+                <MudCard Class="mb-4" Elevation="3">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Detalhes</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudList T="string" Dense="true" DisablePadding="true">
+                            <MudListItem Icon="@Icons.Material.Filled.Info">
+                                <div class="d-flex justify-space-between align-center width-100">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Status</MudText>
+                                    <MudChip T="string" Size="Size.Small" Color="GetStatusColor(order.StatusName)" Variant="Variant.Filled" Class="ma-0">
+                                        @order.StatusName
+                                    </MudChip>
+                                </div>
+                            </MudListItem>
+                            <MudDivider />
+                            
+                             <MudListItem Icon="@Icons.Material.Filled.Category">
+                                <div class="d-flex justify-space-between align-center width-100">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Tipo</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.End">@order.TypeName</MudText>
+                                </div>
+                            </MudListItem>
+                            <MudDivider />
 
-                    <!-- Status -->
-                    <div class="mb-3">
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Status</MudText>
-                        <MudChip Color="GetStatusColor(order.StatusName)" Class="mt-1">
-                            @order.StatusName
-                        </MudChip>
-                    </div>
-
-                    <!-- Tipo -->
-                    <div class="mb-3">
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Tipo</MudText>
-                        <MudText Typo="Typo.body1">@order.TypeName</MudText>
-                    </div>
-
-                    <!-- Departamento -->
-                    @if (!string.IsNullOrEmpty(order.DepartmentName))
-                    {
-                        <div class="mb-3">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Departamento</MudText>
-                            <MudText Typo="Typo.body1">@order.DepartmentName</MudText>
-                        </div>
-                    }
-
-                    <!-- Categoria -->
-                    @if (!string.IsNullOrEmpty(order.CategoryName))
-                    {
-                        <div class="mb-3">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Categoria</MudText>
-                            <MudText Typo="Typo.body1">@order.CategoryName</MudText>
-                        </div>
-                    }
-
-                    <!-- Subcategoria -->
-                    @if (!string.IsNullOrEmpty(order.SubCategoryName))
-                    {
-                        <div class="mb-3">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Subcategoria</MudText>
-                            <MudText Typo="Typo.body1">@order.SubCategoryName</MudText>
-                        </div>
-                    }
-
-                    <!-- Prazo -->
-                    <div class="mb-3">
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Prazo</MudText>
-                        @if (order.DueDate.HasValue)
-                        {
-                            @if (order.IsOverdue)
+                            @if (!string.IsNullOrEmpty(order.DepartmentName))
                             {
-                                <MudChip Color="Color.Error" Class="mt-1">
-                                    Vencido - @order.DueDate.Value.ToString("dd/MM/yyyy")
-                                </MudChip>
+                                <MudListItem Icon="@Icons.Material.Filled.Business">
+                                    <div class="d-flex justify-space-between align-center width-100">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Departamento</MudText>
+                                        <MudText Typo="Typo.body2" Align="Align.End">@order.DepartmentName</MudText>
+                                    </div>
+                                </MudListItem>
+                                <MudDivider />
                             }
-                            else
+
+                             @if (!string.IsNullOrEmpty(order.CategoryName))
                             {
-                                <MudText Typo="Typo.body1">@order.DueDate.Value.ToString("dd/MM/yyyy")</MudText>
+                                <MudListItem Icon="@Icons.Material.Filled.Class">
+                                    <div class="d-flex justify-space-between align-center width-100">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Categoria</MudText>
+                                        <MudText Typo="Typo.body2" Align="Align.End">@order.CategoryName</MudText>
+                                    </div>
+                                </MudListItem>
+                                <MudDivider />
                             }
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.body1">Sem prazo definido</MudText>
-                        }
-                    </div>
+                            
+                            @if (!string.IsNullOrEmpty(order.SubCategoryName))
+                            {
+                                <MudListItem Icon="@Icons.Material.Filled.SubdirectoryArrowRight">
+                                    <div class="d-flex justify-space-between align-center width-100">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Subcategoria</MudText>
+                                        <MudText Typo="Typo.body2" Align="Align.End">@order.SubCategoryName</MudText>
+                                    </div>
+                                </MudListItem>
+                                <MudDivider />
+                            }
 
-                    <!-- Solicitante -->
-                    <div class="mb-3">
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Solicitante</MudText>
-                        <MudText Typo="Typo.body1">@order.RequestingUserEmail</MudText>
-                    </div>
+                             <MudListItem Icon="@Icons.Material.Filled.Event">
+                                <div class="d-flex justify-space-between align-center width-100">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Prazo</MudText>
+                                    @if (order.DueDate.HasValue)
+                                    {
+                                        @if (order.IsOverdue)
+                                        {
+                                            <MudText Color="Color.Error" Typo="Typo.body2" Align="Align.End">@order.DueDate.Value.ToString("dd/MM/yyyy") (Vencido)</MudText>
+                                        }
+                                        else
+                                        {
+                                            <MudText Typo="Typo.body2" Align="Align.End">@order.DueDate.Value.ToString("dd/MM/yyyy")</MudText>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.body2" Align="Align.End">-</MudText>
+                                    }
+                                </div>
+                            </MudListItem>
+                            <MudDivider />
 
-                    <!-- Responsável -->
-                    @if (!string.IsNullOrEmpty(order.AssignedToUserEmail))
-                    {
-                        <div class="mb-3">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Responsável</MudText>
-                            <MudText Typo="Typo.body1">@order.AssignedToUserEmail</MudText>
-                        </div>
-                    }
+                            <MudListItem Icon="@Icons.Material.Filled.Person">
+                                <div class="d-flex flex-column width-100">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Solicitante</MudText>
+                                    <MudText Typo="Typo.body2" Class="text-truncate">@order.RequestingUserEmail</MudText>
+                                </div>
+                            </MudListItem>
+                            <MudDivider />
 
-                    <!-- Data de fechamento -->
-                    @if (order.ClosingDate.HasValue)
-                    {
-                        <div class="mb-3">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Fechado em</MudText>
-                            <MudText Typo="Typo.body1">@order.ClosingDate.Value.ToString("dd/MM/yyyy HH:mm")</MudText>
-                        </div>
-                    }
-
-                    <!-- Avaliação -->
-                    @if (order.Evaluation.HasValue)
-                    {
-                        <div class="mb-3">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Avaliação</MudText>
-                            <MudRating ReadOnly="true" SelectedValue="order.Evaluation.Value" MaxValue="5" />
-                        </div>
-                    }
-                </MudPaper>
+                             <MudListItem Icon="@Icons.Material.Filled.SupportAgent">
+                                <div class="d-flex flex-column width-100">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Responsável</MudText>
+                                    <MudText Typo="Typo.body2" Class="text-truncate">
+                                        @(string.IsNullOrEmpty(order.ResponsibleUserEmail) ? "Não atribuído" : order.ResponsibleUserEmail)
+                                    </MudText>
+                                </div>
+                            </MudListItem>
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
 
                 <!-- Ações Rápidas -->
-                <MudPaper Class="pa-4" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-3">Ações</MudText>
+                <MudCard Elevation="3">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Ações</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudSelect T="Guid" @bind-Value="selectedStatusId"
+                                   Label="Alterar Status"
+                                   Variant="Variant.Outlined"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   Class="mb-3">
+                            @foreach (var status in statuses)
+                            {
+                                <MudSelectItem Value="@status.Id">@status.Name</MudSelectItem>
+                            }
+                        </MudSelect>
 
-                    <!-- Alterar Status -->
-                    <MudSelect @bind-Value="selectedStatusId"
-                               Label="Alterar Status"
-                               Variant="Variant.Outlined"
-                               Class="mb-3">
-                        @foreach (var status in statuses)
-                        {
-                            <MudSelectItem Value="@status.Id">@status.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               FullWidth="true"
-                               Disabled="@(selectedStatusId == order.StatusId || isUpdatingStatus)"
-                               OnClick="UpdateStatus"
-                               Class="mb-2">
-                        @if (isUpdatingStatus)
-                        {
-                            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
-                            <span>Atualizando...</span>
-                        }
-                        else
-                        {
-                            <span>Atualizar Status</span>
-                        }
-                    </MudButton>
-
-                    <!-- Assumir chamado -->
-                    @if (string.IsNullOrEmpty(order.AssignedToUserEmail))
-                    {
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Info"
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
                                    FullWidth="true"
-                                   Disabled="isAssigning"
-                                   OnClick="AssignToMe">
-                            @if (isAssigning)
+                                   Disabled="@(selectedStatusId == order.StatusId || isUpdatingStatus)"
+                                   OnClick="UpdateStatus"
+                                   Class="mb-3">
+                            @if (isUpdatingStatus)
                             {
                                 <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
-                                <span>Assumindo...</span>
+                                <span>Atualizando...</span>
                             }
                             else
                             {
-                                <span>Assumir Chamado</span>
+                                <span>Atualizar Status</span>
                             }
                         </MudButton>
-                    }
-                </MudPaper>
+
+                        <!-- Assumir chamado -->
+                        @if (string.IsNullOrEmpty(order.ResponsibleUserEmail))
+                        {
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Info"
+                                       FullWidth="true"
+                                       Disabled="isAssigning"
+                                       OnClick="AssignToMe"
+                                       StartIcon="@Icons.Material.Filled.AssignmentInd">
+                                @if (isAssigning)
+                                {
+                                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                                    <span>Assumindo...</span>
+                                }
+                                else
+                                {
+                                    <span>Assumir Chamado</span>
+                                }
+                            </MudButton>
+                        }
+                    </MudCardContent>
+                </MudCard>
             </MudItem>
         </MudGrid>
     }
@@ -291,14 +332,16 @@
             // Carrega o chamado e os status em paralelo
             var orderTask = OrderService.GetByIdAsync(Id);
             var statusTask = LookupService.GetStatusTypesAsync();
+            var commentsTask = CommentService.GetByOrderIdAsync(Id);
 
-            await Task.WhenAll(orderTask, statusTask);
+            await Task.WhenAll(orderTask, statusTask, commentsTask);
 
             order = await orderTask;
             statuses = await statusTask;
 
             if (order != null)
             {
+                order = order with { Comments = await commentsTask };
                 selectedStatusId = order.StatusId;
             }
         }
@@ -321,14 +364,25 @@
 
         try
         {
-            var request = new AddCommentRequest(newComment);
-            await OrderService.AddCommentAsync(Id, request);
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userEmail = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                ?? authState.User.Identity?.Name ?? "Usuário";
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                Snackbar.Add("Não foi possível identificar o usuário", Severity.Error);
+                return;
+            }
+
+            var request = new AddCommentRequest(Id, newComment, Guid.Parse(userId), userEmail);
+            await OrderService.AddCommentAsync(request);
 
             Snackbar.Add("Comentário adicionado com sucesso!", Severity.Success);
             newComment = string.Empty;
 
             // Recarrega o chamado para mostrar o novo comentário
-            order = await OrderService.GetByIdAsync(Id);
+            await ReloadOrder();
         }
         catch (Exception ex)
         {
@@ -349,17 +403,12 @@
 
         try
         {
-            var request = new ChangeStatusRequest(selectedStatusId);
-            await OrderService.ChangeStatusAsync(Id, request);
+            await OrderService.ChangeStatusAsync(Id, selectedStatusId);
 
             Snackbar.Add("Status atualizado com sucesso!", Severity.Success);
 
             // Recarrega o chamado
-            order = await OrderService.GetByIdAsync(Id);
-            if (order != null)
-            {
-                selectedStatusId = order.StatusId;
-            }
+            await ReloadOrder();
         }
         catch (Exception ex)
         {
@@ -386,13 +435,12 @@
                 return;
             }
 
-            var request = new AssignOrderRequest(Guid.Parse(userId));
-            await OrderService.AssignAsync(Id, request);
+            await OrderService.AssignAsync(Id, Guid.Parse(userId));
 
             Snackbar.Add("Chamado assumido com sucesso!", Severity.Success);
 
             // Recarrega o chamado
-            order = await OrderService.GetByIdAsync(Id);
+            await ReloadOrder();
         }
         catch (Exception ex)
         {
@@ -401,6 +449,21 @@
         finally
         {
             isAssigning = false;
+        }
+    }
+
+    private async Task ReloadOrder()
+    {
+        var orderTask = OrderService.GetByIdAsync(Id);
+        var commentsTask = CommentService.GetByOrderIdAsync(Id);
+
+        await Task.WhenAll(orderTask, commentsTask);
+
+        var loadedOrder = await orderTask;
+        if (loadedOrder != null)
+        {
+            order = loadedOrder with { Comments = await commentsTask };
+            selectedStatusId = order.StatusId;
         }
     }
 

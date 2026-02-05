@@ -1,0 +1,202 @@
+@page "/debug-logs"
+@inject IJSRuntime JS
+@inject EChamado.Client.Services.PersistentLogger Logger
+
+<PageTitle>Debug Logs</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" GutterBottom="true">Debug Logs (Persistent)</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Estes logs são armazenados em localStorage e sobrevivem a redirects OAuth.
+        </MudText>
+
+        <MudStack Row="true" Class="mb-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RefreshLogs">
+                Atualizar
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ClearLogs">
+                Limpar Logs
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="DownloadLogs">
+                Download
+            </MudButton>
+            <MudSpacer />
+            <MudText Typo="Typo.body2">Total: @_logEntries.Count entradas</MudText>
+        </MudStack>
+
+        @if (_loading)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else if (_logEntries.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Nenhum log encontrado.</MudAlert>
+        }
+        else
+        {
+            <MudDataGrid T="LogEntry"
+                         Items="@_logEntries"
+                         Dense="true"
+                         Hover="true"
+                         Striped="true"
+                         Bordered="true"
+                         Filterable="true"
+                         Sortable="true"
+                         QuickFilter="FilterFunc"
+                         PageSize="20"
+                         PageSizeOptions="@(new int[] { 10, 20, 50, 100 })">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Buscar..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Class="mt-0" />
+                </ToolBarContent>
+                <Columns>
+                    <PropertyColumn Property="x => x.Timestamp" Title="Timestamp" Sortable="true" Filterable="true" />
+                    <TemplateColumn Title="Level" Sortable="true" Filterable="true">
+                        <CellTemplate>
+                            <MudChip T="string" Size="Size.Small" Color="@GetLevelColor(context.Item.Level)">
+                                @context.Item.Level
+                            </MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn Property="x => x.Category" Title="Category" Sortable="true" Filterable="true" />
+                    <TemplateColumn Title="Message" Filterable="true">
+                        <CellTemplate>
+                            <MudText Typo="Typo.body2" Style="max-width: 400px; word-wrap: break-word;">
+                                @context.Item.Message
+                            </MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn Title="Data" Sortable="false" Filterable="false">
+                        <CellTemplate>
+                            @if (!string.IsNullOrEmpty(context.Item.Data))
+                            {
+                                <MudTooltip Text="@context.Item.Data">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                                </MudTooltip>
+                            }
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn Title="URL" Filterable="true">
+                        <CellTemplate>
+                            <MudText Typo="Typo.caption" Style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                                @GetShortUrl(context.Item.Url)
+                            </MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </Columns>
+                <PagerContent>
+                    <MudDataGridPager T="LogEntry" PageSizeOptions="@(new int[] { 10, 20, 50, 100 })" />
+                </PagerContent>
+            </MudDataGrid>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<LogEntry> _logEntries = new();
+    private bool _loading = true;
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshLogs();
+    }
+
+    private async Task RefreshLogs()
+    {
+        _loading = true;
+        try
+        {
+            var logsJson = await Logger.GetLogsAsJsonAsync();
+            _logEntries = System.Text.Json.JsonSerializer.Deserialize<List<LogEntry>>(logsJson) ?? new();
+
+            // Ordena por timestamp decrescente (mais recente primeiro)
+            _logEntries = _logEntries.OrderByDescending(x => x.Timestamp).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading logs: {ex.Message}");
+            _logEntries = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ClearLogs()
+    {
+        await Logger.ClearLogsAsync();
+        await RefreshLogs();
+    }
+
+    private async Task DownloadLogs()
+    {
+        var logsJson = await Logger.GetLogsAsJsonAsync();
+        var fileName = $"echamado-debug-logs-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+        var dataUri = $"data:application/json;charset=utf-8,{Uri.EscapeDataString(logsJson)}";
+
+        await JS.InvokeVoidAsync("eval", $@"
+            (function() {{
+                const a = document.createElement('a');
+                a.href = '{dataUri}';
+                a.download = '{fileName}';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }})();
+        ");
+    }
+
+    private bool FilterFunc(LogEntry entry)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        var search = _searchString.ToLower();
+        return entry.Message?.ToLower().Contains(search) == true ||
+               entry.Category?.ToLower().Contains(search) == true ||
+               entry.Level?.ToLower().Contains(search) == true ||
+               entry.Data?.ToLower().Contains(search) == true;
+    }
+
+    private Color GetLevelColor(string? level) => level?.ToUpper() switch
+    {
+        "ERROR" => Color.Error,
+        "WARN" => Color.Warning,
+        "INFO" => Color.Info,
+        "DEBUG" => Color.Secondary,
+        _ => Color.Default
+    };
+
+    private string GetShortUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+            return "-";
+
+        try
+        {
+            var uri = new Uri(url);
+            return uri.PathAndQuery;
+        }
+        catch
+        {
+            return url.Length > 50 ? url.Substring(0, 47) + "..." : url;
+        }
+    }
+
+    private class LogEntry
+    {
+        public string Timestamp { get; set; } = "";
+        public string Level { get; set; } = "";
+        public string Category { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string? Data { get; set; }
+        public string Url { get; set; } = "";
+    }
+}

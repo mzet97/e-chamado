@@ -1,17 +1,23 @@
-using MediatR;
+using Paramore.Brighter;
 using System.Text.Json;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Notifications;
 
-public class DeletedOrderTypeNotification : INotification
+public class DeletedOrderTypeNotification : IRequest
 {
-    public Guid Id { get; set; }
+    public Id Id { get; set; }
+    public Id CorrelationId { get; set; } = new Id(Guid.NewGuid().ToString());
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
+    public DeletedOrderTypeNotification()
+    {
+        Id = new Id(Guid.NewGuid().ToString());
+    }
+
     public DeletedOrderTypeNotification(Guid id, string name, string description)
     {
-        Id = id;
+        Id = new Id(id.ToString());
         Name = name;
         Description = description;
     }

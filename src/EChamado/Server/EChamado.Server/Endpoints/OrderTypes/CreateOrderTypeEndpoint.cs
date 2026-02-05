@@ -1,6 +1,10 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.OrderTypes.Commands;
+using EChamado.Server.Endpoints.OrderTypes.DTOs;
+using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Brighter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.OrderTypes;
 
@@ -8,28 +12,31 @@ public class CreateOrderTypeEndpoint : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
         => app.MapPost("/", HandleAsync)
-            .WithName("Criar um novo tipo de chamado")
+            .WithName("Criar um novo tipo de ordem")
             .Produces<BaseResult<Guid>>();
 
     private static async Task<IResult> HandleAsync(
-        IMediator mediator,
-        CreateOrderTypeRequest request)
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] CreateOrderTypeRequest request)
     {
-        var command = new CreateOrderTypeCommand(
-            request.Name,
-            request.Description
-        );
+        try
+        {
+            var command = request.ToCommand();
+            await commandProcessor.SendAsync(command);
 
-        var result = await mediator.Send(command);
+            var result = command.Result;
 
-        if (result.Success)
-            return TypedResults.Ok(result);
+            if (result.Success)
+                return TypedResults.Ok(result);
 
-        return TypedResults.BadRequest(result);
+            return TypedResults.BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new BaseResult<Guid>(
+                data: Guid.Empty,
+                success: false,
+                message: $"Erro interno: {ex.Message}"));
+        }
     }
 }
-
-public record CreateOrderTypeRequest(
-    string Name,
-    string Description
-);

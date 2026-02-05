@@ -396,3 +396,19 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/.claude
+/.dotnetcli
+/_out
+*.env
+
+
+appsettings.json
+appsettings.*.json
+
+**/appsettings.json
+**/**/appsettings.json
+**/**/**/appsettings.json
+
+**/appsettings.*.json
+**/**/appsettings.*.json
+**/**/**/appsettings.*.json

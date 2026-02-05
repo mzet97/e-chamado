@@ -1,0 +1,365 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'claude/**' ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore src/EChamado/EChamado.sln
+
+    - name: Build solution
+      run: dotnet build src/EChamado/EChamado.sln --configuration Release --no-restore
+
+    - name: Run Unit Tests
+      run: |
+        dotnet test src/EChamado/Tests/EChamado.Server.UnitTests/EChamado.Server.UnitTests.csproj \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --logger "trx;LogFileName=unit-tests.trx" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults/UnitTests
+
+    # Integration tests are skipped in CI as they require external infrastructure
+    # Run locally with: dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/
+    # - name: Run Integration Tests
+    #   run: |
+    #     dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/EChamado.Server.IntegrationTests.csproj \
+    #       --configuration Release \
+    #       --no-build \
+    #       --verbosity normal \
+    #       --logger "trx;LogFileName=integration-tests.trx" \
+    #       --collect:"XPlat Code Coverage" \
+    #       --results-directory ./TestResults/IntegrationTests
+
+    - name: Generate Code Coverage Report
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.3.10
+      with:
+        reports: '**/coverage.cobertura.xml'
+        targetdir: 'CoverageReport'
+        reporttypes: 'HtmlInline;Cobertura;MarkdownSummaryGithub'
+        sourcedirs: './src'
+
+    - name: Publish Code Coverage Summary
+      if: github.event_name == 'pull_request'
+      run: cat CoverageReport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./CoverageReport/Cobertura.xml
+        flags: unittests
+        name: codecov-echamado
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          TestResults/**/*.trx
+          CoverageReport/**/*
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: |
+          TestResults/**/*.trx
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore src/EChamado/EChamado.sln
+
+    - name: Run dotnet format check
+      run: dotnet format --verify-no-changes --verbosity diagnostic src/EChamado/EChamado.sln
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        distribution: 'zulu'
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache SonarQube packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    - name: Cache SonarQube scanner
+      id: cache-sonar-scanner
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/scanner
+        key: ${{ runner.os }}-sonar-scanner
+        restore-keys: ${{ runner.os }}-sonar-scanner
+
+    - name: Install SonarQube Scanner
+      if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+      run: |
+        dotnet tool update dotnet-sonarscanner --tool-path ~/.sonar/scanner
+
+    - name: SonarQube Begin
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        ~/.sonar/scanner/dotnet-sonarscanner begin \
+          /k:"mzet97_e-chamado" \
+          /o:"mzet97" \
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+          /d:sonar.host.url="https://sonarcloud.io" \
+          /d:sonar.sources="./Server/EChamado.Server,./Client/EChamado.Client.Application,./EChamado.Shared" \
+          /d:sonar.exclusions="**/bin/**,**/obj/**,**Tests/**"
+
+    - name: Build
+      run: dotnet build src/EChamado/EChamado.sln --configuration Release
+
+    - name: SonarQube End
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        ~/.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+  docker-build-server:
+    name: Docker Build & Push Server
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    permissions:
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for Server
+      id: meta-server
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository }}/echamado-server
+        tags: |
+          type=ref,event=branch
+          type=sha,prefix={{branch}}-
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Build and push Server Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/EChamado/
+        file: ./src/EChamado/Server/EChamado.Server/Dockerfile
+        push: true
+        tags: ${{ steps.meta-server.outputs.tags }}
+        labels: ${{ steps.meta-server.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  docker-build-auth:
+    name: Docker Build & Push Auth
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    permissions:
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for Auth
+      id: meta-auth
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository }}/echamado-auth
+        tags: |
+          type=ref,event=branch
+          type=sha,prefix={{branch}}-
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Build and push Auth Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/EChamado/
+        file: ./src/EChamado/Echamado.Auth/Dockerfile
+        push: true
+        tags: ${{ steps.meta-auth.outputs.tags }}
+        labels: ${{ steps.meta-auth.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  build-client:
+    name: Build & Publish Client
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    permissions:
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for Client
+      id: meta-client
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository }}/echamado-client
+        tags: |
+          type=ref,event=branch
+          type=sha,prefix={{branch}}-
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Build and push Client Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/EChamado/
+        file: ./src/EChamado/Client/EChamado.Client/wwwroot/Dockerfile
+        push: true
+        tags: ${{ steps.meta-client.outputs.tags }}
+        labels: ${{ steps.meta-client.outputs.labels }}
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  deployment-ready:
+    name: Deployment Ready
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality, sonarcloud, docker-build-server, docker-build-auth, build-client]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create deployment marker
+      run: |
+        echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+        echo "🚀 Ready for deployment" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Images published:**" >> $GITHUB_STEP_SUMMARY
+        echo "- ghcr.io/${{ github.repository }}/echamado-server:latest" >> $GITHUB_STEP_SUMMARY
+        echo "- ghcr.io/${{ github.repository }}/echamado-auth:latest" >> $GITHUB_STEP_SUMMARY
+        echo "- ghcr.io/${{ github.repository }}/echamado-client:latest" >> $GITHUB_STEP_SUMMARY
