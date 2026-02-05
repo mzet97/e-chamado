@@ -45,15 +45,17 @@ jobs:
           --collect:"XPlat Code Coverage" \
           --results-directory ./TestResults/UnitTests
 
-    - name: Run Integration Tests
-      run: |
-        dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/EChamado.Server.IntegrationTests.csproj \
-          --configuration Release \
-          --no-build \
-          --verbosity normal \
-          --logger "trx;LogFileName=integration-tests.trx" \
-          --collect:"XPlat Code Coverage" \
-          --results-directory ./TestResults/IntegrationTests
+    # Integration tests are skipped in CI as they require external infrastructure
+    # Run locally with: dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/
+    # - name: Run Integration Tests
+    #   run: |
+    #     dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/EChamado.Server.IntegrationTests.csproj \
+    #       --configuration Release \
+    #       --no-build \
+    #       --verbosity normal \
+    #       --logger "trx;LogFileName=integration-tests.trx" \
+    #       --collect:"XPlat Code Coverage" \
+    #       --results-directory ./TestResults/IntegrationTests
 
     - name: Generate Code Coverage Report
       uses: danielpalme/ReportGenerator-GitHub-Action@5.3.10
@@ -146,7 +148,7 @@ jobs:
     - name: Build and push Server Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./src/EChamado/Server/EChamado.Server
+        context: ./src/EChamado/
         file: ./src/EChamado/Server/EChamado.Server/Dockerfile
         push: true
         tags: ${{ steps.meta-server.outputs.tags }}
@@ -188,7 +190,7 @@ jobs:
     - name: Build and push Auth Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./src/EChamado/Echamado.Auth
+        context: ./src/EChamado/
         file: ./src/EChamado/Echamado.Auth/Dockerfile
         push: true
         tags: ${{ steps.meta-auth.outputs.tags }}
@@ -206,20 +208,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Build Client (Blazor WebAssembly)
-      run: |
-        dotnet publish src/EChamado/Client/EChamado.Client/EChamado.Client.csproj \
-          -c Release \
-          -o ./publish/client \
-          --no-restore
-
-    - name: Copy Client Dockerfile
-      run: cp src/EChamado/Client/EChamado.Client/wwwroot/Dockerfile ./publish/client/wwwroot/
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
@@ -242,18 +232,11 @@ jobs:
     - name: Build and push Client Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./publish/client/wwwroot
-        file: ./publish/client/wwwroot/Dockerfile
+        context: ./src/EChamado/
+        file: ./src/EChamado/Client/EChamado.Client/wwwroot/Dockerfile
         push: true
         tags: ${{ steps.meta-client.outputs.tags }}
         labels: ${{ steps.meta-client.outputs.labels }}
-
-    - name: Upload Client artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: client-artifacts
-        path: ./publish/client/
-        retention-days: 7
 
   security-scan:
     name: Security Scan
