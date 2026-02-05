@@ -21,14 +21,14 @@ jobs:
         dotnet-version: '9.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/EChamado/EChamado.sln
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build src/EChamado/EChamado.sln --configuration Release --no-restore
 
     - name: Test with Coverage
       run: |
-        dotnet test --configuration Release \
+        dotnet test src/EChamado/EChamado.sln --configuration Release \
           --no-build \
           --verbosity normal \
           /p:CollectCoverage=true \
