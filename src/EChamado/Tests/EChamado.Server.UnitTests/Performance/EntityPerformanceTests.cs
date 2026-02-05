@@ -29,7 +29,7 @@ public class EntityPerformanceTests : UnitTestBase
         // Assert
         categories.Should().HaveCount(instanceCount);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(5000, "Creating 10k categories should take less than 5 seconds");
-        
+
         // Verify all categories are unique
         var uniqueIds = categories.Select(c => c.Id).Distinct().Count();
         uniqueIds.Should().Be(instanceCount, "All categories should have unique IDs");
@@ -185,7 +185,7 @@ public class EntityPerformanceTests : UnitTestBase
             .ToArray();
 
         var results = await Task.WhenAll(tasks);
-        
+
         foreach (var comments in results)
         {
             allComments.AddRange(comments);
@@ -193,7 +193,7 @@ public class EntityPerformanceTests : UnitTestBase
 
         // Assert
         allComments.Should().HaveCount(tasksCount * commentsPerTask);
-        
+
         var uniqueIds = allComments.Select(c => c.Id).Distinct().Count();
         uniqueIds.Should().Be(allComments.Count, "All comments should have unique IDs even when created concurrently");
     }
@@ -262,10 +262,10 @@ public class EntityPerformanceTests : UnitTestBase
 
         // Assert
         entities.Should().HaveCount(count);
-        
+
         // Performance should scale linearly
         var expectedMaxTime = count * 2; // 2ms per entity maximum
-        stopwatch.ElapsedMilliseconds.Should().BeLessThan(expectedMaxTime, 
+        stopwatch.ElapsedMilliseconds.Should().BeLessThan(expectedMaxTime,
             $"Creating {count} entities should maintain linear performance");
     }
 }
