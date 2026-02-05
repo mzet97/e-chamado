@@ -17,6 +17,10 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
 
     steps:
     - name: Checkout code
@@ -72,6 +76,7 @@ jobs:
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         files: ./CoverageReport/Cobertura.xml
         flags: unittests
         name: codecov-echamado
