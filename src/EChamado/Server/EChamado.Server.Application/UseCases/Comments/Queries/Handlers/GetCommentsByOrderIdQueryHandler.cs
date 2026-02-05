@@ -21,7 +21,9 @@ public class GetCommentsByOrderIdQueryHandler(IUnitOfWork unitOfWork) :
             c.UserId,
             c.UserEmail,
             c.CreatedAtUtc,
-            c.UpdatedAtUtc
+            c.UpdatedAtUtc,
+            c.DeletedAtUtc,
+            c.IsDeleted
         )).ToList();
 
         var pagedResult = PagedResult.Create(1, items.Count, items.Count);

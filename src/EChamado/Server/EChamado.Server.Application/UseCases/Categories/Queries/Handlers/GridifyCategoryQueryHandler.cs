@@ -1,5 +1,6 @@
 using EChamado.Server.Application.Common;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
+using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
 using MediatR;

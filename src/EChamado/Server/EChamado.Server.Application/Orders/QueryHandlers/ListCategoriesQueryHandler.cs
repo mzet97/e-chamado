@@ -1,5 +1,6 @@
 using EChamado.Server.Application.Orders.Queries;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
+using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using EChamado.Server.Domain.Repositories;
 using Paramore.Darker;

@@ -1,4 +1,5 @@
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
+using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
