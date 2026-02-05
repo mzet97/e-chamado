@@ -170,7 +170,7 @@ public class CategoryValidationTests : UnitTestBase
         // Assert
         // Dependendo das regras de negócio, isso pode passar ou falhar
         // Por enquanto, vamos assumir que caracteres especiais são permitidos
-        if (name.Length >= 2 && name.Length <= 100 && 
+        if (name.Length >= 2 && name.Length <= 100 &&
             description.Length >= 1 && description.Length <= 500)
         {
             result.IsValid.Should().BeTrue();
@@ -183,7 +183,7 @@ public class CategoryValidationTests : UnitTestBase
         // Arrange - Nome com exatamente 100 caracteres
         var maxLengthName = new string('A', 100);
         var maxLengthDescription = new string('B', 500);
-        
+
         var category = CategoryTestBuilder.Create()
             .WithName(maxLengthName)
             .WithDescription(maxLengthDescription)

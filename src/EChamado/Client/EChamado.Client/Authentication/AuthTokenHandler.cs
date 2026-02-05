@@ -15,17 +15,17 @@ public class AuthTokenHandler : DelegatingHandler
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request, 
+        HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
         try
         {
             // Get token from localStorage
             var token = await _js.InvokeAsync<string?>("localStorage.getItem", "authToken");
-            
+
             if (!string.IsNullOrEmpty(token))
             {
-                request.Headers.Authorization = 
+                request.Headers.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             }
         }

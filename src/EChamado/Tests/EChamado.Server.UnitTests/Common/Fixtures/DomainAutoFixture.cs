@@ -20,11 +20,11 @@ public class DomainAutoFixture : Fixture
         this.Customize<Guid>(composer => composer.FromFactory(() => Guid.NewGuid()));
 
         // Configurar strings com tamanhos válidos
-        this.Customize<string>(composer => composer.FromFactory(() => 
+        this.Customize<string>(composer => composer.FromFactory(() =>
             this.Create<Generator<string>>().First().Substring(0, Math.Min(50, this.Create<Generator<string>>().First().Length))));
 
         // Configurar DateTime para valores válidos
-        this.Customize<DateTime>(composer => composer.FromFactory(() => 
+        this.Customize<DateTime>(composer => composer.FromFactory(() =>
             DateTime.UtcNow.AddDays(this.Create<int>() % 365)));
 
         // Configurar propriedades específicas para evitar valores inválidos

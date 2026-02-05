@@ -97,7 +97,7 @@ public class CookieAuthenticationStateProvider : AuthenticationStateProvider
     private List<Claim> ParseJwtToken(string token)
     {
         var claims = new List<Claim>();
-        
+
         try
         {
             var parts = token.Split('.');
@@ -108,20 +108,20 @@ public class CookieAuthenticationStateProvider : AuthenticationStateProvider
             // Adiciona padding se necessário
             while (payload.Length % 4 != 0)
                 payload += "=";
-                
+
             var payloadBytes = Convert.FromBase64String(payload);
             var payloadJson = Encoding.UTF8.GetString(payloadBytes);
-            
+
             var payloadDoc = JsonDocument.Parse(payloadJson);
             var root = payloadDoc.RootElement;
 
             // Extrai claims padrão do JWT
             if (root.TryGetProperty("sub", out var sub))
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, sub.GetString() ?? ""));
-                
+
             if (root.TryGetProperty("email", out var email))
                 claims.Add(new Claim(ClaimTypes.Email, email.GetString() ?? ""));
-                
+
             if (root.TryGetProperty("name", out var name))
                 claims.Add(new Claim(ClaimTypes.Name, name.GetString() ?? ""));
             else if (root.TryGetProperty("preferred_username", out var preferredUsername))
@@ -162,7 +162,7 @@ public class CookieAuthenticationStateProvider : AuthenticationStateProvider
             {
                 var expUnix = exp.GetInt64();
                 var expirationDate = DateTimeOffset.FromUnixTimeSeconds(expUnix);
-                
+
                 if (DateTimeOffset.UtcNow > expirationDate)
                 {
                     Console.WriteLine($"❌ Token expired at {expirationDate}");

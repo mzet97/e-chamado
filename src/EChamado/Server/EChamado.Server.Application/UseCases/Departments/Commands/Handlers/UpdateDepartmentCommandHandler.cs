@@ -25,7 +25,7 @@ public class UpdateDepartmentCommandHandler(IUnitOfWork unitOfWork,
             .Departments
             .GetByIdAsync(command.Id);
 
-        if(entityDb == null)
+        if (entityDb == null)
         {
             logger.LogError("Department not found");
             throw new NotFoundException("Department not found");

@@ -6,7 +6,7 @@ using System.Net.Http.Json;
 
 namespace EChamado.Client.Application.UseCases.Auth.Handlers;
 
-public class LoginHandler(IHttpClientFactory httpClientFactory) 
+public class LoginHandler(IHttpClientFactory httpClientFactory)
     : ILoginHandler
 {
     private readonly HttpClient _client = httpClientFactory
@@ -22,8 +22,8 @@ public class LoginHandler(IHttpClientFactory httpClientFactory)
             var data = await result
                 .Content
                 .ReadFromJsonAsync<BaseResult<LoginResponseViewModel>>();
-                
-            if(data != null && data.Success)
+
+            if (data != null && data.Success)
                 return data;
         }
 

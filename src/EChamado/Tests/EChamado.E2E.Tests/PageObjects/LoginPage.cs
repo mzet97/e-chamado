@@ -58,12 +58,12 @@ public class LoginPage
     {
         await FillEmailAsync(email);
         await FillPasswordAsync(password);
-        
+
         if (rememberMe)
         {
             await CheckRememberMeAsync();
         }
-        
+
         await ClickLoginAsync();
     }
 

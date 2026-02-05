@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace EChamado.Server.Application.Services;
 
 public class OpenIddictService(
-     IApplicationUserService applicationUserService) : 
+     IApplicationUserService applicationUserService) :
     IOpenIddictService
 {
     public async Task<ClaimsIdentity> LoginOpenIddictAsync(string email, string password)

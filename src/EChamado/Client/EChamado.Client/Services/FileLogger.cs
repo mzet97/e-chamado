@@ -17,14 +17,14 @@ public class FileLogger
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         var logEntry = $"[{timestamp}] [{level}] [{category}] {message}";
-        
+
         if (exception != null)
         {
             logEntry += $" | Exception: {exception.Message}\nStack: {exception.StackTrace}";
         }
-        
+
         _logBuilder.AppendLine(logEntry);
-        
+
         // También log to console for immediate visibility
         Console.WriteLine(logEntry);
     }
@@ -65,9 +65,9 @@ public class FileLogger
         {
             var logContent = _logBuilder.ToString();
             var dataUri = $"data:text/plain;charset=utf-8,{Uri.EscapeDataString(logContent)}";
-            
+
             await _js.InvokeVoidAsync("downloadFile", fileName, dataUri);
-            
+
             Info("FILE_LOGGER", $"Log salvo em arquivo: {fileName}");
         }
         catch (Exception ex)

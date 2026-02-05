@@ -106,7 +106,7 @@ namespace EChamado.Client
 
                 Console.WriteLine("Building client host...");
                 var host = builder.Build();
-                
+
                 Console.WriteLine("Starting client application...");
                 await host.RunAsync();
             }

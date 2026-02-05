@@ -66,10 +66,10 @@ public class LoginTests : PlaywrightTestBase
         // Assert
         var emailError = Page.Locator(".email-error");
         var passwordError = Page.Locator(".password-error");
-        
+
         await emailError.WaitForAsync();
         await passwordError.WaitForAsync();
-        
+
         Assert.True(await emailError.IsVisibleAsync());
         Assert.True(await passwordError.IsVisibleAsync());
     }
@@ -83,11 +83,11 @@ public class LoginTests : PlaywrightTestBase
         // Assert
         var title = await Page.TitleAsync();
         Assert.Contains("Login", title);
-        
+
         var emailField = Page.Locator("#email");
         var passwordField = Page.Locator("#password");
         var submitButton = Page.Locator("button[type='submit']");
-        
+
         Assert.True(await emailField.IsVisibleAsync());
         Assert.True(await passwordField.IsVisibleAsync());
         Assert.True(await submitButton.IsVisibleAsync());

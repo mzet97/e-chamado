@@ -30,7 +30,7 @@ public static class RedisConfigExtensions
                     options.ConnectTimeout = 5000;
                     options.SyncTimeout = 5000;
                     options.AbortOnConnectFail = false;
-                    
+
                     return ConnectionMultiplexer.Connect(options);
                 }
                 catch (Exception ex)

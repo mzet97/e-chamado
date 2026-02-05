@@ -10,7 +10,7 @@ public class RedisService(IDistributedCache cache) : IRedisService
         var options = new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30),
-            SlidingExpiration = TimeSpan.FromMinutes(10)              
+            SlidingExpiration = TimeSpan.FromMinutes(10)
         };
 
         await cache.SetStringAsync(key, value, options);

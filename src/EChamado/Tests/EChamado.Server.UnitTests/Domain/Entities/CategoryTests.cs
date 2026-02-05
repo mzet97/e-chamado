@@ -60,7 +60,7 @@
 //        var category = CategoryTestBuilder.Create()
 //            .WithValidData()
 //            .Build();
-        
+
 //        var newName = "Nome Atualizado";
 //        var newDescription = "Descri��o Atualizada";
 

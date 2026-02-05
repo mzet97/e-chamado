@@ -13,12 +13,12 @@ public class GetByIdDepartmentQueryHandler(IUnitOfWork unitOfWork) :
         GetByIdDepartmentQuery query,
         CancellationToken cancellationToken = default)
     {
-       if(query == null)
+        if (query == null)
             throw new ArgumentNullException(nameof(query));
 
         var department = await unitOfWork.Departments.GetByIdAsync(query.Id);
 
-        if(department == null)
+        if (department == null)
             throw new NotFoundException("Not found");
 
         var viewModel = new DepartmentViewModel(

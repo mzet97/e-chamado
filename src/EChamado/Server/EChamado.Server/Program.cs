@@ -44,7 +44,7 @@ try
     builder.Services.AddIdentityConfig(builder.Configuration);
     builder.Services.AddMemoryCache();
     builder.Services.AddDistributedMemoryCache();
-    
+
     // Optional services (Redis/MessageBus) - usar fallbacks sem try/catch
     builder.Services.AddRedisCache(builder.Configuration);
     builder.Services.AddRedisOutputCache(builder.Configuration);

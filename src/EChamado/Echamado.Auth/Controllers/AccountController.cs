@@ -105,9 +105,9 @@ public class AccountController : Controller
             // Verifica se o usuário está autenticado
             if (User?.Identity?.IsAuthenticated != true)
             {
-                return Json(new 
-                { 
-                    IsAuthenticated = false 
+                return Json(new
+                {
+                    IsAuthenticated = false
                 });
             }
 
@@ -115,14 +115,14 @@ public class AccountController : Controller
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
             var userName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            
+
             // Pega roles
             var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role)
                 .Select(c => c.Value)
                 .ToArray();
 
-            return Json(new 
-            { 
+            return Json(new
+            {
                 IsAuthenticated = true,
                 UserId = userId,
                 UserName = userName ?? email,
@@ -133,9 +133,9 @@ public class AccountController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting user info");
-            return Json(new 
-            { 
-                IsAuthenticated = false 
+            return Json(new
+            {
+                IsAuthenticated = false
             });
         }
     }

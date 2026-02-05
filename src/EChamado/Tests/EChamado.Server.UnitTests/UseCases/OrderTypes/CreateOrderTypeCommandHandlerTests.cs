@@ -28,7 +28,7 @@ public class CreateOrderTypeCommandHandlerTests : UnitTestBase
         _commandProcessorMock = new Mock<IAmACommandProcessor>();
         _loggerMock = new Mock<ILogger<CreateOrderTypeCommandHandler>>();
         _handler = new CreateOrderTypeCommandHandler(
-            _unitOfWorkMock.Object, 
+            _unitOfWorkMock.Object,
             _commandProcessorMock.Object,
             new MockDateTimeProvider(),
             _loggerMock.Object);

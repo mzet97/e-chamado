@@ -7,7 +7,7 @@ namespace EChamado.Server.Domain.Domains.Orders.Entities;
 
 public class StatusType : SoftDeletableEntity<StatusType>
 {
-    
+
     public string Name { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
 

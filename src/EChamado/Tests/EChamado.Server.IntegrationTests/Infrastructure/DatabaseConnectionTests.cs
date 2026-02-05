@@ -57,7 +57,7 @@ public class DatabaseConnectionTests : IClassFixture<IntegrationTestWebAppFactor
     {
         // Arrange
         using var scope = _factory.Services.CreateScope();
-        
+
         // Act & Assert
         // Para este teste, vamos apenas verificar se o serviço foi registrado
         var cacheService = scope.ServiceProvider.GetService<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
@@ -79,7 +79,7 @@ public class DatabaseConnectionTests : IClassFixture<IntegrationTestWebAppFactor
         // Verificar se há migrations aplicadas (pode estar vazio em um novo banco)
         appliedMigrations.Should().NotBeNull();
         allMigrations.Should().NotBeNull();
-        
+
         // Se há migrations no projeto, elas devem estar aplicadas
         if (allMigrations.Any())
         {
@@ -99,7 +99,7 @@ public class DatabaseConnectionTests : IClassFixture<IntegrationTestWebAppFactor
 
         // Assert
         entityTypes.Should().NotBeEmpty("DbContext deve ter entidades configuradas");
-        
+
         // Verificar se algumas entidades principais estão configuradas
         var entityNames = entityTypes.Select(e => e.ClrType.Name).ToList();
         entityNames.Should().Contain("Order", "DbContext deve ter a entidade Order");

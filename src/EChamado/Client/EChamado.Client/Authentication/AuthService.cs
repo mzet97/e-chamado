@@ -138,7 +138,7 @@ public class AuthService
         try
         {
             var response = await _httpClient.PostAsJsonAsync("api/identity/register", model);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 return new AuthResult { Successful = true };

@@ -25,7 +25,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         var category = Category.Create("Test Category", "Test Description", _dateTimeProvider);
 
         // Act
@@ -45,7 +45,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         var category = Category.Create("Search Test Category", "Search Test Description", _dateTimeProvider);
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync();
@@ -65,7 +65,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         var nonExistentId = Guid.NewGuid();
 
         // Act
@@ -81,7 +81,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         var category = Category.Create("Original Name", "Original Description", _dateTimeProvider);
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync();
@@ -105,7 +105,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         var category = Category.Create("To Delete", "Will be deleted", _dateTimeProvider);
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync();
@@ -125,11 +125,11 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         var category1 = Category.Create("Category 1", "Description 1", _dateTimeProvider);
         var category2 = Category.Create("Category 2", "Description 2", _dateTimeProvider);
         var category3 = Category.Create("Category 3", "Description 3", _dateTimeProvider);
-        
+
         dbContext.Categories.AddRange(category1, category2, category3);
         await dbContext.SaveChangesAsync();
 
@@ -149,7 +149,7 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         var categoryToAdd = Category.Create("New Category", "New Description", _dateTimeProvider);
         var categoryToUpdate = Category.Create("To Update", "Original", _dateTimeProvider);
 
@@ -160,16 +160,16 @@ public class CategoryRepositoryTests : IClassFixture<IntegrationTestWebAppFactor
         dbContext.Categories.Add(categoryToAdd);
         categoryToUpdate.Update("Updated", "Modified Description", _dateTimeProvider);
         dbContext.Categories.Update(categoryToUpdate);
-        
+
         await dbContext.SaveChangesAsync();
 
         // Assert
         var addedCategory = await dbContext.Categories.FindAsync(categoryToAdd.Id);
         var updatedCategory = await dbContext.Categories.FindAsync(categoryToUpdate.Id);
-        
+
         addedCategory.Should().NotBeNull();
         addedCategory!.Name.Should().Be("New Category");
-        
+
         updatedCategory.Should().NotBeNull();
         updatedCategory!.Name.Should().Be("Updated");
         updatedCategory.Description.Should().Be("Modified Description");

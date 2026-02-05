@@ -38,9 +38,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys())) relationship.DeleteBehavior = DeleteBehavior.ClientSetNull;
 
         // Only apply OpenIddict configuration if not in test environment
-        var isTestEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" || 
+        var isTestEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" ||
                                 Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") == "Testing";
-        
+
         if (!isTestEnvironment)
         {
             modelBuilder.UseOpenIddict();

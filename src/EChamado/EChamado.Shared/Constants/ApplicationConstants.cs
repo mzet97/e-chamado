@@ -66,7 +66,7 @@ public static class ApplicationConstants
         public const string DepartmentsAll = "departments:all";
         public const string StatusTypesAll = "statustypes:all";
         public const string OrderTypesAll = "ordertypes:all";
-        
+
         public static string CategoryById(Guid id) => $"category:{id}";
         public static string DepartmentById(Guid id) => $"department:{id}";
     }

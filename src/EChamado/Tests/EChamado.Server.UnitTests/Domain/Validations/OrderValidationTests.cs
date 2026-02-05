@@ -32,7 +32,7 @@ public class OrderValidationTests : UnitTestBase
             var errors = string.Join(", ", result.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
             Assert.Fail($"Expected valid order but got errors: {errors}");
         }
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -134,7 +134,7 @@ public class OrderValidationTests : UnitTestBase
             var errors = string.Join(", ", result.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
             Assert.Fail($"Expected valid emails but got errors: {errors}");
         }
-        
+
         result.IsValid.Should().BeTrue();
     }
 }

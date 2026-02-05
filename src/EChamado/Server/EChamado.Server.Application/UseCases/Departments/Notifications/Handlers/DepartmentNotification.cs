@@ -10,7 +10,7 @@ public class CreatedDepartmentNotificationHandler(
 {
     public override async Task<CreatedDepartmentNotification> HandleAsync(CreatedDepartmentNotification notification, CancellationToken cancellationToken = default)
     {
-        if(notification == null)
+        if (notification == null)
         {
             logger.LogError("CreatedDepartmentNotification is null");
             return await base.HandleAsync(notification, cancellationToken);

@@ -30,7 +30,7 @@ public class CreateCommentCommandHandlerTests : UnitTestBase
         _commandProcessorMock = new Mock<IAmACommandProcessor>();
         _loggerMock = new Mock<ILogger<CreateCommentCommandHandler>>();
         _handler = new CreateCommentCommandHandler(
-            _unitOfWorkMock.Object, 
+            _unitOfWorkMock.Object,
             _commandProcessorMock.Object,
             new MockDateTimeProvider(),
             _loggerMock.Object);

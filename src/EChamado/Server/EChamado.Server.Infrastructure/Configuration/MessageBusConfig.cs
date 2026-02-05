@@ -15,7 +15,7 @@ public static class MessageBusConfig
         try
         {
             var rabbitMqSection = configuration.GetSection("RabbitMQ");
-            
+
             if (!rabbitMqSection.Exists())
             {
                 services.AddSingleton<IMessageBusClient, NullMessageBusClient>();

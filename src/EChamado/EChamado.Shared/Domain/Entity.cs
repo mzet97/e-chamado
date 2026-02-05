@@ -21,7 +21,7 @@ public abstract class Entity<T> : Validatable<T>, IEntity
         Id = id;
         Validate();
     }
-    
+
     protected void AddEvent(IDomainEvent @event) => _events.Add(@event);
     public void AddDomainEvent(IDomainEvent @event) => _events.Add(@event);
 

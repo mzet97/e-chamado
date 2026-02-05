@@ -11,10 +11,10 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     {
         // This is used by the EF Core CLI tools to create a DbContext instance
         // for design-time operations like migrations.
-        
+
         // Define o caminho para o projeto Server onde está o appsettings.json
         var serverProjectPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "EChamado.Server");
-        
+
         // Verifica se o diretório existe, caso contrário tenta o diretório atual
         if (!Directory.Exists(serverProjectPath))
         {
@@ -29,7 +29,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             .Build();
 
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-        
+
         // Obtém a connection string
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))

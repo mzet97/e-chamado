@@ -174,7 +174,7 @@ public class BaseResultTests
         result.Success.Should().BeTrue(); // Property is readable
         result.Message.Should().NotBeNull(); // Property is readable
         result.Data.Should().Be("test"); // Property is readable
-        
+
         // Verify the properties are set only through constructor
         var newResult = new BaseResult<string>("new data", false, "error");
         newResult.Success.Should().BeFalse();

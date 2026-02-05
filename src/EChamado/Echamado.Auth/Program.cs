@@ -42,7 +42,7 @@ try
     {
         options.AddDefaultPolicy(policy =>
         {
-            policy.WithOrigins("https://localhost:5199", "https://localhost:7274", 
+            policy.WithOrigins("https://localhost:5199", "https://localhost:7274",
                               "http://localhost:5199", "http://localhost:7274",
                               "https://localhost:7133", "http://localhost:5137")
                   .AllowAnyMethod().AllowAnyHeader().AllowCredentials();

@@ -27,7 +27,7 @@ public class CreateCategoryCommandHandlerTests : UnitTestBase
         _commandProcessorMock = new Mock<IAmACommandProcessor>();
         _loggerMock = new Mock<ILogger<CreateCategoryCommandHandler>>();
         _handler = new CreateCategoryCommandHandler(
-            _unitOfWorkMock.Object, 
+            _unitOfWorkMock.Object,
             _commandProcessorMock.Object,
             new MockDateTimeProvider(),
             _loggerMock.Object);

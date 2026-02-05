@@ -56,19 +56,19 @@ public class SearchDepartmentsParametersDto
     /// </summary>
     [StringLength(100, ErrorMessage = "O campo {0} deve ter no máximo {1} caracteres")]
     public string? Name { get; set; }
-    
+
     /// <summary>
     /// Descrição do departamento para filtro (opcional)
     /// </summary>
     [StringLength(500, ErrorMessage = "O campo {0} deve ter no máximo {1} caracteres")]
     public string? Description { get; set; }
-    
+
     /// <summary>
     /// Número da página para paginação
     /// </summary>
     [Range(1, int.MaxValue, ErrorMessage = "A página deve ser maior que zero")]
     public int PageIndex { get; set; } = 1;
-    
+
     /// <summary>
     /// Tamanho da página para paginação
     /// </summary>
@@ -86,7 +86,7 @@ public class UpdateStatusDepartmentRequestDto
     /// </summary>
     [Required(ErrorMessage = "A lista de {0} é obrigatória")]
     public List<string> Ids { get; set; } = new();
-    
+
     /// <summary>
     /// Status ativo/inativo
     /// </summary>

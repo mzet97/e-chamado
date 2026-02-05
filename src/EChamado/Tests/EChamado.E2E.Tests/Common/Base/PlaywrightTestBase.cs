@@ -23,10 +23,10 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
     {
         if (Page != null)
             await Page.CloseAsync();
-        
+
         if (Browser != null)
             await Browser.CloseAsync();
-        
+
         Playwright?.Dispose();
     }
 }

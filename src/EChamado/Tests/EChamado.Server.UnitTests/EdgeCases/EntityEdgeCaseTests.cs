@@ -116,7 +116,7 @@
 //        var longLocalPart = new string('a', 64); // Maximum local part length
 //        var longDomainPart = new string('b', 63); // Maximum domain label length
 //        var extremelyLongEmail = $"{longLocalPart}@{longDomainPart}.com";
-        
+
 //        var orderId = Guid.NewGuid();
 //        var userId = Guid.NewGuid();
 
@@ -219,7 +219,7 @@
 //            // Assert
 //            results.Should().HaveCount(cultures.Length);
 //            results.Should().OnlyContain(c => c.IsValid());
-            
+
 //            // All should have same behavior regardless of culture
 //            var names = results.Select(c => c.Name).Distinct();
 //            names.Should().ContainSingle("Test Category");
@@ -264,7 +264,7 @@
 
 //        // Act - Force extreme DateTime values through reflection if needed
 //        var createdAtProperty = typeof(Category).BaseType!.GetProperty("CreatedAt");
-        
+
 //        // Assert - Verify normal behavior with extreme dates
 //        category.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
 //        category.CreatedAt.Should().BeAfter(DateTime.MinValue);
@@ -288,7 +288,7 @@
 //        // Assert
 //        category.Name.Should().Be(name);
 //        category.Name.Length.Should().Be(nameLength);
-        
+
 //        if (nameLength < 2 || nameLength > 100)
 //        {
 //            category.IsValid().Should().BeFalse();
