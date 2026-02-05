@@ -37,7 +37,7 @@ jobs:
 
     - name: Run Unit Tests
       run: |
-        dotnet test tests/EChamado.Server.UnitTests/EChamado.Server.UnitTests.csproj \
+        dotnet test src/EChamado/Tests/EChamado.Server.UnitTests/EChamado.Server.UnitTests.csproj \
           --configuration Release \
           --no-build \
           --verbosity normal \
@@ -47,7 +47,7 @@ jobs:
 
     - name: Run Integration Tests
       run: |
-        dotnet test tests/EChamado.Server.IntegrationTests/EChamado.Server.IntegrationTests.csproj \
+        dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/EChamado.Server.IntegrationTests.csproj \
           --configuration Release \
           --no-build \
           --verbosity normal \
