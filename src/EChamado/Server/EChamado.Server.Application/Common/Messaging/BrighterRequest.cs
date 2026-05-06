@@ -4,7 +4,7 @@ namespace EChamado.Server.Application.Common.Messaging;
 
 /// <summary>
 /// Base class for requests that return a result.
-/// This allows Brighter to work with return values similar to MediatR.
+/// This allows Brighter to work with return values.
 /// </summary>
 public abstract class BrighterRequest<TResult> : IRequest
 {

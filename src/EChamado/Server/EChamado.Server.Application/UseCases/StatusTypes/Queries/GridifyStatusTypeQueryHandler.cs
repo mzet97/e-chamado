@@ -2,14 +2,14 @@ using EChamado.Server.Application.Common;
 using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Queries.Handlers;
 
 /// <summary>
 /// Handler para processar queries de status types com Gridify
 /// </summary>
-public class GridifyStatusTypeQueryHandler : IRequestHandler<GridifyStatusTypeQuery, BaseResultList<StatusTypeViewModel>>
+public class GridifyStatusTypeQueryHandler : QueryHandlerAsync<GridifyStatusTypeQuery, BaseResultList<StatusTypeViewModel>>
 {
     private readonly IStatusTypeRepository _statusTypeRepository;
 
@@ -18,7 +18,7 @@ public class GridifyStatusTypeQueryHandler : IRequestHandler<GridifyStatusTypeQu
         _statusTypeRepository = statusTypeRepository;
     }
 
-    public async Task<BaseResultList<StatusTypeViewModel>> Handle(GridifyStatusTypeQuery request, CancellationToken cancellationToken)
+    public override async Task<BaseResultList<StatusTypeViewModel>> ExecuteAsync(GridifyStatusTypeQuery request, CancellationToken cancellationToken = default)
     {
         // 1. Obtém a query base
         var query = _statusTypeRepository.GetAllQueryable()

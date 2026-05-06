@@ -2,7 +2,7 @@
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Categories;
@@ -21,11 +21,11 @@ public class GridifyCategoriesEndpoint : IEndpoint
 
     public static async Task<IResult> HandleAsync(
         [AsParameters] GridifyCategoryQuery query,
-        [FromServices] IMediator mediator)
+        [FromServices] IQueryProcessor queryProcessor)
     {
         try
         {
-            var result = await mediator.Send(query);
+            var result = await queryProcessor.ExecuteAsync(query);
 
             return result.Success
                 ? TypedResults.Ok(result)

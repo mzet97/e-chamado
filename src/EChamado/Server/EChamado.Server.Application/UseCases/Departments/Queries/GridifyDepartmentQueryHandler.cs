@@ -2,14 +2,14 @@ using EChamado.Server.Application.Common;
 using EChamado.Server.Application.UseCases.Departments.ViewModels;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 
 namespace EChamado.Server.Application.UseCases.Departments.Queries;
 
 /// <summary>
 /// Handler para processar queries de departments com Gridify
 /// </summary>
-public class GridifyDepartmentQueryHandler : IRequestHandler<GridifyDepartmentQuery, BaseResultList<DepartmentViewModel>>
+public class GridifyDepartmentQueryHandler : QueryHandlerAsync<GridifyDepartmentQuery, BaseResultList<DepartmentViewModel>>
 {
     private readonly IDepartmentRepository _departmentRepository;
 
@@ -18,7 +18,7 @@ public class GridifyDepartmentQueryHandler : IRequestHandler<GridifyDepartmentQu
         _departmentRepository = departmentRepository;
     }
 
-    public async Task<BaseResultList<DepartmentViewModel>> Handle(GridifyDepartmentQuery request, CancellationToken cancellationToken)
+    public override async Task<BaseResultList<DepartmentViewModel>> ExecuteAsync(GridifyDepartmentQuery request, CancellationToken cancellationToken = default)
     {
         // 1. Obtém a query base
         var query = _departmentRepository.GetAllQueryable()

@@ -1,4 +1,3 @@
-using EChamado.Server.Application.Common;
 using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.Orders.QueryHandlers;
@@ -8,18 +7,35 @@ using EChamado.Server.Application.Services.AI;
 using EChamado.Server.Application.Services.AI.Configuration;
 using EChamado.Server.Application.Services.AI.Interfaces;
 using EChamado.Server.Application.Services.AI.Providers;
+using EChamado.Server.Application.UseCases.Categories.Queries.Handlers;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
+using EChamado.Server.Application.UseCases.Comments.Queries.Handlers;
+using EChamado.Server.Application.UseCases.Comments.ViewModels;
+using EChamado.Server.Application.UseCases.Departments.Queries;
+using EChamado.Server.Application.UseCases.Departments.ViewModels;
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
+using EChamado.Server.Application.UseCases.OrderTypes.Queries.Handlers;
+using EChamado.Server.Application.UseCases.OrderTypes.ViewModels;
+using EChamado.Server.Application.UseCases.StatusTypes.Queries.Handlers;
 using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
+using EChamado.Server.Application.UseCases.SubCategories.Queries.Handlers;
+using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
 using EChamado.Server.Domain.Services.Interface;
+using EChamado.Shared.Responses;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Paramore.Brighter;
 using Paramore.Brighter.Extensions.DependencyInjection;
 using Paramore.Darker;
 using System.Reflection;
+using CategoriesQueries = EChamado.Server.Application.UseCases.Categories.Queries;
+using OrdersQueries = EChamado.Server.Application.UseCases.Orders.Queries;
+using CommentsQueries = EChamado.Server.Application.UseCases.Comments.Queries;
+using OrderTypesQueries = EChamado.Server.Application.UseCases.OrderTypes.Queries;
+using StatusTypesQueries = EChamado.Server.Application.UseCases.StatusTypes.Queries;
+using SubCategoriesQueries = EChamado.Server.Application.UseCases.SubCategories.Queries;
+using OrdersQueryHandlers = EChamado.Server.Application.UseCases.Orders.Queries.Handlers;
 
 namespace EChamado.Server.Application.Configuration;
 
@@ -39,23 +55,29 @@ public static class DependencyInjection
             })
             .AutoFromAssemblies(new[] { currentAssembly });
 
+            // Register Darker query processor (custom ServiceProviderQueryProcessor resolves via DI)
             services.AddScoped<IQueryProcessor, ServiceProviderQueryProcessor>();
+
+            // Register Darker query handlers - existing Orders/Queries
             services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderViewModel?>, GetOrderByIdQueryHandler>();
             services.AddScoped<IQueryHandler<ListOrdersQuery, IEnumerable<OrderListViewModel>>, ListOrdersQueryHandler>();
             services.AddScoped<IQueryHandler<ListCategoriesQuery, IEnumerable<CategoryViewModel>>, ListCategoriesQueryHandler>();
             services.AddScoped<IQueryHandler<ListStatusTypesQuery, IEnumerable<StatusTypeViewModel>>, ListStatusTypesQueryHandler>();
 
-            // Add MediatR
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(currentAssembly));
+            // Register Gridify query handlers (converted from MediatR to Darker)
+            services.AddScoped<IQueryHandler<CategoriesQueries.GridifyCategoryQuery, BaseResultList<CategoryViewModel>>, GridifyCategoryQueryHandler>();
+            services.AddScoped<IQueryHandler<OrdersQueries.GridifyOrderQuery, BaseResultList<OrderViewModel>>, OrdersQueryHandlers.GridifyOrderQueryHandler>();
+            services.AddScoped<IQueryHandler<CommentsQueries.GridifyCommentQuery, BaseResultList<CommentViewModel>>, GridifyCommentQueryHandler>();
+            services.AddScoped<IQueryHandler<GridifyDepartmentQuery, BaseResultList<DepartmentViewModel>>, GridifyDepartmentQueryHandler>();
+            services.AddScoped<IQueryHandler<OrderTypesQueries.GridifyOrderTypeQuery, BaseResultList<OrderTypeViewModel>>, GridifyOrderTypeQueryHandler>();
+            services.AddScoped<IQueryHandler<StatusTypesQueries.GridifyStatusTypeQuery, BaseResultList<StatusTypeViewModel>>, GridifyStatusTypeQueryHandler>();
+            services.AddScoped<IQueryHandler<SubCategoriesQueries.GridifySubCategoryQuery, BaseResultList<SubCategoryViewModel>>, GridifySubCategoryQueryHandler>();
 
             // Add FluentValidation validators
             services.AddValidatorsFromAssembly(currentAssembly);
-
-            // Add validation behavior to MediatR pipeline
-            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         }
 
-        // Register the generic validation and exception handlers
+        // Register the generic validation and exception handlers for Brighter pipeline
         services.AddTransient(typeof(ValidationHandler<>));
         services.AddTransient(typeof(UnhandledExceptionHandler<>));
 
@@ -82,30 +104,23 @@ public static class DependencyInjection
         this IServiceCollection services,
         Action<AISettings>? configureSettings = null)
     {
-        // Configure settings
         if (configureSettings != null)
         {
             services.Configure(configureSettings);
         }
 
-        // Add memory cache for AI response caching
         services.AddMemoryCache(options =>
         {
-            options.SizeLimit = 1024; // Limit cache size
+            options.SizeLimit = 1024;
         });
 
-        // Register AI providers
         services.AddSingleton<IAIProvider, OpenAIProvider>();
         services.AddSingleton<IAIProvider, GeminiProvider>();
         services.AddSingleton<IAIProvider, OpenRouterProvider>();
 
-        // Register provider factory
         services.AddSingleton<AIProviderFactory>();
-
-        // Register main NL to Gridify service
         services.AddScoped<NLToGridifyService>();
 
-        // Add HttpClient for OpenRouter
         services.AddHttpClient("OpenRouter")
             .ConfigureHttpClient(client =>
             {

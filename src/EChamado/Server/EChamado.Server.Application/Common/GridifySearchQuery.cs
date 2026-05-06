@@ -1,6 +1,6 @@
 using Gridify;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 
 namespace EChamado.Server.Application.Common;
 
@@ -9,7 +9,7 @@ namespace EChamado.Server.Application.Common;
 /// Fornece funcionalidades de filtro, ordenação e paginação dinâmica
 /// </summary>
 /// <typeparam name="TResult">Tipo do resultado da query</typeparam>
-public abstract class GridifySearchQuery<TResult> : IGridifyQuery, IRequest<BaseResultList<TResult>>
+public abstract class GridifySearchQuery<TResult> : IGridifyQuery, IQuery<BaseResultList<TResult>>
 {
     /// <summary>
     /// Filtros no formato Gridify

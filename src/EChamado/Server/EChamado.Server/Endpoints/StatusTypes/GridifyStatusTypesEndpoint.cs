@@ -2,7 +2,7 @@
 using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.StatusTypes;
@@ -21,11 +21,11 @@ public class GridifyStatusTypesEndpoint : IEndpoint
 
     public static async Task<IResult> HandleAsync(
         [AsParameters] GridifyStatusTypeQuery query,
-        [FromServices] IMediator mediator)
+        [FromServices] IQueryProcessor queryProcessor)
     {
         try
         {
-            var result = await mediator.Send(query);
+            var result = await queryProcessor.ExecuteAsync(query);
 
             return result.Success
                 ? TypedResults.Ok(result)

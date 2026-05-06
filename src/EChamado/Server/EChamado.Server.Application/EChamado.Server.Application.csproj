@@ -32,7 +32,6 @@
     <PackageReference Include="Gridify.EntityFramework" Version="2.16.3" />
     <PackageReference Include="LinqKit.Core" Version="1.2.8" />
     <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8" />
-    <PackageReference Include="MediatR" Version="13.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
     <PackageReference Include="Mscc.GenerativeAI" Version="1.7.1" />
     <PackageReference Include="Paramore.Brighter" Version="10.0.3" />

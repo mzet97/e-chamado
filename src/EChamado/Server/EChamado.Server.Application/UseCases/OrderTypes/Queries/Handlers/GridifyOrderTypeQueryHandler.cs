@@ -2,14 +2,14 @@ using EChamado.Server.Application.Common;
 using EChamado.Server.Application.UseCases.OrderTypes.ViewModels;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 
 namespace EChamado.Server.Application.UseCases.OrderTypes.Queries.Handlers;
 
 /// <summary>
 /// Handler para processar queries de order types com Gridify
 /// </summary>
-public class GridifyOrderTypeQueryHandler : IRequestHandler<GridifyOrderTypeQuery, BaseResultList<OrderTypeViewModel>>
+public class GridifyOrderTypeQueryHandler : QueryHandlerAsync<GridifyOrderTypeQuery, BaseResultList<OrderTypeViewModel>>
 {
     private readonly IOrderTypeRepository _orderTypeRepository;
 
@@ -18,7 +18,7 @@ public class GridifyOrderTypeQueryHandler : IRequestHandler<GridifyOrderTypeQuer
         _orderTypeRepository = orderTypeRepository;
     }
 
-    public async Task<BaseResultList<OrderTypeViewModel>> Handle(GridifyOrderTypeQuery request, CancellationToken cancellationToken)
+    public override async Task<BaseResultList<OrderTypeViewModel>> ExecuteAsync(GridifyOrderTypeQuery request, CancellationToken cancellationToken = default)
     {
         // 1. Obtém a query base
         var query = _orderTypeRepository.GetAllQueryable()

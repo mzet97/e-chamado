@@ -2,14 +2,14 @@ using EChamado.Server.Application.Common;
 using EChamado.Server.Application.UseCases.SubCategories.ViewModels;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 
 namespace EChamado.Server.Application.UseCases.SubCategories.Queries.Handlers;
 
 /// <summary>
 /// Handler para processar queries de sub-categories com Gridify
 /// </summary>
-public class GridifySubCategoryQueryHandler : IRequestHandler<GridifySubCategoryQuery, BaseResultList<SubCategoryViewModel>>
+public class GridifySubCategoryQueryHandler : QueryHandlerAsync<GridifySubCategoryQuery, BaseResultList<SubCategoryViewModel>>
 {
     private readonly ISubCategoryRepository _subCategoryRepository;
 
@@ -18,7 +18,7 @@ public class GridifySubCategoryQueryHandler : IRequestHandler<GridifySubCategory
         _subCategoryRepository = subCategoryRepository;
     }
 
-    public async Task<BaseResultList<SubCategoryViewModel>> Handle(GridifySubCategoryQuery request, CancellationToken cancellationToken)
+    public override async Task<BaseResultList<SubCategoryViewModel>> ExecuteAsync(GridifySubCategoryQuery request, CancellationToken cancellationToken = default)
     {
         // 1. Obtém a query base
         var query = _subCategoryRepository.GetAllQueryable()

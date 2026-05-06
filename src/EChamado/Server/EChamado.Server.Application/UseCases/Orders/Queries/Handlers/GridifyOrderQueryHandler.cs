@@ -2,7 +2,7 @@ using EChamado.Server.Application.Common;
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 using Microsoft.EntityFrameworkCore;
 
 namespace EChamado.Server.Application.UseCases.Orders.Queries.Handlers;
@@ -10,7 +10,7 @@ namespace EChamado.Server.Application.UseCases.Orders.Queries.Handlers;
 /// <summary>
 /// Handler para processar queries de orders com Gridify
 /// </summary>
-public class GridifyOrderQueryHandler : IRequestHandler<GridifyOrderQuery, BaseResultList<OrderViewModel>>
+public class GridifyOrderQueryHandler : QueryHandlerAsync<GridifyOrderQuery, BaseResultList<OrderViewModel>>
 {
     private readonly IOrderRepository _orderRepository;
 
@@ -19,7 +19,7 @@ public class GridifyOrderQueryHandler : IRequestHandler<GridifyOrderQuery, BaseR
         _orderRepository = orderRepository;
     }
 
-    public async Task<BaseResultList<OrderViewModel>> Handle(GridifyOrderQuery request, CancellationToken cancellationToken)
+    public override async Task<BaseResultList<OrderViewModel>> ExecuteAsync(GridifyOrderQuery request, CancellationToken cancellationToken = default)
     {
         // 1. Obtém a query base com includes para eager loading
         var query = _orderRepository.GetAllQueryable()

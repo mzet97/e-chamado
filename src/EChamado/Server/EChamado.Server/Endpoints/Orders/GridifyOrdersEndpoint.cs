@@ -2,7 +2,7 @@
 using EChamado.Server.Application.UseCases.Orders.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EChamado.Server.Endpoints.Orders;
@@ -21,11 +21,11 @@ public class GridifyOrdersEndpoint : IEndpoint
 
     public static async Task<IResult> HandleAsync(
         [AsParameters] GridifyOrderQuery query,
-        [FromServices] IMediator mediator)
+        [FromServices] IQueryProcessor queryProcessor)
     {
         try
         {
-            var result = await mediator.Send(query);
+            var result = await queryProcessor.ExecuteAsync(query);
 
             return result.Success
                 ? TypedResults.Ok(result)

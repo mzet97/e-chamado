@@ -2,14 +2,14 @@ using EChamado.Server.Application.Common;
 using EChamado.Server.Application.UseCases.Comments.ViewModels;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
-using MediatR;
+using Paramore.Darker;
 
 namespace EChamado.Server.Application.UseCases.Comments.Queries.Handlers;
 
 /// <summary>
 /// Handler para processar queries de comments com Gridify
 /// </summary>
-public class GridifyCommentQueryHandler : IRequestHandler<GridifyCommentQuery, BaseResultList<CommentViewModel>>
+public class GridifyCommentQueryHandler : QueryHandlerAsync<GridifyCommentQuery, BaseResultList<CommentViewModel>>
 {
     private readonly ICommentRepository _commentRepository;
 
@@ -18,7 +18,7 @@ public class GridifyCommentQueryHandler : IRequestHandler<GridifyCommentQuery, B
         _commentRepository = commentRepository;
     }
 
-    public async Task<BaseResultList<CommentViewModel>> Handle(GridifyCommentQuery request, CancellationToken cancellationToken)
+    public override async Task<BaseResultList<CommentViewModel>> ExecuteAsync(GridifyCommentQuery request, CancellationToken cancellationToken = default)
     {
         // 1. Obtém a query base
         var query = _commentRepository.GetAllQueryable()
