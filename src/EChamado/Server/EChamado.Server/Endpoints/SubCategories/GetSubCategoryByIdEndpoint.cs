@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Endpoints.SubCategories.DTOs;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
@@ -29,12 +29,12 @@ public class GetSubCategoryByIdEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.NotFound(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResult<BaseViewModel>(
                 data: null,
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

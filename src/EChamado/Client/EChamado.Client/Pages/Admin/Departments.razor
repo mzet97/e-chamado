@@ -10,7 +10,7 @@
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 @inject ILogger<Departments> Logger
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Gerenciar Departamentos - EChamado</PageTitle>
 

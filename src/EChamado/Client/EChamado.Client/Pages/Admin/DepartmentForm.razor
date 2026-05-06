@@ -5,7 +5,7 @@
 @inject DepartmentService DepartmentService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>@(IsEdit ? "Editar Departamento" : "Novo Departamento") - EChamado</PageTitle>
 

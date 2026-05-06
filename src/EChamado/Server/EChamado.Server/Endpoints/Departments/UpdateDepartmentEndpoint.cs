@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Departments.Commands;
 using EChamado.Server.Endpoints.Departments.DTOs;
 using EChamado.Server.Common.Api;
@@ -35,11 +35,11 @@ public class UpdateDepartmentEndpoint : IEndpoint
 
             return TypedResults.BadRequest(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResult(
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

@@ -30,13 +30,13 @@ public class GetAllRolesEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.BadRequest(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<RolesViewModel>(
                 new List<RolesViewModel>(),
                 null,
                 false,
-                $"Erro interno: {ex.Message}"));
+                "Erro ao processar a solicitacao."));
         }
     }
 }

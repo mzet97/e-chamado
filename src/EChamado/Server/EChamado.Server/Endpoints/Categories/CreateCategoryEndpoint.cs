@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.Commands;
 using EChamado.Server.Endpoints.Categories.DTOs;
 using EChamado.Server.Common.Api;
@@ -31,12 +31,12 @@ public class CreateCategoryEndpoint : IEndpoint
 
             return TypedResults.BadRequest(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResult<Guid>(
                 data: Guid.Empty,
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

@@ -1,4 +1,4 @@
-using EChamado.Server.Application.UseCases.OrderTypes.Queries;
+﻿using EChamado.Server.Application.UseCases.OrderTypes.Queries;
 using EChamado.Server.Application.UseCases.OrderTypes.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
@@ -31,13 +31,13 @@ public class GridifyOrderTypesEndpoint : IEndpoint
                 ? TypedResults.Ok(result)
                 : TypedResults.BadRequest(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<OrderTypeViewModel>(
                 data: new List<OrderTypeViewModel>(),
                 pagedResult: PagedResult.Create(1, 10, 0),
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

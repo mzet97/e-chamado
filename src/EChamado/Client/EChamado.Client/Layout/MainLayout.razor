@@ -130,9 +130,22 @@
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-8">
-            @Body
-        </MudContainer>
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-8">
+                    @Body
+                </MudContainer>
+            </ChildContent>
+            <ErrorContent Context="ex">
+                <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-8">
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4">
+                        <MudText Typo="Typo.h6">Ocorreu um erro inesperado</MudText>
+                        <MudText Typo="Typo.body2">A pagina encontrou um problema. Tente recarregar.</MudText>
+                    </MudAlert>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ResetError">Recarregar Pagina</MudButton>
+                </MudContainer>
+            </ErrorContent>
+        </ErrorBoundary>
     </MudMainContent>
 </MudLayout>
 
@@ -140,6 +153,13 @@
     private bool _isDarkMode = false;
     private bool _drawerOpen = true;
     private MudThemeProvider _mudThemeProvider = null!;
+    private ErrorBoundary? _errorBoundary;
+
+    private void ResetError()
+    {
+        _errorBoundary?.Recover();
+        StateHasChanged();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

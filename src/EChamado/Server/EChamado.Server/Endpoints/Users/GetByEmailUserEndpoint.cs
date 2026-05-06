@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Users.Queries;
 using EChamado.Server.Application.UseCases.Users.ViewModels;
 using EChamado.Server.Common.Api;
@@ -28,12 +28,12 @@ public class GetByEmailUserEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.NotFound(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResult<ApplicationUserViewModel>(
                 data: null,
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

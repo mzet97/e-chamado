@@ -12,10 +12,10 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         // This is used by the EF Core CLI tools to create a DbContext instance
         // for design-time operations like migrations.
 
-        // Define o caminho para o projeto Server onde está o appsettings.json
+        // Define o caminho para o projeto Server onde estï¿½ o appsettings.json
         var serverProjectPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "EChamado.Server");
 
-        // Verifica se o diretório existe, caso contrário tenta o diretório atual
+        // Verifica se o diretï¿½rio existe, caso contrï¿½rio tenta o diretï¿½rio atual
         if (!Directory.Exists(serverProjectPath))
         {
             serverProjectPath = Directory.GetCurrentDirectory();
@@ -30,18 +30,18 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-        // Obtém a connection string
+        // Obtï¿½m a connection string
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            // Fallback para connection string padrão
-            connectionString = "Host=192.168.31.52;Port=5432;Pooling=true;Database=e-chamado;User Id=app;Password=Admin@123;";
+            // Fallback para connection string padrï¿½o
+            connectionString = "Host=localhost;Port=5432;Pooling=true;Database=e-chamado;User Id=app;Password=CHANGEME;";
         }
 
-        // Obtém o provider de banco de dados (padrão: Postgres)
+        // Obtï¿½m o provider de banco de dados (padrï¿½o: Postgres)
         var databaseProvider = configuration.GetValue<string>("DatabaseProvider") ?? "Postgres";
 
-        // Configura o LoggerFactory para o design time (sem usar 'using' para não descartar)
+        // Configura o LoggerFactory para o design time (sem usar 'using' para nï¿½o descartar)
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder.AddConsole();
@@ -50,7 +50,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 
         optionsBuilder.UseLoggerFactory(loggerFactory);
 
-        // Configura o provider baseado na configuração
+        // Configura o provider baseado na configuraï¿½ï¿½o
         if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
         {
             optionsBuilder.UseSqlite(connectionString);
@@ -60,7 +60,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             optionsBuilder.UseNpgsql(connectionString);
         }
 
-        // Habilita detalhamento de erros e dados sensíveis em modo desenvolvimento
+        // Habilita detalhamento de erros e dados sensï¿½veis em modo desenvolvimento
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
         if (environment == "Development")
         {

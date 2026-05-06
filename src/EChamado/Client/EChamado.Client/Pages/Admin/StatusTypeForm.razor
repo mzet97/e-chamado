@@ -5,7 +5,7 @@
 @inject LookupService LookupService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>@(IsEdit ? "Editar Status" : "Novo Status") - EChamado</PageTitle>
 

@@ -2,6 +2,7 @@ using EChamado.Server.Common.Api;
 using EChamado.Server.Endpoints.AI;
 using EChamado.Server.Endpoints.Categories;
 using EChamado.Server.Endpoints.Comments;
+using EChamado.Server.Endpoints.Dashboard;
 using EChamado.Server.Endpoints.Departments;
 using EChamado.Server.Endpoints.OrderTypes;
 using EChamado.Server.Endpoints.Orders;
@@ -147,6 +148,12 @@ public static class Endpoint
             .WithTags("AI")
             .RequireAuthorization()
             .MapEndpoint<ConvertNLToGridifyEndpoint>();
+
+        // Dashboard v1
+        endpoints.MapGroup("v1/dashboard")
+            .WithTags("Dashboard")
+            .RequireAuthorization()
+            .MapEndpoint<GetDashboardStatsEndpoint>();
     }
 
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)

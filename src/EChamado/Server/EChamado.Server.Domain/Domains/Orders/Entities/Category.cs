@@ -10,7 +10,7 @@ public class Category : SoftDeletableEntity<Category>
     public string Name { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
 
-    public IEnumerable<SubCategory> SubCategories { get; set; } = new List<SubCategory>();
+    public IEnumerable<SubCategory> SubCategories { get; private set; } = new List<SubCategory>();
 
     private Category() : base(new CategoryValidation()) { }
 

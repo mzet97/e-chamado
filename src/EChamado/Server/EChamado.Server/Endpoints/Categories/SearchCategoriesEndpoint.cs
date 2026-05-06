@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Categories.Queries;
 using EChamado.Server.Application.UseCases.Categories.ViewModels;
 using EChamado.Shared.Responses;
@@ -75,13 +75,13 @@ public class SearchCategoriesEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.BadRequest(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<CategoryViewModel>(
                 new List<CategoryViewModel>(),
                 null,
                 false,
-                $"Erro interno: {ex.Message}"));
+                "Erro ao processar a solicitacao."));
         }
     }
 }

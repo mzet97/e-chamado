@@ -1,4 +1,4 @@
-using EChamado.Server.Application.UseCases.Departments.Queries;
+﻿using EChamado.Server.Application.UseCases.Departments.Queries;
 using EChamado.Server.Application.UseCases.Departments.ViewModels;
 using EChamado.Server.Common.Api;
 using EChamado.Shared.Responses;
@@ -31,13 +31,13 @@ public class GridifyDepartmentsEndpoint : IEndpoint
                 ? TypedResults.Ok(result)
                 : TypedResults.BadRequest(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<DepartmentViewModel>(
                 data: new List<DepartmentViewModel>(),
                 pagedResult: PagedResult.Create(1, 10, 0),
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

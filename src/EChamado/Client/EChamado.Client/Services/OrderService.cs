@@ -211,6 +211,23 @@ public class OrderService
             PageSize = pageSize
         });
 
+    public async Task<DashboardStatsResponse?> GetDashboardStatsAsync(Guid? userId = null)
+    {
+        try
+        {
+            var url = "v1/dashboard/stats";
+            if (userId.HasValue && userId.Value != Guid.Empty)
+                url += $"?userId={userId.Value}";
+
+            var result = await _httpClient.GetFromJsonAsync<BaseResult<DashboardStatsResponse>>(url);
+            return result?.Data;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+    }
+
     private static string BuildQueryString(SearchOrdersParameters parameters)
     {
         var queryParams = new List<string>

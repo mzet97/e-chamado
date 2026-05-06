@@ -18,10 +18,10 @@ public class Order : SoftDeletableAggregateRoot<Order>
     public DateTime? DueDate { get; private set; }
 
     public Guid StatusId { get; private set; }
-    public StatusType Status { get; set; } = null!;
+    public StatusType Status { get; private set; } = null!;
 
     public Guid TypeId { get; private set; }
-    public OrderType Type { get; set; } = null!;
+    public OrderType Type { get; private set; } = null!;
 
     public Guid RequestingUserId { get; private set; }
     public string RequestingUserEmail { get; private set; } = string.Empty;
@@ -30,13 +30,13 @@ public class Order : SoftDeletableAggregateRoot<Order>
     public string ResponsibleUserEmail { get; private set; } = string.Empty;
 
     public Guid CategoryId { get; private set; }
-    public Category Category { get; set; } = null!;
+    public Category Category { get; private set; } = null!;
 
     public Guid? SubCategoryId { get; private set; }
-    public SubCategory? SubCategory { get; set; }
+    public SubCategory? SubCategory { get; private set; }
 
     public Guid DepartmentId { get; private set; }
-    public Department Department { get; set; } = null!;
+    public Department Department { get; private set; } = null!;
 
     private Order() : base(new OrderValidation()) { }
 

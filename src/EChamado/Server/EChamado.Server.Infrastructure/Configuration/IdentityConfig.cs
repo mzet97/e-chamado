@@ -194,7 +194,7 @@ namespace EChamado.Server.Infrastructure.Configuration
 
                     // Configure introspection client credentials
                     options.SetClientId("introspection-client");
-                    options.SetClientSecret("echamado_introspection_secret_2024");
+                    options.SetClientSecret(Environment.GetEnvironmentVariable("INTROSPECTION_CLIENT_SECRET") ?? "changeme_introspection_secret");
                 });
 
             // -------------------------

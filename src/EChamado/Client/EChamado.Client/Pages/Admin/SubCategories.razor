@@ -12,7 +12,7 @@
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 @inject ILogger<SubCategories> Logger
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Gerenciar Subcategorias - EChamado</PageTitle>
 

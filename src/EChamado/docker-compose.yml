@@ -24,7 +24,7 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
     container_name: elasticsearch
     volumes:
-      - /dados/elasticsearch:/usr/share/elasticsearch/data
+      - elasticsearch-data:/usr/share/elasticsearch/data
     networks:
       - echamado-network
     ports:
@@ -55,7 +55,7 @@ services:
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - TELEMETRY_ENABLED=false
-      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=MinhaChaveDe32CaracteresNoMinimo!!!!
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY}
 
   logstash:
       image: docker.elastic.co/logstash/logstash:8.15.1
@@ -81,8 +81,8 @@ services:
         - ELASTIC_HOSTS=http://elasticsearch:9200
       volumes:
         - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-        - /dados/logstash/logs:/usr/share/logstash/logs
-        - /dados/logstash/data:/usr/share/logstash/data
+        - logstash-logs:/usr/share/logstash/logs
+        - logstash-data:/usr/share/logstash/data
       depends_on:
         - elasticsearch
 
@@ -97,7 +97,7 @@ services:
     networks:
       - echamado-network
     volumes:
-      - /dados/postgres:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
 
   pgadmin:
       image: dpage/pgadmin4
@@ -109,7 +109,7 @@ services:
       networks:
         - echamado-network
       volumes:
-        - /dados/pgadmin:/var/lib/pgadmin
+        - pgadmin-data:/var/lib/pgadmin
   
   rabbitmq:
     image: rabbitmq:3-management
@@ -118,7 +118,7 @@ services:
       - "5672:5672"
       - "15672:15672"
     volumes:
-      - /dados/rabbitmq:/var/lib/rabbitmq
+      - rabbitmq-data:/var/lib/rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
@@ -131,8 +131,8 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - /dados/redis:/data
-      - /dados/redis/logs:/logs
+      - redis-data:/data
+      - redis-logs:/logs
     networks:
       - echamado-network
     restart: unless-stopped
@@ -149,7 +149,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -157,3 +157,13 @@ services:
 networks:
   echamado-network:
     external: true
+
+volumes:
+  elasticsearch-data:
+  logstash-logs:
+  logstash-data:
+  postgres-data:
+  pgadmin-data:
+  rabbitmq-data:
+  redis-data:
+  redis-logs:

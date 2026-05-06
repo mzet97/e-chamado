@@ -401,14 +401,16 @@ FodyWeavers.xsd
 /_out
 *.env
 
+# IDE and tool artifacts
+.trae/
+.ruff_cache/
+.vs/
+.vscode/
+TestResults/
+*.slnLaunch.user
 
-appsettings.json
-appsettings.*.json
+# Build output
+_out/
 
-**/appsettings.json
-**/**/appsettings.json
-**/**/**/appsettings.json
-
+# Appsettings - track base config, ignore environment overrides
 **/appsettings.*.json
-**/**/appsettings.*.json
-**/**/**/appsettings.*.json

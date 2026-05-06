@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.OrderTypes.Queries;
 using EChamado.Server.Application.UseCases.OrderTypes.ViewModels;
 using EChamado.Server.Common.Api;
@@ -39,13 +39,13 @@ public class SearchOrderTypesEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.BadRequest(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<OrderTypeViewModel>(
                 new List<OrderTypeViewModel>(),
                 null,
                 false,
-                $"Erro interno: {ex.Message}"));
+                "Erro ao processar a solicitacao."));
         }
     }
 }

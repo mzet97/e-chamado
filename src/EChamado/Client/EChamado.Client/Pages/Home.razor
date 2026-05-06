@@ -2,34 +2,22 @@
 @using EChamado.Client.Services
 @using EChamado.Client.Models
 @using EChamado.Client.Authentication
-@using EChamado.Client.Components.Dialogs
 @using System.Security.Claims
 @inject OrderService OrderService
 @inject LookupService LookupService
-@inject NavigationManager NavigationManager
-@inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
-@inject IDialogService DialogService
 @attribute [Authorize]
 
 <PageTitle>Dashboard - EChamado</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-8">
-    <!-- Header with Welcome & Debug -->
-    <div class="d-flex justify-space-between align-center mb-6">
+    <!-- Header with Welcome -->
+    <div class="d-flex align-center mb-6">
         <div>
             <MudText Typo="Typo.h4" GutterBottom="true" Style="font-weight: 700;">Dashboard</MudText>
             <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
                 Bem-vindo de volta, <b>@userName</b>! 👋
             </MudText>
-        </div>
-        <div>
-             <MudTooltip Text="Informações de Debug">
-                <MudIconButton Icon="@Icons.Material.Filled.BugReport" 
-                               Color="Color.Warning" 
-                               Variant="Variant.Outlined"
-                               OnClick="OpenDebugDialog" />
-            </MudTooltip>
         </div>
     </div>
 
@@ -227,12 +215,6 @@
     private bool isLoading = true;
     private string? errorMessage;
     private string userName = "Usuário";
-    
-    // Debug info for Dialog
-    private string authState = "Checking...";
-    private string? testToken = null;
-    private int claimsCount = 0;
-    private string userIdentity = "Unknown";
 
     private DashboardStats stats = new();
     private List<OrderListViewModel> recentTickets = new();
@@ -268,16 +250,7 @@
         if (user.Identity?.IsAuthenticated == true)
         {
             userName = user.Identity.Name ?? "Usuário";
-            userIdentity = userName;
-            claimsCount = user.Claims.Count();
-            authState = "✅ Authenticated";
         }
-        else
-        {
-            authState = "❌ Not Authenticated";
-        }
-        
-        testToken = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
     }
 
     private async Task LoadDashboardData()
@@ -286,110 +259,30 @@
         var userIdStr = authStateResult.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")?.Value;
         Guid.TryParse(userIdStr, out Guid userId);
 
-        // Parallel data loading
-        var allTicketsTask = OrderService.SearchAsync(new SearchOrdersParameters { PageSize = 100 });
-        var overdueTask = OrderService.SearchAsync(new SearchOrdersParameters { IsOverdue = true, PageSize = 100 });
-        
-        // Conditional tasks if we have userId
-        Task<PagedResult<OrderListViewModel>>? myTicketsTask = userId != Guid.Empty 
-            ? OrderService.GetMyTicketsAsync(userId, 1, 100) 
-            : null;
-            
-        Task<PagedResult<OrderListViewModel>>? assignedToMeTask = userId != Guid.Empty 
-            ? OrderService.GetAssignedToMeAsync(userId, 1, 100) 
-            : null;
+        var dashboardStats = await OrderService.GetDashboardStatsAsync(userId != Guid.Empty ? userId : null);
 
-        await Task.WhenAll(
-            allTicketsTask, 
-            overdueTask, 
-            myTicketsTask ?? Task.FromResult(new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0)), 
-            assignedToMeTask ?? Task.FromResult(new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0))
-        );
-
-        var allTickets = await allTicketsTask;
-        var overdue = await overdueTask;
-        var myTickets = myTicketsTask != null ? await myTicketsTask : new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0);
-        var assignedToMe = assignedToMeTask != null ? await assignedToMeTask : new PagedResult<OrderListViewModel>(new(), 0, 1, 10, 0);
-
-        stats = new DashboardStats
+        if (dashboardStats != null)
         {
-            TotalTickets = allTickets.TotalCount,
-            MyTickets = myTickets.TotalCount,
-            AssignedToMe = assignedToMe.TotalCount,
-            OverdueTickets = overdue.TotalCount
-        };
+            stats = new DashboardStats
+            {
+                TotalTickets = dashboardStats.TotalTickets,
+                MyTickets = dashboardStats.MyTickets,
+                AssignedToMe = dashboardStats.AssignedToMe,
+                OverdueTickets = dashboardStats.OverdueTickets
+            };
+        }
 
-        // Recent tickets (from all tickets for now, or could use specific endpoint)
+        var allTickets = await OrderService.SearchAsync(new SearchOrdersParameters { PageSize = 100 });
         recentTickets = allTickets.Items.Take(10).ToList();
 
-        // Charts
         var groupedByStatus = allTickets.Items
             .GroupBy(t => t.StatusName)
             .Select(g => new { Status = g.Key, Count = g.Count() })
-            .Select(g => new { Status = string.IsNullOrEmpty(g.Status) ? "Desconhecido" : g.Status, Count = g.Count })
+            .Select(g => new { Status = string.IsNullOrEmpty(g.Status) ? "Desconhecido" : g.Status, g.Count })
             .ToList();
 
         chartLabelsByStatus = groupedByStatus.Select(g => g.Status).ToArray();
         chartDataByStatus = groupedByStatus.Select(g => (double)g.Count).ToArray();
-    }
-
-    private void OpenDebugDialog()
-    {
-        var parameters = new DialogParameters
-        {
-            { "AuthState", authState },
-            { "TestToken", testToken },
-            { "ClaimsCount", claimsCount },
-            { "UserIdentity", userIdentity },
-            { "OnTestAuthState", EventCallback.Factory.Create(this, TestAuthState) },
-            { "OnForceLogout", EventCallback.Factory.Create(this, ForceLogout) },
-            { "OnTestLogin", EventCallback.Factory.Create(this, TestLogin) },
-            { "OnDownloadLogs", EventCallback.Factory.Create(this, DownloadLogs) },
-            { "OnClearLogs", EventCallback.Factory.Create(this, ClearLogs) }
-        };
-
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        DialogService.Show<DebugInfoDialog>("Debug Info", parameters, options);
-    }
-
-    private async Task TestAuthState()
-    {
-        await LoadUserData();
-        StateHasChanged();
-    }
-
-    private async Task ForceLogout()
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("localStorage.removeItem", "authToken");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "refreshToken");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_code_verifier");
-            NavigationManager.NavigateTo("/authentication/login", forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Logout error: {ex.Message}");
-        }
-    }
-
-    private async Task TestLogin()
-    {
-        if (AuthStateProvider is CookieAuthenticationStateProvider cookieProvider)
-        {
-            var success = await cookieProvider.LoginAsync("admin@admin.com", "Admin@123");
-            if (success) await TestAuthState();
-        }
-    }
-    
-    private async Task DownloadLogs()
-    {
-        await JS.InvokeVoidAsync("window.EChamadoLogger.downloadLogs", "echamado-auth-debug.log");
-    }
-
-    private async Task ClearLogs()
-    {
-        await JS.InvokeVoidAsync("window.EChamadoLogger.clearLogs");
     }
 
     private Func<OrderListViewModel, bool> RecentQuickFilter => order =>

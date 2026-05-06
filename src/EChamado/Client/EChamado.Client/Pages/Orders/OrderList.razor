@@ -291,13 +291,22 @@
 
     private string ConvertGridifyToOData(string gridifyQuery)
     {
-        // Basic conversion: Gridify uses *= for contains, OData uses contains()
-        var odataQuery = gridifyQuery
-            .Replace("*=", "contains")
-            .Replace("&", "and")
-            .Replace("|", "or");
+        if (string.IsNullOrWhiteSpace(gridifyQuery))
+            return string.Empty;
 
-        return odataQuery;
+        var odata = gridifyQuery;
+
+        odata = odata.Replace("*=", "/contains(");
+        odata = odata.Replace("=", " eq ");
+        odata = odata.Replace("!=", " ne ");
+        odata = odata.Replace(">", " gt ");
+        odata = odata.Replace("<", " lt ");
+        odata = odata.Replace(">=", " ge ");
+        odata = odata.Replace("<=", " le ");
+        odata = odata.Replace("&", " and ");
+        odata = odata.Replace("|", " or ");
+
+        return odata;
     }
 
     protected override async Task OnInitializedAsync()

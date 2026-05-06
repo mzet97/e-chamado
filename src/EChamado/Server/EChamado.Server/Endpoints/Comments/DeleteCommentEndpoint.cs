@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.Comments.Commands;
 using EChamado.Server.Endpoints.Comments.DTOs;
 using EChamado.Server.Common.Api;
@@ -32,11 +32,11 @@ public class DeleteCommentEndpoint : IEndpoint
 
             return TypedResults.BadRequest(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResult(
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

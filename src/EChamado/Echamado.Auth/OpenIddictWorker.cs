@@ -60,7 +60,7 @@ public class OpenIddictWorker : IHostedService
                 ClientId = "introspection-client",
                 DisplayName = "Introspection Client (API Server)",
                 ClientType = ClientTypes.Confidential,
-                ClientSecret = "echamado_introspection_secret_2024",
+                ClientSecret = Environment.GetEnvironmentVariable("INTROSPECTION_CLIENT_SECRET") ?? "changeme_introspection_secret",
                 Permissions =
                 {
                     Permissions.Endpoints.Introspection
@@ -78,7 +78,7 @@ public class OpenIddictWorker : IHostedService
             await manager.PopulateAsync(descriptor, introspectionClient, cancellationToken);
 
             descriptor.ClientType = ClientTypes.Confidential;
-            descriptor.ClientSecret = "echamado_introspection_secret_2024";
+            descriptor.ClientSecret = Environment.GetEnvironmentVariable("INTROSPECTION_CLIENT_SECRET") ?? "changeme_introspection_secret";
             descriptor.Permissions.Clear();
             descriptor.Permissions.Add(Permissions.Endpoints.Introspection);
 

@@ -5,7 +5,7 @@
 @inject CategoryService CategoryService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>@(IsEdit ? "Editar Categoria" : "Nova Categoria") - EChamado</PageTitle>
 

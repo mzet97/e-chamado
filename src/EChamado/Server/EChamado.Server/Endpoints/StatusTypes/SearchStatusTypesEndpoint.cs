@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.StatusTypes.Queries;
 using EChamado.Server.Application.UseCases.StatusTypes.ViewModels;
 using EChamado.Server.Common.Api;
@@ -39,13 +39,13 @@ public class SearchStatusTypesEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.BadRequest(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<StatusTypeViewModel>(
                 new List<StatusTypeViewModel>(),
                 null,
                 false,
-                $"Erro interno: {ex.Message}"));
+                "Erro ao processar a solicitacao."));
         }
     }
 }

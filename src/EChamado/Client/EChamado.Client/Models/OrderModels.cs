@@ -83,3 +83,11 @@ public record CloseOrderRequest(Guid OrderId, int? Evaluation);
 public record ChangeStatusRequest(Guid OrderId, Guid StatusTypeId);
 public record AssignOrderRequest(Guid OrderId, Guid AssignedToUserId);
 public record AddCommentRequest(Guid OrderId, string Description, Guid UserId, string UserEmail);
+
+public class DashboardStatsResponse
+{
+    public int TotalTickets { get; set; }
+    public int MyTickets { get; set; }
+    public int AssignedToMe { get; set; }
+    public int OverdueTickets { get; set; }
+}

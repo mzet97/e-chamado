@@ -10,7 +10,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject ILogger<StatusTypes> Logger
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Gerenciar Status - EChamado</PageTitle>
 

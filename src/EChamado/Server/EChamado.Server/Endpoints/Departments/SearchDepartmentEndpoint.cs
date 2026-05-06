@@ -42,13 +42,13 @@ public class SearchDepartmentEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.BadRequest(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<DepartmentViewModel>(
                 new List<DepartmentViewModel>(),
                 null,
                 false,
-                $"Erro interno: {ex.Message}"));
+                "Erro ao processar a solicitacao."));
         }
     }
 }

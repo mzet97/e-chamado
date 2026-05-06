@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Services.AI;
+﻿using EChamado.Server.Application.Services.AI;
 using EChamado.Server.Common.Api;
 using Microsoft.AspNetCore.Mvc;
 
@@ -52,12 +52,12 @@ public sealed class ConvertNLToGridifyEndpoint : IEndpoint
 
             return TypedResults.BadRequest(response);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new NLToGridifyResponse
             {
                 Success = false,
-                ErrorMessage = $"Erro ao processar consulta: {ex.Message}",
+                ErrorMessage = "Erro ao processar a solicitacao.",
                 OriginalQuery = request.Query,
                 EntityName = request.EntityName
             });

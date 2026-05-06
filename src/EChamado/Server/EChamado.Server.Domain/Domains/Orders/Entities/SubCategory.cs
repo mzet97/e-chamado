@@ -11,7 +11,7 @@ public class SubCategory : SoftDeletableEntity<SubCategory>
     public string Description { get; private set; } = string.Empty;
 
     public Guid CategoryId { get; private set; }
-    public Category Category { get; set; } = null!;
+    public Category Category { get; private set; } = null!;
 
     private SubCategory() : base(new SubCategoryValidation()) { }
 

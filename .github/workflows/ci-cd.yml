@@ -27,6 +27,21 @@ jobs:
       checks: write
       pull-requests: write
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: e_chamado_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -54,17 +69,37 @@ jobs:
           --collect:"XPlat Code Coverage" \
           --results-directory ./TestResults/UnitTests
 
-    # Integration tests are skipped in CI as they require external infrastructure
-    # Run locally with: dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/
-    # - name: Run Integration Tests
-    #   run: |
-    #     dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/EChamado.Server.IntegrationTests.csproj \
-    #       --configuration Release \
-    #       --no-build \
-    #       --verbosity normal \
-    #       --logger "trx;LogFileName=integration-tests.trx" \
-    #       --collect:"XPlat Code Coverage" \
-    #       --results-directory ./TestResults/IntegrationTests
+    - name: Run Shared Unit Tests
+      run: |
+        dotnet test src/EChamado/Tests/EChamado.Shared.UnitTests/EChamado.Shared.UnitTests.csproj \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --logger "trx;LogFileName=shared-unit-tests.trx" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults/SharedUnitTests
+
+    - name: Run Auth Unit Tests
+      run: |
+        dotnet test src/EChamado/Tests/Echamado.Auth.UnitTests/Echamado.Auth.UnitTests.csproj \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --logger "trx;LogFileName=auth-unit-tests.trx" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults/AuthUnitTests
+
+    - name: Run Integration Tests
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=e_chamado_test;User Id=test_user;Password=test_password;"
+      run: |
+        dotnet test src/EChamado/Tests/EChamado.Server.IntegrationTests/EChamado.Server.IntegrationTests.csproj \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --logger "trx;LogFileName=integration-tests.trx" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults/IntegrationTests
 
     - name: Generate Code Coverage Report
       uses: danielpalme/ReportGenerator-GitHub-Action@5.3.10

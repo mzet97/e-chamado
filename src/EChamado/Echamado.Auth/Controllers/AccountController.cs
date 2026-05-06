@@ -70,10 +70,9 @@ public class AccountController : Controller
 
         // Com OpenIddict configurado, o redirecionamento para returnUrl
         // permitirá que o OpenIddict complete o fluxo e gere o token JWT
-        if (!string.IsNullOrEmpty(returnUrl))
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {
-            _logger.LogInformation("📍 Redirecting to returnUrl: {ReturnUrl}", returnUrl);
-            _logger.LogInformation("🔍 returnUrl should be /connect/authorize with OAuth params");
+            _logger.LogInformation("Redirecting to returnUrl: {ReturnUrl}", returnUrl);
             return Redirect(returnUrl);
         }
 
@@ -89,7 +88,7 @@ public class AccountController : Controller
         await _signInManager.SignOutAsync();
         await HttpContext.SignOutAsync("External");
 
-        if (!string.IsNullOrEmpty(returnUrl))
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {
             return Redirect(returnUrl);
         }

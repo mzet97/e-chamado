@@ -11,7 +11,7 @@
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 @inject ILogger<OrderTypes> Logger
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 <PageTitle>Gerenciar Tipos de Chamado - EChamado</PageTitle>
 

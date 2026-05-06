@@ -1,4 +1,4 @@
-using EChamado.Server.Application.Common.Messaging;
+﻿using EChamado.Server.Application.Common.Messaging;
 using EChamado.Server.Application.UseCases.SubCategories.Queries;
 using EChamado.Server.Endpoints.SubCategories.DTOs;
 using EChamado.Server.Common.Api;
@@ -29,13 +29,13 @@ public class SearchSubCategoriesEndpoint : IEndpoint
                 ? TypedResults.Ok(query.Result)
                 : TypedResults.BadRequest(query.Result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return TypedResults.BadRequest(new BaseResultList<BaseViewModel>(
                 data: new List<BaseViewModel>(),
                 pagedResult: new PagedResult { CurrentPage = 0, PageCount = 0, PageSize = 10, RowCount = 0 },
                 success: false,
-                message: $"Erro interno: {ex.Message}"));
+                message: "Erro ao processar a solicitacao."));
         }
     }
 }

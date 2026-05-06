@@ -12,7 +12,7 @@ public class Comment : SoftDeletableEntity<Comment>
     public Guid UserId { get; private set; }
     public string UserEmail { get; private set; } = string.Empty;
 
-    public Order Order { get; set; } = null!;
+    public Order Order { get; private set; } = null!;
 
     private Comment() : base(new CommentValidation()) { }
 

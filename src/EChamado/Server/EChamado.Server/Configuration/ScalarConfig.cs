@@ -75,7 +75,7 @@ curl -X POST https://localhost:7133/connect/token \
   -H ""Content-Type: application/x-www-form-urlencoded"" \
   -d ""grant_type=password"" \
   -d ""username=admin@admin.com"" \
-  -d ""password=Admin@123"" \
+  -d ""password=YOUR_PASSWORD"" \
   -d ""client_id=mobile-client"" \
   -d ""scope=openid profile email roles api chamados""
 ```
@@ -104,10 +104,9 @@ curl -X POST https://localhost:7133/connect/token \
 - **API Server**: https://localhost:7296 (esta API)
 - **Client App**: https://localhost:7274 (Blazor WebAssembly)
 
-## 👥 Usuários Padrão
+## 👥 Usuarios Padrao (configure via environment variables)
 
-- **Admin**: admin@admin.com / Admin@123
-- **User**: user@echamado.com / User@123
+Veja `docs/onboarding/developer-onboarding.md` para credenciais de desenvolvimento.
 ",
                 Contact = new OpenApiContact
                 {
@@ -143,7 +142,7 @@ curl -X POST https://localhost:7133/connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
   -d 'username=admin@admin.com' \
-  -d 'password=Admin@123' \
+  -d 'password=YOUR_PASSWORD' \
   -d 'client_id=mobile-client' \
   -d 'scope=openid profile email roles api chamados'
 ```
