@@ -35,7 +35,8 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             // Fallback para connection string padr�o
-            connectionString = "Host=localhost;Port=5432;Pooling=true;Database=e-chamado;User Id=app;Password=CHANGEME;";
+            var pgPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "dsv@123";
+            connectionString = $"Host=localhost;Port=5433;Pooling=true;Database=e-chamado;Username=postgres;Password={pgPassword};";
         }
 
         // Obt�m o provider de banco de dados (padr�o: Postgres)
