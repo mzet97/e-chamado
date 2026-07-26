@@ -10,7 +10,8 @@ public static class CommentDTOExtensions
             request.Description,
             request.OrderId,
             request.UserId,
-            request.UserEmail
+            request.UserEmail,
+            request.IsInternal
         );
     }
 

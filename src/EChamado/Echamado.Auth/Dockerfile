@@ -1,18 +1,21 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# EChamado Auth Server - Multi-stage Dockerfile (.NET 10)
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy entire source
+# Copy csproj files first for layer cache optimization
+COPY EChamado.Shared/EChamado.Shared.csproj EChamado.Shared/
+COPY Server/EChamado.Server.Domain/EChamado.Server.Domain.csproj Server/EChamado.Server.Domain/
+COPY Server/EChamado.Server.Application/EChamado.Server.Application.csproj Server/EChamado.Server.Application/
+COPY Server/EChamado.Server.Infrastructure/EChamado.Server.Infrastructure.csproj Server/EChamado.Server.Infrastructure/
+COPY Echamado.Auth/Echamado.Auth.csproj Echamado.Auth/
+RUN dotnet restore Echamado.Auth/Echamado.Auth.csproj
+
+# Copy source and build
 COPY . .
-
-# Restore and build
-RUN dotnet restore --force --no-cache
-
-# Build and publish Auth
 RUN dotnet publish Echamado.Auth/Echamado.Auth.csproj -c Release -o /app/publish --no-restore
 
-# Runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+# Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
@@ -20,11 +23,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 COPY --from=build /app/publish .
 
 RUN groupadd -g 1000 appgroup && useradd -u 1000 -G appgroup appuser && chown -R appuser:appgroup /app
-
 USER appuser
 
-EXPOSE 5001
+EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl -f http://localhost:5001/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:8080/.well-known/openid-configuration || exit 1
 
 ENTRYPOINT ["dotnet", "Echamado.Auth.dll"]

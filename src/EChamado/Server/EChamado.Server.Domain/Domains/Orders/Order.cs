@@ -38,6 +38,10 @@ public class Order : SoftDeletableAggregateRoot<Order>
     public Guid DepartmentId { get; private set; }
     public Department Department { get; private set; } = null!;
 
+    // Navigation property — permite Include() em queries EF
+    // (acesso via repositório, não por lazy loading)
+    public IEnumerable<Comment> Comments { get; private set; } = new List<Comment>();
+
     private Order() : base(new OrderValidation()) { }
 
 

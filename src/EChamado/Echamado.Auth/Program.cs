@@ -160,12 +160,16 @@ try
             options.SetAuthorizationEndpointUris("/connect/authorize"); // ✅ ADICIONADO para Authorization Code Flow
             options.SetTokenEndpointUris("/connect/token");
             options.SetIntrospectionEndpointUris("/connect/introspect"); // ✅ CRÍTICO para validação de tokens
+            options.SetEndSessionEndpointUris("/connect/logout"); // ✅ End session endpoint (logout OIDC)
 
             // Grant types permitidos
             options.AllowAuthorizationCodeFlow() // ✅ ADICIONADO para Authorization Code + PKCE
                    .AllowPasswordFlow()
                    .AllowClientCredentialsFlow()
                    .AllowRefreshTokenFlow();
+
+            // Em OpenIddict 7.x, o end session (logout) é habilitado automaticamente
+            // quando SetEndSessionEndpointUris é chamado. Nenhuma permissão extra é necessária.
 
             // Scopes registrados
             options.RegisterScopes("openid", "profile", "email", "roles", "api", "chamados");
@@ -182,6 +186,7 @@ try
             options.UseAspNetCore()
                    .EnableAuthorizationEndpointPassthrough() // ✅ ADICIONADO para permitir processamento customizado
                    .EnableTokenEndpointPassthrough()
+                   .EnableEndSessionEndpointPassthrough() // ✅ Permite processamento customizado do logout
                    .DisableTransportSecurityRequirement();
         })
         .AddValidation(options =>

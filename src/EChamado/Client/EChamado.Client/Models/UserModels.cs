@@ -12,6 +12,7 @@ public record UserResponse(
     DateTimeOffset? LockoutEnd,
     bool LockoutEnabled,
     int AccessFailedCount,
+    Guid? DepartmentId,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     List<string> Roles

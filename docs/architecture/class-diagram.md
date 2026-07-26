@@ -6,164 +6,176 @@
 
 Este documento apresenta os diagramas de classes do sistema EChamado, mostrando os principais modelos de domínio, seus relacionamentos e hierarquias.
 
+### Legenda de Status
+- ✅ **Implementado** — existe no código
+- ⚠️ **Parcial** — existe com diferenças em relação ao diagrama
+- 📝 **Planejado** — descrito para referência futura, não implementado
+
+> **Nota:** Os diagramas abaixo foram atualizados em jul/2026 para refletir o código real.
+> Seções marcadas como 📝 descrevem aspirações de design, não código existente.
+
 ---
 
-## 🏗️ Arquitetura de Classes
+## 🏗️ Arquitetura de Classes ✅
 
 ```mermaid
 classDiagram
-    %% Entity Base Classes
-    class Entity~TId~ {
-        +TId Id
-        +DateTime CreatedAt
-        +DateTime UpdatedAt
-        +bool Equals(object obj)
-        +int GetHashCode()
+    %% Entity Base Classes (EChamado.Shared/Domain/)
+    class Entity~T~ {
+        +Guid Id
+        +IReadOnlyCollection~IDomainEvent~ Events
+        +void AddEvent(IDomainEvent event)
+        +void ClearEvents()
     }
-    
-    class AggregateRoot~TId~ {
-        +DateTime CreatedAt
-        +DateTime UpdatedAt
-        +List~IDomainEvent~ _domainEvents
-        +IReadOnlyCollection~IDomainEvent~ DomainEvents
-        +void AddDomainEvent(IDomainEvent domainEvent)
-        +void ClearDomainEvents()
+
+    class AuditableEntity~T~ {
+        +DateTime CreatedAtUtc
+        +DateTime? UpdatedAtUtc
+        +void MarkCreated(DateTime utcNow)
+        +void MarkUpdated(DateTime utcNow)
     }
-    
-    %% Order System
+
+    class SoftDeletableEntity~T~ {
+        +bool IsDeleted
+        +DateTime? DeletedAtUtc
+        +void SoftDelete(DateTime utcNow)
+        +void Restore()
+    }
+
+    class Validatable~T~ {
+        +bool _isValid
+        +IEnumerable~string~ _errors
+        +bool IsValid()
+        +abstract void Validate()
+    }
+
+    %% Order System (implementado)
     class Order {
         +Guid Id
         +string Title
         +string Description
-        +Guid CategoryId
-        +Guid OrderTypeId
-        +Guid StatusTypeId
-        +Guid DepartmentId
-        +Guid? ResponsibleUserId
-        +string ResponsibleUserEmail
-        +DateTime OpeningDate
+        +string? Evaluation
+        +DateTime? OpeningDate
         +DateTime? ClosingDate
-        +List~Comment~ Comments
-        +OrderStatus Status
-        +bool IsOverdue()
-        +void AssignUser(Guid userId, string email)
-        +void ChangeStatus(OrderStatus newStatus)
+        +DateTime? DueDate
+        +Guid StatusId
+        +Guid TypeId
+        +Guid CategoryId
+        +Guid? SubCategoryId
+        +Guid DepartmentId
+        +Guid RequestingUserId
+        +string RequestingUserEmail
+        +Guid ResponsibleUserId
+        +string ResponsibleUserEmail
+        +static Create(...)$
+        +void Update(...)
+        +void AssignTo(Guid userId, string email, IDateTimeProvider dt)
+        +void ChangeStatus(Guid statusId, IDateTimeProvider dt)
+        +void Close(int evaluation, IDateTimeProvider dt)
     }
-    
-    %% Supporting Entities
+
+    %% Supporting Entities (implementado)
     class Category {
         +Guid Id
         +string Name
-        +string? Description
-        +List~SubCategory~ SubCategories
-        +void Update(string name, string? description)
+        +string Description
+        +IEnumerable~SubCategory~ SubCategories
+        +static Create(name, description, dt)$
+        +void Update(name, description, dt)
     }
-    
+
     class SubCategory {
         +Guid Id
         +string Name
-        +string? Description
+        +string Description
         +Guid CategoryId
-        +Category Category
-        +List~Order~ Orders
-        +void Update(string name, string? description)
+        +static Create(name, description, categoryId, dt)$
+        +void Update(name, description, dt)
     }
-    
+
     class Department {
         +Guid Id
         +string Name
-        +string? Description
-        +List~Order~ Orders
-        +List~User~ Users
-        +void Update(string name, string? description)
+        +string Description
+        +static Create(name, description, dt)$
+        +void Update(name, description, dt)
     }
     
     class OrderType {
         +Guid Id
         +string Name
-        +string? Description
-        +List~Order~ Orders
-        +void Update(string name, string? description)
+        +string Description
+        +static Create(name, description, dt)$
+        +void Update(name, description, dt)
     }
-    
+
     class StatusType {
         +Guid Id
         +string Name
-        +string? Description
-        +string Color
-        +int SortOrder
-        +bool IsFinal
-        +List~Order~ Orders
-        +void Update(string name, string? description, string color)
+        +string Description
+        +static Create(name, description, dt)$
+        +void Update(name, description, dt)
     }
-    
-    %% Comment System
+
+    %% Comment System (implementado)
     class Comment {
         +Guid Id
-        +string Content
+        +string Text
         +Guid OrderId
-        +Order Order
         +Guid UserId
-        +string UserName
         +string UserEmail
-        +DateTime CreatedAt
-        +bool IsInternal
-        +void UpdateContent(string content)
+        +static Create(text, orderId, userId, userEmail, dt)$
     }
-    
-    %% User Management
-    class User {
+
+    %% ApplicationUser (Identity - implementado)
+    class ApplicationUser {
         +Guid Id
-        +string Email
-        +string Name
-        +string? Phone
-        +byte[]? Photo
-        +UserRole Role
-        +Guid DepartmentId
-        +Department Department
-        +DateTime CreatedAt
-        +DateTime? LastLoginAt
-        +bool IsActive
-        +List~Order~ AssignedOrders
-        +void ChangeRole(UserRole newRole)
-        +void UpdateProfile(string name, string? phone)
+        +string? Email
+        +string? UserName
+        +string? FullName
+        +string? Photo
+        +bool EmailConfirmed
+        +DateTime CreatedAtUtc
     }
-    
-    %% Enums
-    OrderStatus : Open | InProgress | WaitingUser | WaitingDepartment | Resolved | Closed | Cancelled
-    UserRole : Admin | Manager | Agent | User | Guest
-    
+
     %% Relationships
-    Entity <|-- AggregateRoot
-    AggregateRoot <|-- Order
-    AggregateRoot <|-- Category
-    AggregateRoot <|-- Department
-    AggregateRoot <|-- OrderType
-    AggregateRoot <|-- StatusType
-    AggregateRoot <|-- User
-    
-    Entity <|-- SubCategory
-    Entity <|-- Comment
-    
+    Validatable <|-- Entity
+    Entity <|-- AuditableEntity
+    AuditableEntity <|-- SoftDeletableEntity
+    SoftDeletableEntity <|-- SoftDeletableAggregateRoot
+
+    SoftDeletableEntity <|-- Order
+    SoftDeletableEntity <|-- Category
+    SoftDeletableEntity <|-- Department
+    SoftDeletableEntity <|-- OrderType
+    SoftDeletableEntity <|-- StatusType
+    SoftDeletableEntity <|-- SubCategory
+    SoftDeletableEntity <|-- Comment
+
     Order "1" --> "1" Category : belongs to
     Order "1" --> "1" OrderType : has type
     Order "1" --> "1" StatusType : current status
     Order "1" --> "1" Department : assigned to
-    Order "1" --> "*" Comment : contains
-    
+    Order "1" --> "0..1" SubCategory : optional
+
     Category "1" --> "*" SubCategory : has
     SubCategory "1" --> "1" Category : belongs to
-    
-    User "1" --> "1" Department : belongs to
-    User "*" --> "*" Order : assigned to
-    
-    OrderStatus --* Order : status
-    UserRole --* User : role
+
+    %% Nota: Order.Comments é acessado via ICommentRepository.GetByOrderIdAsync()
+    %% (não navigation property)
+    %% Nota: IsOverdue existe apenas no OrderViewModel (não na entidade)
+    %% Nota: Department.Users não existe (Users não têm FK para Department)
 ```
 
 ---
 
-## 🗄️ ViewModels e DTOs
+> ⚠️ **As seções abaixo (ViewModels, Infrastructure, CQRS, Auth, Frontend, Database, Events, Statistics, Config) descrevem o design aspiracional completo.** Muitas classes descritas não existem no código atual. Para ver o que está realmente implementado, consulte:
+> - [[EChamado - Status de Implementação (Auditoria)]]
+> - [[EChamado - Docs vs Implementação (Auditoria)]]
+
+---
+
+## 🗄️ ViewModels e DTOs ⚠️ (parcial — ViewModels reais são records mais simples)
 
 ```mermaid
 classDiagram
@@ -1082,43 +1094,26 @@ classDiagram
 
 ## 📝 Summary
 
-Este diagrama de classes apresenta uma visão abrangente da arquitetura do EChamado:
+Este diagrama de classes apresenta a visão da arquitetura do EChamado.
 
-### 🎯 **Principais Características:**
+### ✅ **Implementado no código:**
+- **Clean Architecture** — 4 camadas (Domain, Application, Infrastructure, API)
+- **CQRS** — Commands (Paramore.Brighter) + Queries (Paramore.Darker)
+- **Domain-Driven Design** — entidades ricas com Factory Method, Domain Events, FluentValidation
+- **Repository + UnitOfWork** — abstrações de persistência
+- **Soft-delete + Auditoria** — `ISoftDeletable`, `IAuditable`, `IDateTimeProvider`
+- **289 testes unitários** passando (0 falhas)
 
-- **Clean Architecture** com separação clara de responsabilidades
-- **CQRS** para otimização de leitura/escrita
-- **Domain-Driven Design** com entidades ricas
-- **Event-Driven Architecture** para desacoplamento
-- **Comprehensive Testing** com 310+ testes
-- **Scalable Infrastructure** com microservices ready
-
-### 🏗️ **Padrões Aplicados:**
-
-1. **Repository Pattern** - Abstrações de persistência
-2. **Unit of Work** - Gerenciamento de transações
-3. **Factory Pattern** - Criação de objetos complexos
-4. **Observer Pattern** - Eventos e notificações
-5. **Strategy Pattern** - Políticas de negócio
-6. **Dependency Injection** - Inversão de controle
-
-### 📊 **Métricas:**
-
-- **242+ Classes** organizadas em camadas
-- **6 Módulos** principais (Orders, Categories, Users, etc.)
-- **30+ Interfaces** para abstrações
-- **15+ Enums** para tipos domain
-- **100% Coverage** das funcionalidades core
+### 📝 **Planejado (não implementado):**
+- Event-Driven Architecture (event bus real, email notifications)
+- `User.DepartmentId` (permissão por departamento)
+- SLA management (SlaPolicy, alertas)
+- Relatórios (PDF/Excel export)
+- Full-text Search (PostgreSQL tsvector)
+- Performance/Analytics metrics
 
 ---
 
-**Próximos passos:**
-- **[Diagramas de Sequência](sequence-diagrams.md)** - Fluxos detalhados
-- **[Casos de Uso](use-cases.md)** - Cenários de negócio
-- **[Padrões Implementados](patterns.md)** - Detalhes técnicos
-
----
-
-**Última atualização:** 26 de novembro de 2025  
-**Versão:** 1.0.0  
-**Status:** ✅ Classes consolidadas e testadas
+**Última atualização:** 26 de julho de 2026
+**Versão:** 2.0.0
+**Status:** ✅ Diagrama atualizado para refletir código real (entidades, base classes, relacionamentos)

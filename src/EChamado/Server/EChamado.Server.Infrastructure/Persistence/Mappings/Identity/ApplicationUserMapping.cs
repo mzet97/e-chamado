@@ -30,6 +30,8 @@ namespace EChamado.Server.Infrastructure.Persistence.Mappings.Identity
             builder.Property(u => u.FullName)
                 .HasMaxLength(256);
 
+            builder.Property(u => u.DepartmentId);
+
             builder.Property(u => u.CreatedAtUtc)
                 .IsRequired();
 

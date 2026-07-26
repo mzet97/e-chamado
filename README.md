@@ -2,7 +2,7 @@
 
 Sistema de gestao de tickets/chamados com autenticacao SSO/OIDC, desenvolvido com .NET 9, Blazor WebAssembly e MudBlazor.
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
 [![Blazor](https://img.shields.io/badge/Blazor-WebAssembly-512BD4)](https://blazor.net/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 

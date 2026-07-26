@@ -34,7 +34,8 @@ public class CreateCommentCommandHandler(
             command.OrderId,
             command.UserId,
             command.UserEmail,
-            dateTimeProvider);
+            dateTimeProvider,
+            command.IsInternal);
 
         if (!entity.IsValid())
         {

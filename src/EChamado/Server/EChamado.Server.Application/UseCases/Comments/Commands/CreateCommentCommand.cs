@@ -9,16 +9,18 @@ public class CreateCommentCommand : BrighterRequest<BaseResult<Guid>>
     public Guid OrderId { get; set; } = default!;
     public Guid UserId { get; set; } = default!;
     public string UserEmail { get; set; } = string.Empty;
+    public bool IsInternal { get; set; }
 
     public CreateCommentCommand()
     {
     }
 
-    public CreateCommentCommand(string text, Guid orderId, Guid userId, string userEmail)
+    public CreateCommentCommand(string text, Guid orderId, Guid userId, string userEmail, bool isInternal = false)
     {
         Text = text;
         OrderId = orderId;
         UserId = userId;
         UserEmail = userEmail;
+        IsInternal = isInternal;
     }
 }

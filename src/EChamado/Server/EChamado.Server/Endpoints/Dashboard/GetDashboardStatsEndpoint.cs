@@ -1,6 +1,6 @@
 using EChamado.Server.Common.Api;
 using EChamado.Server.Domain.Domains.Orders;
-using EChamado.Server.Domain.Repositories;
+using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Shared.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,15 +15,17 @@ public class GetDashboardStatsEndpoint : IEndpoint
             .Produces<BaseResult<DashboardStatsResponse>>();
 
     private static async Task<IResult> HandleAsync(
-        [FromServices] IRepository<Order> orderRepository,
+        [FromServices] IOrderRepository orderRepository,
         [FromQuery] Guid? userId)
     {
         try
         {
             var query = orderRepository.GetAllQueryable();
 
-            var totalTask = query.CountAsync();
-            var overdueTask = query.CountAsync(o =>
+            // Execução sequencial para evitar InvalidOperationException
+            // (EF Core não suporta operações concorrentes no mesmo DbContext)
+            var total = await query.CountAsync();
+            var overdue = await query.CountAsync(o =>
                 o.DueDate != null && o.DueDate < DateTime.UtcNow && o.ClosingDate == null);
 
             int myTickets = 0;
@@ -34,9 +36,6 @@ public class GetDashboardStatsEndpoint : IEndpoint
                 myTickets = await query.CountAsync(o => o.RequestingUserId == userId.Value);
                 assignedToMe = await query.CountAsync(o => o.ResponsibleUserId == userId.Value);
             }
-
-            var total = await totalTask;
-            var overdue = await overdueTask;
 
             var stats = new DashboardStatsResponse
             {
@@ -51,12 +50,14 @@ public class GetDashboardStatsEndpoint : IEndpoint
                 success: true,
                 message: "Dashboard statistics retrieved successfully"));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine($"[Dashboard] ERRO: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine($"[Dashboard] StackTrace: {ex.StackTrace}");
             return TypedResults.BadRequest(new BaseResult<DashboardStatsResponse>(
                 data: null,
                 success: false,
-                message: "Erro ao processar a solicitacao."));
+                message: $"Erro ao processar a solicitacao: {ex.Message}"));
         }
     }
 }

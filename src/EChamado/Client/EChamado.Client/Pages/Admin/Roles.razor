@@ -1,0 +1,229 @@
+@page "/admin/roles"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using EChamado.Client.Components
+@using MudBlazor
+@inject RoleService RoleService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Roles> Logger
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Perfis - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Perfis</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreate">
+            Novo Perfil
+        </MudButton>
+    </div>
+
+    <MudCard Elevation="3">
+        <MudCardContent>
+            @if (isLoading)
+            {
+                <MudSkeleton Height="120px" />
+            }
+            else if (!roles.Any())
+            {
+                <MudAlert Severity="Severity.Info">Nenhum perfil encontrado.</MudAlert>
+            }
+            else
+            {
+                <MudDataGrid T="RoleResponse"
+                             Items="@roles"
+                             Hover="true"
+                             Bordered="true"
+                             Dense="true"
+                             Striped="true"
+                             Filterable="true"
+                             SortMode="SortMode.Single">
+                    <Columns>
+                        <PropertyColumn Property="x => x.Name" Title="Nome" />
+                        <PropertyColumn Property="x => x.Description" Title="Descrição" />
+                        <TemplateColumn Title="Permissões">
+                            <CellTemplate>
+                                @if (context.Item.Permissions?.Any() == true)
+                                {
+                                    @string.Join(", ", context.Item.Permissions)
+                                }
+                                else
+                                {
+                                    <MudText Color="Color.Secondary">-</MudText>
+                                }
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Ações" CellClass="d-flex align-center justify-end">
+                            <CellTemplate>
+                                <MudTooltip Text="Editar">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Size="Size.Small"
+                                                   Color="Color.Info"
+                                                   OnClick="@(() => OpenEdit(context.Item))" />
+                                </MudTooltip>
+                                <MudTooltip Text="Excluir">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Size="Size.Small"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => DeleteRole(context.Item))" />
+                                </MudTooltip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <NoRecordsContent>
+                        <div class="d-flex flex-column align-center justify-center py-4">
+                            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Color="Color.Secondary" Class="mt-2">Nenhum perfil encontrado</MudText>
+                        </div>
+                    </NoRecordsContent>
+                </MudDataGrid>
+            }
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Dialog Create/Edit -->
+    <MudDialog @bind-IsVisible="showDialog">
+        <DialogContent>
+            <MudText Typo="Typo.h6" Class="mb-4">@(editingId == Guid.Empty ? "Novo Perfil" : "Editar Perfil")</MudText>
+            <MudTextField @bind-Value="formName"
+                          Label="Nome"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          Class="mb-3" />
+            <MudTextField @bind-Value="formDescription"
+                          Label="Descrição"
+                          Variant="Variant.Outlined"
+                          Class="mb-3" />
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="CancelForm" Color="Color.Inherit">Cancelar</MudButton>
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       Disabled="isSaving"
+                       OnClick="SaveRole">
+                @if (isSaving)
+                {
+                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                }
+                Salvar
+            </MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudContainer>
+
+@code {
+    private List<RoleResponse> roles = new();
+    private bool isLoading = true;
+    private bool isSaving;
+
+    private bool showDialog;
+    private Guid editingId = Guid.Empty;
+    private string formName = string.Empty;
+    private string? formDescription;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRoles();
+    }
+
+    private async Task LoadRoles()
+    {
+        isLoading = true;
+        try
+        {
+            roles = await RoleService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar perfis: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenCreate()
+    {
+        editingId = Guid.Empty;
+        formName = string.Empty;
+        formDescription = null;
+        showDialog = true;
+    }
+
+    private void OpenEdit(RoleResponse role)
+    {
+        editingId = role.Id;
+        formName = role.Name;
+        formDescription = role.Description;
+        showDialog = true;
+    }
+
+    private void CancelForm()
+    {
+        showDialog = false;
+    }
+
+    private async Task SaveRole()
+    {
+        if (string.IsNullOrWhiteSpace(formName))
+        {
+            Snackbar.Add("Nome é obrigatório", Severity.Warning);
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            if (editingId == Guid.Empty)
+            {
+                await RoleService.CreateAsync(new CreateRoleRequest(formName, formDescription ?? string.Empty, new List<string>()));
+                Snackbar.Add("Perfil criado com sucesso!", Severity.Success);
+            }
+            else
+            {
+                await RoleService.UpdateAsync(editingId, new UpdateRoleRequest(formName, formDescription ?? string.Empty, new List<string>()));
+                Snackbar.Add("Perfil atualizado com sucesso!", Severity.Success);
+            }
+            showDialog = false;
+            await LoadRoles();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar perfil: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteRole(RoleResponse role)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", $"Tem certeza que deseja excluir o perfil \"{role.Name}\"?" },
+            { "ButtonText", "Excluir" },
+            { "Color", Color.Error }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            try
+            {
+                await RoleService.DeleteAsync(role.Id);
+                Snackbar.Add("Perfil excluído com sucesso!", Severity.Success);
+                await LoadRoles();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir perfil: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

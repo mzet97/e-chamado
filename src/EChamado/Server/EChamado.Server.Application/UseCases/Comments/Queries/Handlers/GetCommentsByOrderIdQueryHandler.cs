@@ -20,6 +20,7 @@ public class GetCommentsByOrderIdQueryHandler(IUnitOfWork unitOfWork) :
             c.OrderId,
             c.UserId,
             c.UserEmail,
+            c.IsInternal,
             c.CreatedAtUtc,
             c.UpdatedAtUtc,
             c.DeletedAtUtc,

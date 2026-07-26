@@ -1,6 +1,25 @@
 @page "/authentication/logout-callback"
+@using EChamado.Client.Authentication
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Logout Callback</PageTitle>
+<PageTitle>Saindo...</PageTitle>
 
-<RemoteAuthenticatorView Action="logout-callback" />
+<div style="text-align: center; padding: 50px;">
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    <p>Encerrando sessão...</p>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Após o retorno do end session endpoint da Auth Server, finaliza a
+        // limpeza do estado local e redireciona para a home (que exige login).
+        if (AuthStateProvider is CookieAuthenticationStateProvider provider)
+        {
+            await provider.LogoutAsync();
+        }
+
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

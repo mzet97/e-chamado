@@ -84,6 +84,9 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -225,16 +228,74 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", "public");
                 });
 
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CommentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UploadedByUserEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId")
+                        .HasDatabaseName("IX_Attachment_CommentId");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Attachment_IsDeleted");
+
+                    b.ToTable("Attachment", "public");
+                });
+
             modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Category", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -249,13 +310,13 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_Category_CreatedAt");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_Category_CreatedAtUtc");
 
                     b.HasIndex("IsDeleted")
                         .HasDatabaseName("IX_Category_IsDeleted");
@@ -275,14 +336,19 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInternal")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
@@ -292,7 +358,7 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("varchar");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserEmail")
@@ -305,7 +371,17 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_Comment_CreatedAtUtc");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Comment_IsDeleted");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("IX_Comment_OrderId");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_Comment_UserId");
 
                     b.ToTable("Comment", "public");
                 });
@@ -316,10 +392,10 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -334,13 +410,13 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_Department_CreatedAt");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_Department_CreatedAtUtc");
 
                     b.HasIndex("IsDeleted")
                         .HasDatabaseName("IX_Department_IsDeleted");
@@ -360,10 +436,10 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -378,13 +454,13 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_OrderType_CreatedAt");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_OrderType_CreatedAtUtc");
 
                     b.HasIndex("IsDeleted")
                         .HasDatabaseName("IX_OrderType_IsDeleted");
@@ -398,16 +474,71 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.ToTable("OrderType", "public");
                 });
 
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.SlaPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ResolutionHours")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ResponseHours")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("IX_SlaPolicy_CategoryId");
+
+                    b.HasIndex("DepartmentId")
+                        .HasDatabaseName("IX_SlaPolicy_DepartmentId");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_SlaPolicy_IsDeleted");
+
+                    b.HasIndex("Priority")
+                        .HasDatabaseName("IX_SlaPolicy_Priority");
+
+                    b.ToTable("SlaPolicy", "public");
+                });
+
             modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.StatusType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -422,13 +553,13 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_StatusType_CreatedAt");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_StatusType_CreatedAtUtc");
 
                     b.HasIndex("IsDeleted")
                         .HasDatabaseName("IX_StatusType_IsDeleted");
@@ -451,10 +582,10 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -469,12 +600,25 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("IX_SubCategory_CategoryId");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_SubCategory_CreatedAtUtc");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_SubCategory_IsDeleted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_SubCategory_Name");
+
+                    b.HasIndex("IsDeleted", "Name")
+                        .HasDatabaseName("IX_SubCategory_IsDeleted_Name");
 
                     b.ToTable("SubCategory", "public");
                 });
@@ -491,10 +635,10 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ClosingDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("DepartmentId")
@@ -515,7 +659,7 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime>("OpeningDate")
+                    b.Property<DateTime?>("OpeningDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RequestingUserEmail")
@@ -548,7 +692,7 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("TypeId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -559,8 +703,8 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.HasIndex("ClosingDate")
                         .HasDatabaseName("IX_Order_ClosingDate");
 
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_Order_CreatedAt");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_Order_CreatedAtUtc");
 
                     b.HasIndex("DepartmentId")
                         .HasDatabaseName("IX_Order_DepartmentId");
@@ -589,8 +733,8 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                     b.HasIndex("TypeId")
                         .HasDatabaseName("IX_Order_TypeId");
 
-                    b.HasIndex("IsDeleted", "StatusId", "CreatedAt")
-                        .HasDatabaseName("IX_Order_IsDeleted_StatusId_CreatedAt");
+                    b.HasIndex("IsDeleted", "StatusId", "CreatedAtUtc")
+                        .HasDatabaseName("IX_Order_IsDeleted_StatusId_CreatedAtUtc");
 
                     b.ToTable("Order", "public");
                 });
@@ -852,14 +996,39 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Attachment", b =>
+                {
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.Comment", "Comment")
+                        .WithMany()
+                        .HasForeignKey("CommentId")
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+                });
+
             modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Comment", b =>
                 {
                     b.HasOne("EChamado.Server.Domain.Domains.Orders.Order", "Order")
-                        .WithMany()
+                        .WithMany("Comments")
                         .HasForeignKey("OrderId")
                         .IsRequired();
 
                     b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.SlaPolicy", b =>
+                {
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId");
+
+                    b.HasOne("EChamado.Server.Domain.Domains.Orders.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Department");
                 });
 
             modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.SubCategory", b =>
@@ -954,6 +1123,11 @@ namespace EChamado.Server.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Entities.Category", b =>
                 {
                     b.Navigation("SubCategories");
+                });
+
+            modelBuilder.Entity("EChamado.Server.Domain.Domains.Orders.Order", b =>
+                {
+                    b.Navigation("Comments");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication", b =>

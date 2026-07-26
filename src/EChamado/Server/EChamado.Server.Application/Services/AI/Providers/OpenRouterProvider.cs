@@ -30,7 +30,11 @@ public sealed class OpenRouterProvider : IAIProvider
 
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
-            _httpClient.BaseAddress = new Uri(_settings.Endpoint);
+            // Trailing slash é OBRIGATÓRIO para que o HttpClient resolva paths relativos corretamente
+            // Sem trailing slash: "https://openrouter.ai/api/v1" + "chat/completions" = "https://openrouter.ai/api/chat/completions" (ERRADO)
+            // Com trailing slash: "https://openrouter.ai/api/v1/" + "chat/completions" = "https://openrouter.ai/api/v1/chat/completions" (CORRETO)
+            var endpoint = _settings.Endpoint.TrimEnd('/') + "/";
+            _httpClient.BaseAddress = new Uri(endpoint);
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_settings.ApiKey}");
             _httpClient.DefaultRequestHeaders.Add("HTTP-Referer", "https://echamado.com");
             _httpClient.DefaultRequestHeaders.Add("X-Title", "EChamado");
@@ -86,15 +90,23 @@ public sealed class OpenRouterProvider : IAIProvider
                 "Sending request to OpenRouter. Model: {Model}, Temperature: {Temperature}, MaxTokens: {MaxTokens}",
                 _settings.Model, request.Temperature, request.MaxTokens);
 
+            // IMPORTANTE: usar caminho relativo SEM barra inicial para que o BaseAddress
+            // seja respeitado. O BaseAddress já tem trailing slash no endpoint.
             var response = await _httpClient.PostAsJsonAsync(
-                "/chat/completions",
+                "chat/completions",
                 requestBody,
                 cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
-            var responseContent = await response.Content.ReadFromJsonAsync<OpenRouterResponse>(
-                cancellationToken: cancellationToken);
+            var rawResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            // OpenRouter API retorna JSON com lowercase (camelCase)
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var responseContent = JsonSerializer.Deserialize<OpenRouterResponse>(rawResponse, jsonOptions);
 
             if (responseContent is null || responseContent.Choices is null || responseContent.Choices.Length == 0)
             {
@@ -103,9 +115,15 @@ public sealed class OpenRouterProvider : IAIProvider
 
             stopwatch.Stop();
 
+            // DeepSeek e modelos de raciocínio retornam o texto no campo "reasoning"
+            // em vez de "content". Usamos content primeiro, fallback para reasoning.
+            var message = responseContent.Choices[0].Message;
+            var content = message.Content ?? message.Reasoning
+                ?? throw new InvalidOperationException("OpenRouter response has no content or reasoning");
+
             var aiResponse = new AIResponse
             {
-                Content = responseContent.Choices[0].Message.Content,
+                Content = content,
                 Model = _settings.Model,
                 Provider = ProviderName,
                 TotalTokens = responseContent.Usage?.TotalTokens ?? 0,
@@ -135,7 +153,8 @@ public sealed class OpenRouterProvider : IAIProvider
         Message Message);
 
     private sealed record Message(
-        string Content);
+        string? Content,
+        string? Reasoning);  // DeepSeek e outros modelos de raciocínio retornam aqui
 
     private sealed record Usage(
         [property: JsonPropertyName("total_tokens")] int TotalTokens);

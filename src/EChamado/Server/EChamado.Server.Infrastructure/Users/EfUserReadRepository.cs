@@ -24,6 +24,21 @@ public sealed class EfUserReadRepository(ApplicationDbContext dbContext)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<UserDetailsDto?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => new UserDetailsDto(
+                u.Id,
+                u.Email ?? string.Empty,
+                string.IsNullOrWhiteSpace(u.FullName) ? (u.UserName ?? string.Empty) : u.FullName,
+                u.CreatedAtUtc))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<PagedResult<UserListItemDto>> SearchAsync(
         UserSearchFilter filter,
         CancellationToken cancellationToken)

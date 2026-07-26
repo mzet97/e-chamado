@@ -11,6 +11,7 @@ public class Comment : SoftDeletableEntity<Comment>
     public Guid OrderId { get; private set; }
     public Guid UserId { get; private set; }
     public string UserEmail { get; private set; } = string.Empty;
+    public bool IsInternal { get; private set; }
 
     public Order Order { get; private set; } = null!;
 
@@ -22,6 +23,7 @@ public class Comment : SoftDeletableEntity<Comment>
         Guid orderId,
         Guid userId,
         string userEmail,
+        bool isInternal,
         IDateTimeProvider dateTimeProvider)
         : base(new CommentValidation())
     {
@@ -31,6 +33,7 @@ public class Comment : SoftDeletableEntity<Comment>
         OrderId = orderId;
         UserId = userId;
         UserEmail = userEmail;
+        IsInternal = isInternal;
 
         MarkCreated(dateTimeProvider.UtcNow);
         Validate();
@@ -41,7 +44,8 @@ public class Comment : SoftDeletableEntity<Comment>
         Guid orderId,
         Guid userId,
         string userEmail,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        bool isInternal = false)
     {
         var comment = new Comment(
             Guid.NewGuid(),
@@ -49,6 +53,7 @@ public class Comment : SoftDeletableEntity<Comment>
             orderId,
             userId,
             userEmail,
+            isInternal,
             dateTimeProvider);
 
         comment.AddEvent(new CommentCreated(

@@ -13,33 +13,37 @@ Este guia estabelece os padrões de escrita de código C# para o projeto EChamad
 ### 1. Estrutura de Arquivos
 
 ```csharp
-// Exemplo: OrderController.cs
+// Exemplo: CreateOrderEndpoint.cs (Minimal API endpoint)
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using EChamado.Server.Application.UseCases.Orders.Commands;
+using EChamado.Server.Common.Api;
+using EChamado.Shared.Responses;
+using Paramore.Brighter;
 using Microsoft.AspNetCore.Mvc;
-using MediatR;
-using FluentValidation;
 
-// Namespace principal
-namespace EChamado.Server.Endpoints.Orders
+namespace EChamado.Server.Endpoints.Orders;
+
+/// <summary>
+/// Endpoint para criação de uma nova ordem/chamado
+/// </summary>
+public class CreateOrderEndpoint : IEndpoint
 {
-    /// <summary>
-    /// Controller responsável por gerenciar endpoints de Ordens
-    /// </summary>
-    [Route("api/[controller]")]
-    [ApiController]
-    public class OrdersController : ControllerBase
+    public static void Map(IEndpointRouteBuilder app)
+        => app.MapPost("/", HandleAsync)
+            .WithName("Criar uma nova ordem")
+            .Produces<BaseResult<Guid>>();
+
+    private static async Task<IResult> HandleAsync(
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] CreateOrderRequest request)
     {
-        private readonly IMediator _mediator;
-        
-        public OrdersController(IMediator mediator)
-        {
-            _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
-        }
-        
-        // Métodos endpoints aqui...
+        var command = request.ToCommand();
+        await commandProcessor.SendAsync(command);
+
+        var result = command.Result;
+        return result.Success
+            ? TypedResults.Ok(result)
+            : TypedResults.BadRequest(result);
     }
 }
 ```
@@ -56,82 +60,68 @@ public Guid OrderId { get; set; }
 
 // ❌ Incorreto
 public class orderService
-public interface iorderrepository  
+public interface iorderrepository
 public void createOrder()
 public Guid order_id { get; set; }
 ```
 
-#### 2.2 camelCase (Parâmetros, Variáveis Locais)
+#### 2.2 camelCase (Parâmetros, Variáveis Locais, Campos privados)
 ```csharp
 // ✅ Correto
 public async Task<OrderDto> GetOrderById(Guid orderId)
 {
     var order = await _repository.GetByIdAsync(orderId);
-    var result = _mapper.Map<OrderDto>(order);
+    var result = MapToViewModel(order);
     return result;
 }
 
-// ❌ Incorreto
-public async Task<OrderDto> GetOrderById(Guid OrderId)
-{
-    var Order = await _repository.GetByIdAsync(OrderId);
-    var Result = _mapper.Map<OrderDto>(Order);
-    return Result;
-}
+// Campos privados com underscore
+private readonly IUnitOfWork _unitOfWork;
+private readonly IDateTimeProvider _dateTimeProvider;
 ```
 
-#### 2.3 UPPER_CASE (Constantes)
+#### 2.3 Constantes — PascalCase
 ```csharp
-// ✅ Correto
-public const string DEFAULT_STATUS = "Open";
-public const int MAX_RETRY_COUNT = 3;
-
-// ❌ Incorreto
-public const string defaultStatus = "Open";
-public const int MaxRetryCount = 3;
+// ✅ Correto (padrão real do projeto)
+public static class ApplicationConstants
+{
+    public static class Validation
+    {
+        public const int MinPasswordLength = 12;
+        public const int MaxTitleLength = 200;
+    }
+}
 ```
 
 ### 3. Espaçamento e Indentação
 
 ```csharp
 // ✅ Correto - Usar 4 espaços para indentação
-public class OrderService : IOrderService
+public class CreateCategoryCommandHandler(
+    IUnitOfWork unitOfWork,
+    IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
+    ILogger<CreateCategoryCommandHandler> logger) :
+    RequestHandlerAsync<CreateCategoryCommand>
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly IMapper _mapper;
-    
-    public OrderService(
-        IOrderRepository orderRepository,
-        IMapper mapper)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<CreateCategoryCommand> HandleAsync(
+        CreateCategoryCommand command,
+        CancellationToken cancellationToken = default)
     {
-        _orderRepository = orderRepository ?? 
-            throw new ArgumentNullException(nameof(orderRepository));
-        _mapper = mapper ?? 
-            throw new ArgumentNullException(nameof(mapper));
-    }
-    
-    public async Task<OrderDto> CreateOrderAsync(
-        CreateOrderCommand command)
-    {
-        if (command == null)
-            throw new ArgumentNullException(nameof(command));
-            
-        var order = await ProcessOrderCreation(command);
-        return _mapper.Map<OrderDto>(order);
-    }
-}
+        var entity = Category.Create(command.Name, command.Description, dateTimeProvider);
 
-// ❌ Incorreto - Indentação inconsistente
-public class OrderService : IOrderService
-{
-private readonly IOrderRepository _orderRepository;
-private readonly IMapper _mapper;
+        if (!entity.IsValid())
+            throw new ValidationException("Validation failed", entity.Errors);
 
-public OrderService(IOrderRepository orderRepository, IMapper mapper)
-{
-_orderRepository = orderRepository;
-_mapper = mapper;
-}
+        await unitOfWork.BeginTransactionAsync();
+        await unitOfWork.Categories.AddAsync(entity);
+        await unitOfWork.CommitAsync();
+
+        command.Result = new BaseResult<Guid>(entity.Id);
+        return await base.HandleAsync(command, cancellationToken);
+    }
 }
 ```
 
@@ -139,56 +129,45 @@ _mapper = mapper;
 
 ## 🏗️ Estrutura de Classes
 
-### 4.1 Ordenação de Membros
+### 4.1 Entidades de Domínio (DDD)
 
 ```csharp
-public class Order
+// Padrão: Factory Method estático + ctor privado + setters private
+public class Category : SoftDeletableEntity<Category>
 {
-    // Constantes
-    public const int MIN_TITLE_LENGTH = 5;
-    public const int MAX_TITLE_LENGTH = 200;
-    
-    // Campos privados (com underscore)
-    private readonly List<Comment> _comments;
-    private readonly DateTime _createdAt;
-    
-    // Propriedades
-    public Guid Id { get; private set; }
-    public string Title { get; private set; }
-    public string Description { get; private set; }
-    public OrderStatus Status { get; private set; }
-    
-    // Construtores
-    public Order(string title, string description, Guid categoryId)
+    public string Name { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
+
+    private Category() : base(new CategoryValidation()) { }
+
+    // Factory Method — ÚNICA forma de criar
+    public static Category Create(string name, string description, IDateTimeProvider dt)
     {
-        Id = Guid.NewGuid();
-        Title = title ?? throw new ArgumentNullException(nameof(title));
-        Description = description ?? throw new ArgumentNullException(nameof(description));
-        _comments = new List<Comment>();
-        _createdAt = DateTime.UtcNow;
-        Status = OrderStatus.Open;
+        var category = new Category();
+        category.Id = Guid.NewGuid();
+        category.Name = name;
+        category.Description = description;
+        category.MarkCreated(dt.UtcNow);
+        category.Validate();
+        category.AddEvent(new CategoryCreated(category.Id, category.Name, category.Description));
+        return category;
     }
-    
-    // Métodos públicos
-    public void ChangeStatus(OrderStatus newStatus)
+
+    // Métodos de comportamento — mutam estado + validam + emitem eventos
+    public void Update(string name, string description, IDateTimeProvider dt)
     {
-        if (!IsValidStatusTransition(Status, newStatus))
-            throw new InvalidOperationException("Invalid status transition");
-            
-        Status = newStatus;
+        Name = name;
+        Description = description;
+        MarkUpdated(dt.UtcNow);
+        Validate();
+        AddEvent(new CategoryUpdated(Id, Name, Description));
     }
-    
-    public void AddComment(string content, Guid userId)
+
+    public override void Validate()
     {
-        var comment = new Comment(content, userId, Id);
-        _comments.Add(comment);
-    }
-    
-    // Métodos privados
-    private bool IsValidStatusTransition(OrderStatus current, OrderStatus next)
-    {
-        // Lógica de validação de transição
-        return true;
+        var result = new CategoryValidation().Validate(this);
+        _errors = result.Errors.Select(x => x.ErrorMessage);
+        _isValid = result.IsValid;
     }
 }
 ```
@@ -197,18 +176,11 @@ public class Order
 
 ```csharp
 // ✅ Correto - Sempre ser explícito
-public class PublicClass
+public class Order
 {
-    public string PublicProperty { get; set; }
-    internal string InternalProperty { get; set; }
-    private string PrivateProperty { get; set; }
-    protected string ProtectedProperty { get; set; }
-}
-
-// ❌ Incorreto - Não usar modificadores padrão
-class PublicClass  // Faltou public
-{
-    string PublicProperty { get; set; }  // Faltou modificador
+    public Guid Id { get; private set; }
+    private readonly List<Comment> _comments = new();
+    internal Order(Guid id, ...) { }  // internal para testes/EF
 }
 ```
 
@@ -220,123 +192,73 @@ class PublicClass  // Faltou public
 
 ```csharp
 // ✅ Correto - Usar verificações explícitas e null-coalescing
-public class OrderService
-{
-    private readonly IOrderRepository _orderRepository;
-    
-    public OrderService(IOrderRepository orderRepository)
-    {
-        _orderRepository = orderRepository ?? 
-            throw new ArgumentNullException(nameof(orderRepository));
-    }
-    
-    public async Task<OrderDto> GetOrderAsync(Guid? orderId)
-    {
-        if (!orderId.HasValue)
-            return null;
-            
-        var order = await _orderRepository.GetByIdAsync(orderId.Value);
-        return order?.MapToDto();
-    }
-    
-    public void ProcessOrder(Order order)
-    {
-        // Usar operador null-conditional
-        order?.ChangeStatus(OrderStatus.InProgress);
-        
-        // Usar null-coalescing operator
-        var title = order?.Title ?? "Untitled Order";
-        
-        // Usar pattern matching (C# 9+)
-        var isValid = order switch
-        {
-            { Status: OrderStatus.Open } => true,
-            { Status: OrderStatus.Closed } => false,
-            null => false,
-            _ => false
-        };
-    }
-}
+var categoryId = command.CategoryId ?? Guid.Empty;
+
+if (categoryId == Guid.Empty)
+    throw new ValidationException("Category is required");
+
+// Usar pattern matching (C# 9+)
+var statusName = order.Status?.Name ?? "Desconhecido";
 ```
 
 ### 5.2 Exceções e Error Handling
 
 ```csharp
-// ✅ Correto - Usar exceções específicas e mensagens descritivas
-public class OrderService
+// ✅ Correto - Exceções específicas do domínio
+public class NotFoundException : Exception
 {
-    public async Task<OrderDto> CreateOrderAsync(CreateOrderCommand command)
-    {
-        try
-        {
-            if (command == null)
-                throw new ArgumentNullException(nameof(command));
-                
-            var validator = new CreateOrderCommandValidator();
-            var validationResult = await validator.ValidateAsync(command);
-            
-            if (!validationResult.IsValid)
-                throw new ValidationException(validationResult.Errors);
-                
-            var order = await ProcessOrderCreation(command);
-            return _mapper.Map<OrderDto>(order);
-        }
-        catch (ValidationException ex)
-        {
-            _logger.LogWarning(ex, "Validation failed for order creation");
-            throw; // Re-throw preserving stack trace
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogError(ex, "Null argument provided to CreateOrderAsync");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during order creation");
-            throw new ApplicationException("Failed to create order", ex);
-        }
-    }
+    public NotFoundException(string message) : base(message) { }
+}
+
+public class ValidationException : Exception
+{
+    public IEnumerable<string> Errors { get; }
+    public ValidationException(string message, IEnumerable<string> errors)
+        : base(message) => Errors = errors;
+}
+
+// Em handlers: lançar, não capturar
+if (order == null)
+    throw new NotFoundException($"Order {command.OrderId} not found");
+
+// Em endpoints: capturar e retornar BadRequest
+catch (Exception ex)
+{
+    return TypedResults.BadRequest(new BaseResult<T>(
+        data: default, success: false, message: ex.Message));
 }
 ```
 
 ### 5.3 Async/Await Patterns
 
 ```csharp
-// ✅ Correto - Padrões adequados para código assíncrono
-public class OrderService
+// ✅ Correto - CancellationToken sempre como último parâmetro
+public override async Task<CreateOrderCommand> HandleAsync(
+    CreateOrderCommand command,
+    CancellationToken cancellationToken = default)
 {
-    public async Task<OrderDto> GetOrderAsync(Guid orderId)
-    {
-        // Sempre adicionar CancellationToken quando possível
-        return await _orderRepository.GetByIdAsync(orderId, HttpContext.RequestAborted)
-            .ConfigureAwait(false);
-    }
-    
-    public async Task<IEnumerable<OrderDto>> GetOrdersByUserAsync(Guid userId)
-    {
-        // Usar Task.FromResult para operações síncronas
-        if (userId == Guid.Empty)
-            return Task.FromResult<IEnumerable<OrderDto>>(new List<OrderDto>());
-            
-        // Usar WhenAll para operações paralelas
-        var ordersTask = _orderRepository.GetByUserIdAsync(userId);
-        var userTask = _userRepository.GetByIdAsync(userId);
-        
-        await Task.WhenAll(ordersTask, userTask);
-        
-        var orders = await ordersTask;
-        var user = await userTask;
-        
-        return orders.Select(o => MapOrderWithUser(o, user));
-    }
-    
-    // Evitar async void (apenas para event handlers)
-    protected override async void OnLoad()
-    {
-        await LoadOrdersAsync();
-    }
+    // ...
+    await unitOfWork.CommitAsync();
 }
+
+// Evitar async void (exceto event handlers)
+```
+
+### 5.4 DateTime — Nunca usar DateTime.UtcNow direto
+
+```csharp
+// ❌ Incorreto
+var now = DateTime.UtcNow;
+
+// ✅ Correto — usar IDateTimeProvider (testabilidade)
+public interface IDateTimeProvider
+{
+    DateTime UtcNow { get; }
+    DateTime Now { get; }
+}
+
+// Injeção via DI (registrado como singleton)
+services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 ```
 
 ---
@@ -347,60 +269,25 @@ public class OrderService
 
 ```csharp
 /// <summary>
-/// Serviço responsável por gerenciar operações relacionadas a ordens.
+/// Handler para criar uma nova categoria
 /// </summary>
-/// <remarks>
-/// Este serviço implementa o padrão Repository e utiliza CQRS
-/// para separar comandos de queries.
-/// </remarks>
-public interface IOrderService
+public class CreateCategoryCommandHandler(
+    IUnitOfWork unitOfWork,
+    IAmACommandProcessor commandProcessor,
+    IDateTimeProvider dateTimeProvider,
+    ILogger<CreateCategoryCommandHandler> logger) :
+    RequestHandlerAsync<CreateCategoryCommand>
 {
     /// <summary>
-    /// Cria uma nova ordem no sistema
+    /// Processa o comando de criação de categoria
     /// </summary>
-    /// <param name="command">Dados necessários para criação da ordem</param>
-    /// <returns>Dados da ordem criada</returns>
-    /// <exception cref="ArgumentNullException">Quando command é nulo</exception>
+    /// <param name="command">Dados da categoria a ser criada</param>
+    /// <param name="cancellationToken">Token de cancelamento</param>
+    /// <returns>O comando com Result preenchido</returns>
     /// <exception cref="ValidationException">Quando dados são inválidos</exception>
-    Task<OrderDto> CreateOrderAsync(CreateOrderCommand command);
-    
-    /// <summary>
-    /// Obtém uma ordem pelo identificador único
-    /// </summary>
-    /// <param name="orderId">Identificador da ordem</param>
-    /// <returns>Dados da ordem encontrada ou null se não existir</returns>
-    Task<OrderDto?> GetOrderByIdAsync(Guid orderId);
-    
-    /// <summary>
-    /// Atualiza o status de uma ordem
-    /// </summary>
-    /// <param name="orderId">Identificador da ordem</param>
-    /// <param name="newStatus">Novo status da ordem</param>
-    /// <returns>True se atualizado com sucesso, false caso contrário</returns>
-    Task<bool> UpdateOrderStatusAsync(Guid orderId, OrderStatus newStatus);
-}
-```
-
-### 6.2 Comentários Inline
-
-```csharp
-public class OrderService : IOrderService
-{
-    public async Task<OrderDto> ProcessOrderAsync(Order order)
-    {
-        // Validação de regras de negócio específicas
-        // Esta validação é necessária para garantir SLA compliance
-        if (!ValidateBusinessRules(order))
-            throw new BusinessRuleException("Order violates business rules");
-            
-        // Processar em background para melhor performance
-        // usando Task.Run para não bloquear thread principal
-        await Task.Run(() => ProcessOrderInBackground(order))
-                  .ConfigureAwait(false);
-                  
-        // Retornar resultado processado
-        return MapToDto(order);
-    }
+    public override async Task<CreateCategoryCommand> HandleAsync(
+        CreateCategoryCommand command,
+        CancellationToken cancellationToken = default) { ... }
 }
 ```
 
@@ -408,339 +295,186 @@ public class OrderService : IOrderService
 
 ## 🧪 Padrões de Testes
 
-### 7.1 Estrutura de Testes Unitários
+### 7.1 Framework: xUnit + FluentAssertions + Moq
 
 ```csharp
-[TestFixture]
-public class OrderServiceTests
+// ✅ Correto — xUnit com [Fact] e [Theory]
+public class CreateCategoryCommandHandlerTests : UnitTestBase
 {
-    private Mock<IOrderRepository> _orderRepositoryMock;
-    private Mock<ILogger<OrderService>> _loggerMock;
-    private Mock<IMapper> _mapperMock;
-    private OrderService _orderService;
-    
-    [SetUp]
-    public void SetUp()
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IDateTimeProvider> _dateTimeProviderMock;
+    private readonly CreateCategoryCommandHandler _handler;
+
+    public CreateCategoryCommandHandlerTests()
     {
-        _orderRepositoryMock = new Mock<IOrderRepository>();
-        _loggerMock = new Mock<ILogger<OrderService>>();
-        _mapperMock = new Mock<IMapper>();
-        
-        _orderService = new OrderService(
-            _orderRepositoryMock.Object,
-            _loggerMock.Object,
-            _mapperMock.Object);
+        _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _dateTimeProviderMock = new Mock<IDateTimeProvider>();
+        _dateTimeProviderMock.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
+        _handler = new CreateCategoryCommandHandler(
+            _unitOfWorkMock.Object,
+            new Mock<IAmACommandProcessor>().Object,
+            _dateTimeProviderMock.Object,
+            new Mock<ILogger<CreateCategoryCommandHandler>>().Object);
     }
-    
-    [Test]
-    public async Task CreateOrderAsync_WithValidData_ShouldReturnCreatedOrder()
+
+    [Fact]
+    public async Task Handle_ValidCommand_ShouldCreateCategory()
     {
         // Arrange
-        var command = new CreateOrderCommand
-        {
-            Title = "Test Order",
-            Description = "Test Description",
-            CategoryId = Guid.NewGuid()
-        };
-        
-        var expectedOrder = new Order(
-            command.Title,
-            command.Description,
-            command.CategoryId);
-            
-        _orderRepositoryMock
-            .Setup(x => x.AddAsync(It.IsAny<Order>()))
-            .ReturnsAsync(expectedOrder);
-            
-        _mapperMock
-            .Setup(x => x.Map<OrderDto>(It.IsAny<Order>()))
-            .Returns((Order o) => new OrderDto { Id = o.Id, Title = o.Title });
-        
+        var command = new CreateCategoryCommand("Test", "Description");
+        SetupValidMocks();
+
         // Act
-        var result = await _orderService.CreateOrderAsync(command);
-        
+        var result = await _handler.HandleAsync(command);
+
         // Assert
-        result.Should().NotBeNull();
-        result.Title.Should().Be(command.Title);
-        _orderRepositoryMock.Verify(
-            x => x.AddAsync(It.IsAny<Order>()), 
-            Times.Once);
+        result.Result!.Success.Should().BeTrue();
+        ((BaseResult<Guid>)result.Result).Data.Should().NotBeEmpty();
+        _unitOfWorkMock.Verify(x => x.Categories.AddAsync(It.IsAny<Category>()), Times.Once);
     }
-    
-    [Test]
-    public void CreateOrderAsync_WithNullCommand_ShouldThrowArgumentNullException()
+
+    [Theory]
+    [InlineData("", "Description")]
+    [InlineData("   ", "Description")]
+    public async Task Handle_InvalidName_ShouldThrowValidationException(string name, string desc)
     {
-        // Act & Assert
-        FluentActions.Invoking(() => 
-            _orderService.CreateOrderAsync(null))
-            .Should().Throw<ArgumentNullException>();
-    }
-    
-    [TearDown]
-    public void TearDown()
-    {
-        // Cleanup se necessário
-    }
-}
-```
-
-### 7.2 Padrões de Teste (AAA)
-
-```csharp
-[Test]
-public async Task OrderService_UpdateStatus_WithValidTransition_ShouldSucceed()
-{
-    // Arrange (Preparar)
-    var order = CreateTestOrder(OrderStatus.Open);
-    var newStatus = OrderStatus.InProgress;
-    
-    _orderRepositoryMock
-        .Setup(x => x.GetByIdAsync(order.Id))
-        .ReturnsAsync(order);
-        
-    // Act (Executar)
-    var result = await _orderService.UpdateOrderStatusAsync(order.Id, newStatus);
-    
-    // Assert (Verificar)
-    result.Should().BeTrue();
-    order.Status.Should().Be(newStatus);
-    _orderRepositoryMock.Verify(
-        x => x.UpdateAsync(order), 
-        Times.Once);
-}
-```
-
----
-
-## 🔐 Padrões de Segurança
-
-### 8.1 Validação de Input
-
-```csharp
-public class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
-{
-    public CreateOrderCommandValidator()
-    {
-        RuleFor(x => x.Title)
-            .NotEmpty()
-            .WithMessage("Título é obrigatório")
-            .Length(5, 200)
-            .WithMessage("Título deve ter entre 5 e 200 caracteres")
-            .Matches(@"^[a-zA-Z0-9\s\-\._\+]+$")
-            .WithMessage("Título contém caracteres inválidos");
-            
-        RuleFor(x => x.Description)
-            .NotEmpty()
-            .WithMessage("Descrição é obrigatória")
-            .Length(10, 2000)
-            .WithMessage("Descrição deve ter entre 10 e 2000 caracteres");
-            
-        RuleFor(x => x.CategoryId)
-            .NotEmpty()
-            .WithMessage("Categoria é obrigatória")
-            .MustAsync(BeValidCategory)
-            .WithMessage("Categoria não encontrada ou inativa");
-    }
-    
-    private async Task<bool> BeValidCategory(Guid categoryId, CancellationToken cancellationToken)
-    {
-        // Implementar validação contra banco de dados
-        return await _categoryRepository.ExistsAsync(categoryId);
-    }
-}
-```
-
-### 8.2 Autenticação e Autorização
-
-```csharp
-[Authorize(Roles = "Admin,Manager,Agent")]
-[ApiController]
-[Route("api/[controller]")]
-public class OrdersController : ControllerBase
-{
-    [HttpGet("{id}")]
-    public async Task<ActionResult<OrderDto>> GetOrder(Guid id)
-    {
-        // Verificar se usuário tem permissão para acessar esta ordem
-        if (!await _authorizationService.CanAccessOrderAsync(User.GetUserId(), id))
-            return Forbid();
-            
-        var order = await _orderService.GetOrderByIdAsync(id);
-        return Ok(order);
-    }
-    
-    [Authorize(Roles = "Agent,Manager,Admin")]
-    [HttpPut("{id}/status")]
-    public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusCommand command)
-    {
-        if (id != command.OrderId)
-            return BadRequest("Order ID mismatch");
-            
-        await _mediator.Send(command);
-        return NoContent();
+        var command = new CreateCategoryCommand(name, desc);
+        await _handler.Invoking(h => h.HandleAsync(command))
+            .Should().ThrowAsync<Exception>();
     }
 }
 ```
 
 ---
 
-## 📊 Configurações e Constantes
-
-### 9.1 Constants vs Configuration
-
-```csharp
-// ✅ Correto - Usar constantes para valores fixos da aplicação
-public static class OrderConstants
-{
-    public const int MIN_TITLE_LENGTH = 5;
-    public const int MAX_TITLE_LENGTH = 200;
-    public const string DEFAULT_STATUS = "Open";
-    public static readonly TimeSpan DEFAULT_SLA = TimeSpan.FromDays(7);
-}
-
-// ✅ Correto - Usar IOptions para configurações
-public class OrderSettings
-{
-    public int MaxTitleLength { get; set; } = 200;
-    public int MaxDescriptionLength { get; set; } = 2000;
-    public TimeSpan DefaultSla { get; set; } = TimeSpan.FromDays(7);
-    public bool EnableNotifications { get; set; } = true;
-}
-
-public class OrderService
-{
-    private readonly OrderSettings _settings;
-    
-    public OrderService(IOptions<OrderSettings> settings)
-    {
-        _settings = settings.Value;
-    }
-    
-    public void ValidateOrder(Order order)
-    {
-        if (order.Title.Length > _settings.MaxTitleLength)
-            throw new ArgumentException($"Title exceeds maximum length of {_settings.MaxTitleLength}");
-    }
-}
-```
-
----
-
-## 🔄 Clean Code Principles
-
-### 10.1 SOLID Principles
-
-```csharp
-// ✅ Correto - Princípio da Responsabilidade Única
-public interface IOrderRepository
-{
-    Task<Order> GetByIdAsync(Guid id);
-    Task<Order> AddAsync(Order order);
-    Task<Order> UpdateAsync(Order order);
-    Task DeleteAsync(Guid id);
-}
-
-public interface IOrderService
-{
-    Task<OrderDto> CreateOrderAsync(CreateOrderCommand command);
-    Task<OrderDto> GetOrderAsync(Guid id);
-    Task<bool> UpdateStatusAsync(Guid id, OrderStatus status);
-}
-
-// ✅ Correto - Princípio Aberto/Fechado
-public abstract class OrderProcessor
-{
-    public abstract Task<OrderResult> ProcessAsync(Order order);
-}
-
-public class HighPriorityOrderProcessor : OrderProcessor
-{
-    public override async Task<OrderResult> ProcessAsync(Order order)
-    {
-        // Processamento específico para ordens de alta prioridade
-        return await Task.FromResult(new OrderResult { Success = true });
-    }
-}
-
-public class NormalOrderProcessor : OrderProcessor
-{
-    public override async Task<OrderResult> ProcessAsync(Order order)
-    {
-        // Processamento padrão
-        return await Task.FromResult(new OrderResult { Success = true });
-    }
-}
-```
-
-### 10.2 Dependency Injection
-
-```csharp
-// ✅ Correto - Registrações claras e descritivas
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection AddOrderServices(
-        this IServiceCollection services, 
-        IConfiguration configuration)
-    {
-        services.Configure<OrderSettings>(configuration.GetSection("OrderSettings"));
-        
-        services.AddScoped<IOrderRepository, EfOrderRepository>();
-        services.AddScoped<IOrderService, OrderService>();
-        services.AddScoped<IOrderProcessor, OrderProcessor>();
-        
-        // Com MediatR para CQRS
-        services.AddMediatR(typeof(CreateOrderCommand).Assembly);
-        
-        return services;
-    }
-}
-```
-
----
-
-## 📚 Resumo das Convenções
+## 📊 Resumo das Convenções
 
 ### ✅ **Do's (Fazer):**
-
 - Usar **PascalCase** para classes, métodos e propriedades
-- Usar **camelCase** para variáveis e parâmetros
+- Usar **camelCase** para variáveis e parâmetros (`_camelCase` para campos privados)
 - Documentar métodos públicos com XML comments
 - Usar `async/await` consistentemente
-- Implementar tratamento de exceções robusto
-- Usar validação de input com FluentValidation
-- Escrever testes unitários com padrão AAA
+- Implementar tratamento de exceções robusto (`NotFoundException`, `ValidationException`)
+- Usar validação com **FluentValidation** (no Domain)
+- Escrever testes unitários com **xUnit** + padrão AAA
 - Seguir princípios SOLID
 - Usar dependency injection
-- Implementar logging estruturado
+- Implementar logging estruturado (ILogger<T>)
+- Usar **IDateTimeProvider** em vez de `DateTime.UtcNow`
 
 ### ❌ **Don'ts (Não Fazer):**
-
 - Usar abreviações em nomes de classes/métodos
-- Deixar métodos sem documentação
+- Deixar métodos sem documentação pública
 - Ignorar warnings do compilador
 - Usar `async void` (exceto event handlers)
 - Tratar exceções genéricas sem logging
 - Criar classes com muitas responsabilidades
 - Usar strings mágicas sem constantes
 - Misturar responsabilidades de diferentes camadas
-
-### 📊 **Métricas de Qualidade:**
-
-- **Complexidade ciclomática**: < 10 por método
-- **Cobertura de testes**: > 80%
-- **Documentação pública**: 100%
-- **SonarQube Quality Gate**: Aprovado
-- **Warnings**: Zero
+- Usar `DateTime.UtcNow` diretamente (usar `IDateTimeProvider`)
 
 ---
 
-**Próximos passos:**
-- **[Blazor Guidelines](blazor-guidelines.md)** - Diretrizes específicas para Blazor
-- **[Naming Conventions](naming-conventions.md)** - Convenções detalhadas de nomenclatura
-- **[Documentation Standards](documentation.md)** - Padrões de documentação
+## 🏛️ Padrões Arquiteturais do Projeto
+
+### CQRS com Paramore.Brighter (Commands) + Paramore.Darker (Queries)
+
+```csharp
+// Command (Brighter) — escrita
+public class CreateOrderCommand : BrighterRequest<BaseResult<Guid>>
+{
+    public string Title { get; set; } = string.Empty;
+    // ...
+}
+
+// Handler (Brighter)
+public class CreateOrderCommandHandler(
+    IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider,
+    ILogger<CreateOrderCommandHandler> logger) :
+    RequestHandlerAsync<CreateOrderCommand>
+{
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<CreateOrderCommand> HandleAsync(
+        CreateOrderCommand command, CancellationToken ct = default) { ... }
+}
+
+// Query (Darker) — leitura
+public class GridifyOrderQuery : IGridifyQuery { ... }
+
+// Handler (Darker)
+public class GridifyOrderQueryHandler : QueryHandlerAsync<GridifyOrderQuery, BaseResultList<OrderViewModel>>
+{
+    public override async Task<BaseResultList<OrderViewModel>> ExecuteAsync(
+        GridifyOrderQuery request, CancellationToken ct = default) { ... }
+}
+```
+
+### Minimal API Endpoints
+
+```csharp
+// Cada endpoint implementa IEndpoint com Map estático
+public class CreateCategoryEndpoint : IEndpoint
+{
+    public static void Map(IEndpointRouteBuilder app)
+        => app.MapPost("/", HandleAsync)
+            .WithName("Criar categoria")
+            .Produces<BaseResult<Guid>>();
+
+    private static async Task<IResult> HandleAsync(
+        [FromServices] IAmACommandProcessor commandProcessor,
+        [FromBody] CreateCategoryRequest request)
+    {
+        var command = request.ToCommand();  // Extension method
+        await commandProcessor.SendAsync(command);
+        return command.Result.Success
+            ? TypedResults.Ok(command.Result)
+            : TypedResults.BadRequest(command.Result);
+    }
+}
+```
+
+### Domain Events
+
+```csharp
+// Na entidade: AddEvent() durante Create/Update
+order.AddEvent(new OrderCreated(order.Id, order.Title, ...));
+
+// Interceptor captura após SaveChanges
+// BrighterEventMapper converte Domain Event → Brighter Event
+// Brighter publica no barramento
+```
+
+### Responses (sempre)
+
+```csharp
+// Single result
+new BaseResult<T>(data, success: true, message: "")
+
+// Paged result
+new BaseResultList<T>(data, pagedResult, success: true, message: "")
+```
 
 ---
 
-**Última atualização:** 26 de novembro de 2025  
-**Versão:** 1.0.0  
-**Status:** ✅ Padrões consolidados e implementados
+## 📚 Referências
+
+| Tópico | Tecnologia real do projeto |
+|--------|---------------------------|
+| Commands | **Paramore.Brighter** (`RequestHandlerAsync<T>`) |
+| Queries | **Paramore.Darker** (`QueryHandlerAsync<TQuery, TResult>`) |
+| API | **Minimal API** (`IEndpoint`, `MapPost/MapGet`) |
+| Mapeamento | **Manual** (extensions `ToCommand()`, constructors) |
+| Validação | **FluentValidation** (no Domain) |
+| Testes | **xUnit** (`[Fact]`/`[Theory]`) + **FluentAssertions** + **Moq** |
+| DateTime | **IDateTimeProvider** (nunca `DateTime.UtcNow` direto) |
+| Docs API | **Scalar** (substitui Swagger UI) |
+| Cache | **Redis** (com fallback em memória) |
+| Logging | **Serilog** → ELK Stack |
+
+---
+
+**Última atualização:** 26 de julho de 2026
+**Versão:** 2.0.0
+**Status:** ✅ Atualizado para refletir o código real (Brighter/Darker, Minimal API, xUnit, IDateTimeProvider)

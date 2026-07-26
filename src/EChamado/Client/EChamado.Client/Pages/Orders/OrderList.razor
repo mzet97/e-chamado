@@ -4,6 +4,7 @@
 @using EChamado.Client.Components
 @using System.Reflection
 @using MudBlazor.Services
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IBrowserViewportService BrowserViewportService
 @implements IBrowserViewportObserver
 @inject OrderService OrderService
@@ -13,6 +14,7 @@
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 @inject ILogger<OrderList> Logger
+@inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize]
 
 <PageTitle>Chamados - EChamado</PageTitle>
@@ -228,6 +230,10 @@
     private DateRange? dateRange;
     private bool showOnlyOverdue;
 
+    // Filtro "Meus Atribuídos" via querystring (?assigned=true)
+    private bool assignedOnly;
+    private Guid? currentUserId;
+
     private int ActiveFiltersCount
     {
         get
@@ -313,6 +319,24 @@
     {
         try
         {
+            // Lê o querystring ?assigned=true (link "Meus Atribuídos" do Dashboard)
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            assignedOnly = string.Equals(query["assigned"], "true", StringComparison.OrdinalIgnoreCase);
+
+            // Se o filtro "Meus Atribuídos" estiver ativo, resolve o ID do usuário logado
+            if (assignedOnly)
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+                var subClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+                            ?? user.FindFirst("sub");
+                if (subClaim != null && Guid.TryParse(subClaim.Value, out var uid))
+                {
+                    currentUserId = uid;
+                }
+            }
+
             // Carrega lookups em paralelo
             var statusTask = LookupService.GetStatusTypesAsync();
             var deptTask = LookupService.GetDepartmentsAsync();
@@ -375,7 +399,9 @@
                     TypeId = selectedType,
                     StartDate = startDate,
                     EndDate = endDate,
-                    IsOverdue = showOnlyOverdue ? true : null
+                    IsOverdue = showOnlyOverdue ? true : null,
+                    // Aplica o filtro "Meus Atribuídos" quando vindo do Dashboard
+                    AssignedToUserId = (assignedOnly && currentUserId.HasValue) ? currentUserId : null
                 };
 
                 var result = await OrderService.SearchAsync(parameters);

@@ -28,8 +28,12 @@ public class CommentMapping : IEntityTypeConfiguration<Comment>
             .HasColumnType("varchar")
             .HasMaxLength(256);
 
+        builder.Property(x => x.IsInternal)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.HasOne(x => x.Order)
-            .WithMany()
+            .WithMany(o => o.Comments)
             .HasForeignKey(x => x.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 

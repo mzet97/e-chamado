@@ -1,7 +1,5 @@
 using EChamado.Server.Application.Common.Behaviours;
 using EChamado.Server.Application.Common.Messaging;
-using EChamado.Server.Application.Orders.QueryHandlers;
-using EChamado.Server.Application.Orders.Queries;
 using EChamado.Server.Application.Services;
 using EChamado.Server.Application.Services.AI;
 using EChamado.Server.Application.Services.AI.Configuration;
@@ -58,13 +56,8 @@ public static class DependencyInjection
             // Register Darker query processor (custom ServiceProviderQueryProcessor resolves via DI)
             services.AddScoped<IQueryProcessor, ServiceProviderQueryProcessor>();
 
-            // Register Darker query handlers - existing Orders/Queries
-            services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderViewModel?>, GetOrderByIdQueryHandler>();
-            services.AddScoped<IQueryHandler<ListOrdersQuery, IEnumerable<OrderListViewModel>>, ListOrdersQueryHandler>();
-            services.AddScoped<IQueryHandler<ListCategoriesQuery, IEnumerable<CategoryViewModel>>, ListCategoriesQueryHandler>();
-            services.AddScoped<IQueryHandler<ListStatusTypesQuery, IEnumerable<StatusTypeViewModel>>, ListStatusTypesQueryHandler>();
-
-            // Register Gridify query handlers (converted from MediatR to Darker)
+            // Register Gridify query handlers (Darker). Handlers de commands (Brighter)
+            // são resolvidos automaticamente pelo AutoFromAssemblies acima.
             services.AddScoped<IQueryHandler<CategoriesQueries.GridifyCategoryQuery, BaseResultList<CategoryViewModel>>, GridifyCategoryQueryHandler>();
             services.AddScoped<IQueryHandler<OrdersQueries.GridifyOrderQuery, BaseResultList<OrderViewModel>>, OrdersQueryHandlers.GridifyOrderQueryHandler>();
             services.AddScoped<IQueryHandler<CommentsQueries.GridifyCommentQuery, BaseResultList<CommentViewModel>>, GridifyCommentQueryHandler>();
@@ -125,6 +118,11 @@ public static class DependencyInjection
             .ConfigureHttpClient(client =>
             {
                 client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                // Em dev, aceita certificados self-signed/unknown para chamadas HTTPS externas
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             });
 
         return services;

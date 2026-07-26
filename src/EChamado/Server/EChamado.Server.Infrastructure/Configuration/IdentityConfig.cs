@@ -189,7 +189,18 @@ namespace EChamado.Server.Infrastructure.Configuration
                     options.UseIntrospection();
 
                     // Use system HTTP client for token introspection
-                    options.UseSystemNetHttp();
+                    var httpBuilder = options.UseSystemNetHttp();
+
+                    // Em Development, o HttpClient da introspecção deve ignorar erros de
+                    // certificado SSL (certificado de desenvolvedor não confiável).
+                    // Em produção, o certificado deve ser confiável e este bypass removido.
+                    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+                    {
+                        httpBuilder.ConfigureHttpClientHandler(handler =>
+                            handler.ServerCertificateCustomValidationCallback =
+                                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
+                    }
+
                     options.UseAspNetCore();
 
                     // Configure introspection client credentials

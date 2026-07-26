@@ -16,6 +16,16 @@ O EChamado agora possui integração com IA para converter consultas em **lingua
 StatusName *= 'Aberto' & DepartmentName *= 'TI'
 ```
 
+### Providers Disponíveis
+| Provider | Modelo | Status |
+|----------|--------|--------|
+| OpenRouter | deepseek/deepseek-v4-flash | ✅ Funcional (recomendado) |
+| OpenAI | gpt-4o-mini | ⚠️ Requer API key |
+| Gemini | gemini-2.0-flash-exp | ⚠️ Requer API key |
+
+> **Nota:** Modelos DeepSeek retornam a resposta no campo `reasoning` em vez de `content`.
+> O `OpenRouterProvider` trata ambos automaticamente como fallback.
+
 ---
 
 ## 🏗️ Arquitetura
@@ -49,8 +59,8 @@ StatusName *= 'Aberto' & DepartmentName *= 'TI'
 │  ┌────────────────────────────────────────────────────────┐    │
 │  │         NLToGridifyService                              │    │
 │  │  • ConvertAsync()                                       │    │
-│  │  • ConvertWithOrderingAsync()                           │    │
-│  │  • ConvertBatchAsync()                                  │    │
+│  │  (ConvertWithOrderingAsync e ConvertBatchAsync          │    │
+│  │   planejados para implementação futura)                 │    │
 │  └────────────────────────────────────────────────────────┘    │
 │                            │                                      │
 │                            ▼                                      │

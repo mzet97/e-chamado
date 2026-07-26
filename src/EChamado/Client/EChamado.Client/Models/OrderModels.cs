@@ -82,7 +82,7 @@ public record UpdateOrderRequest(
 public record CloseOrderRequest(Guid OrderId, int? Evaluation);
 public record ChangeStatusRequest(Guid OrderId, Guid StatusTypeId);
 public record AssignOrderRequest(Guid OrderId, Guid AssignedToUserId);
-public record AddCommentRequest(Guid OrderId, string Description, Guid UserId, string UserEmail);
+public record AddCommentRequest(Guid OrderId, string Description, Guid UserId, string UserEmail, bool IsInternal = false);
 
 public class DashboardStatsResponse
 {

@@ -334,4 +334,40 @@ public class AuthorizationController(
 
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
+
+    [HttpGet("~/connect/logout")]
+    [HttpPost("~/connect/logout")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> Logout()
+    {
+        logger.LogInformation("Logout endpoint called");
+
+        var request = HttpContext.GetOpenIddictServerRequest()
+                              ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+
+        // Sign out from OpenIddict (revokes the authentication session and issues
+        // a sign-out response that the client can use to clear its tokens).
+        await HttpContext.SignOutAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+        // Also sign out of the Identity "External" cookie used during interactive login.
+        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        await HttpContext.SignOutAsync("External");
+
+        logger.LogInformation("Logout completed for subject");
+
+        // If post_logout_redirect_uri was provided (and is registered), OpenIddict
+        // will redirect to it automatically as part of the sign-out response.
+        // Otherwise, redirect to the Auth Server login page.
+        if (!string.IsNullOrEmpty(request.PostLogoutRedirectUri))
+        {
+            return SignOut(
+                authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                properties: new AuthenticationProperties
+                {
+                    RedirectUri = request.PostLogoutRedirectUri
+                });
+        }
+
+        return SignOut(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
 }

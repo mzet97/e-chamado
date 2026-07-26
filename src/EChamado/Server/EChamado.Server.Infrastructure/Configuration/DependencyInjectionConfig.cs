@@ -1,8 +1,10 @@
 ﻿using EChamado.Server.Domain.Domains.Identities;
 using EChamado.Server.Domain.Repositories;
+using EChamado.Server.Infrastructure.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using EChamado.Server.Domain.Repositories.Orders;
 using EChamado.Server.Domain.Services.Interface;
-using EChamado.Server.Application.Orders.Events;
+using EChamado.Server.Application.Events;
 using EChamado.Server.Domain.Domains.Orders.Events.Categories;
 using EChamado.Server.Domain.Domains.Orders.Events.Comments;
 using EChamado.Server.Domain.Domains.Orders.Events.Departments;
@@ -33,11 +35,13 @@ public static class DependencyInjectionConfig
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IOrderTypeRepository, OrderTypeRepository>();
         services.AddScoped<IStatusTypeRepository, StatusTypeRepository>();
         services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
+        services.AddScoped<IAttachmentRepository, AttachmentRepository>();
         services.AddScoped<IUserTokenService, UserTokenService>();
 
         services.AddScoped<IRedisService, RedisService>();
@@ -62,6 +66,9 @@ public static class DependencyInjectionConfig
 
         services.AddScoped<IDomainEventDispatcher, BrighterDomainEventDispatcher>();
         services.AddScoped<DomainEventsSaveChangesInterceptor>();
+
+        // Authorization handlers
+        services.AddScoped<IAuthorizationHandler, DepartmentAuthorizationHandler>();
 
         // Date/Time provider for testable timestamps
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();

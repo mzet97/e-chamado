@@ -79,6 +79,19 @@ namespace EChamado.Client
                     client.Timeout = TimeSpan.FromSeconds(30);
                 }).AddHttpMessageHandler<AuthTokenHandler>();
 
+                // User & Role management (admin)
+                builder.Services.AddHttpClient<UserService>(client =>
+                {
+                    client.BaseAddress = new Uri(backendUrl);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                }).AddHttpMessageHandler<AuthTokenHandler>();
+
+                builder.Services.AddHttpClient<RoleService>(client =>
+                {
+                    client.BaseAddress = new Uri(backendUrl);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                }).AddHttpMessageHandler<AuthTokenHandler>();
+
                 // OData Service
                 builder.Services.AddHttpClient<ODataService>(client =>
                 {

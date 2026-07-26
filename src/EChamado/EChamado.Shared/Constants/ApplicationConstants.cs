@@ -7,7 +7,7 @@ public static class ApplicationConstants
 {
     public static class Urls
     {
-        public const string DefaultAuthServerUrl = "https://localhost:7132";
+        public const string DefaultAuthServerUrl = "https://localhost:7133";
         public const string DefaultApiServerUrl = "https://localhost:7296";
         public const string DefaultBlazorClientUrl = "https://localhost:7274";
     }

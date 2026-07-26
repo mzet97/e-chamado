@@ -16,6 +16,7 @@ public class ApplicationUser : IdentityUser<Guid>
 
     public string? Photo { get; set; }
     public string? FullName { get; set; }
+    public Guid? DepartmentId { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public ICollection<ApplicationUserClaim> Claims { get; set; }

@@ -54,6 +54,23 @@
                 await PersistentLog.AuthAsync("✅ Code and State VALID - Starting exchange");
                 Logger.LogInformation("Processing authorization code exchange");
 
+                // ========== ETAPA 3a: Validação do state (proteção CSRF) ==========
+                // Compara o state retornado pela Auth Server com o state gerado e
+                // armazenado em localStorage no início do fluxo (InitiateLoginAsync).
+                var expectedState = await JS.InvokeAsync<string?>("localStorage.getItem", "pkce_state");
+                if (string.IsNullOrEmpty(expectedState) || !CryptographicEquals(state, expectedState))
+                {
+                    await PersistentLog.AuthErrorAsync("❌ STATE MISMATCH - possível ataque CSRF ou sessão expirada",
+                        $"Expected: {expectedState?.Length ?? 0} chars, Received: {state.Length} chars");
+                    Logger.LogError("State mismatch detected - aborting token exchange (CSRF protection)");
+                    // Limpa o state comprometido e redireciona para o login
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_state");
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_code_verifier");
+                    Navigation.NavigateTo("/authentication/login", forceLoad: true);
+                    return;
+                }
+                await PersistentLog.AuthAsync("✅ State validated successfully (CSRF protection passed)");
+
                 // Obtém o code verifier do localStorage
                 var codeVerifier = await AuthService.GetCodeVerifierAsync();
 
@@ -138,5 +155,21 @@
                 await PersistentLog.DebugAsync("CALLBACK", "Processing flag reset - ready for new login");
             });
         }
+    }
+
+    /// <summary>
+    /// Comparação de strings em tempo constante para evitar timing attacks
+    /// na validação do parâmetro state do OIDC.
+    /// </summary>
+    private static bool CryptographicEquals(string a, string b)
+    {
+        if (a is null || b is null || a.Length != b.Length)
+            return false;
+
+        var result = 0;
+        for (var i = 0; i < a.Length; i++)
+            result |= a[i] ^ b[i];
+
+        return result == 0;
     }
 }

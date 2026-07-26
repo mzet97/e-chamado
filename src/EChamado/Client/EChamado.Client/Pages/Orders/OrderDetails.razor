@@ -97,7 +97,13 @@
                                         </ItemOpposite>
                                         <ItemContent>
                                             <MudPaper Elevation="0" Class="pa-3 grey lighten-5 rounded">
-                                                <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@comment.UserEmail</MudText>
+                                                <div class="d-flex align-center gap-2">
+                                                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@comment.UserEmail</MudText>
+                                                    @if (comment.IsInternal)
+                                                    {
+                                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Icon="@Icons.Material.Filled.Lock">Interno</MudChip>
+                                                    }
+                                                </div>
                                                 <MudText Typo="Typo.body2" Style="white-space: pre-wrap;">@comment.Text</MudText>
                                             </MudPaper>
                                         </ItemContent>
@@ -113,7 +119,12 @@
                             </div>
                         }
                     </MudCardContent>
-                    <MudCardActions Class="d-block pa-4">
+                        <MudCardActions Class="d-block pa-4">
+                        <div class="d-flex align-center gap-3 mb-3">
+                            <MudCheckBox T="bool" @bind-Value="newCommentIsInternal"
+                                         Label="Comentário interno (visível apenas para equipe)"
+                                         Color="Color.Warning" />
+                        </div>
                         <MudTextField @bind-Value="newComment"
                                       Label="Adicionar Comentário"
                                       Variant="Variant.Outlined"
@@ -303,8 +314,64 @@
                                 }
                             </MudButton>
                         }
+
+                        <!-- Fechar chamado (visível apenas se ainda não estiver fechado) -->
+                        @if (!order.ClosingDate.HasValue)
+                        {
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Success"
+                                       FullWidth="true"
+                                       Class="mt-3"
+                                       Disabled="isClosing"
+                                       OnClick="OpenCloseDialog"
+                                       StartIcon="@Icons.Material.Filled.CheckCircle">
+                                @if (isClosing)
+                                {
+                                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                                    <span>Fechando...</span>
+                                }
+                                else
+                                {
+                                    <span>Fechar Chamado</span>
+                                }
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Success" Class="mt-3" Icon="@Icons.Material.Filled.CheckCircle">
+                                Chamado fechado em @order.ClosingDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                @if (order.Evaluation.HasValue)
+                                {
+                                    <MudText Typo="Typo.body2">Avaliação: @order.Evaluation/5</MudText>
+                                }
+                            </MudAlert>
+                        }
                     </MudCardContent>
                 </MudCard>
+
+                <!-- Dialog de Fechamento com Avaliação -->
+                <MudDialog @bind-IsVisible="showCloseDialog" Class="mt-4">
+                    <DialogContent>
+                        <MudText Typo="Typo.h6">Fechar Chamado</MudText>
+                        <MudText Typo="Typo.body2" Class="mb-4">
+                            Confirma o fechamento do chamado "@order.Title"? Avalie o atendimento (opcional).
+                        </MudText>
+                        <MudRating @bind-SelectedValue="closeEvaluation"
+                                   MaxValue="5"
+                                   Class="d-flex justify-center mb-2" />
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="d-flex justify-center">
+                            Toque nas estrelas para avaliar (1 a 5)
+                        </MudText>
+                    </DialogContent>
+                    <DialogActions>
+                        <MudButton OnClick="CancelClose" Color="Color.Inherit">Cancelar</MudButton>
+                        <MudButton Color="Color.Success"
+                                   Variant="Variant.Filled"
+                                   StartIcon="@Icons.Material.Filled.CheckCircle"
+                                   Disabled="isClosing"
+                                   OnClick="ConfirmClose">Confirmar Fechamento</MudButton>
+                    </DialogActions>
+                </MudDialog>
             </MudItem>
         </MudGrid>
     }
@@ -317,9 +384,13 @@
     private OrderViewModel? order;
     private bool isLoading = true;
     private string newComment = string.Empty;
+    private bool newCommentIsInternal;
     private bool isAddingComment;
     private bool isUpdatingStatus;
     private bool isAssigning;
+    private bool isClosing;
+    private bool showCloseDialog;
+    private int closeEvaluation;
 
     // Lookups
     private List<StatusTypeResponse> statuses = new();
@@ -375,11 +446,14 @@
                 return;
             }
 
-            var request = new AddCommentRequest(Id, newComment, Guid.Parse(userId), userEmail);
+            var request = new AddCommentRequest(Id, newComment, Guid.Parse(userId), userEmail, newCommentIsInternal);
             await OrderService.AddCommentAsync(request);
 
-            Snackbar.Add("Comentário adicionado com sucesso!", Severity.Success);
+            Snackbar.Add(newCommentIsInternal
+                ? "Comentário interno adicionado com sucesso!"
+                : "Comentário adicionado com sucesso!", Severity.Success);
             newComment = string.Empty;
+            newCommentIsInternal = false;
 
             // Recarrega o chamado para mostrar o novo comentário
             await ReloadOrder();
@@ -449,6 +523,41 @@
         finally
         {
             isAssigning = false;
+        }
+    }
+
+    private Task OpenCloseDialog()
+    {
+        closeEvaluation = 0;
+        showCloseDialog = true;
+        return Task.CompletedTask;
+    }
+
+    private void CancelClose()
+    {
+        showCloseDialog = false;
+        closeEvaluation = 0;
+    }
+
+    private async Task ConfirmClose()
+    {
+        isClosing = true;
+        try
+        {
+            // 0 = sem avaliação; converte para null para indicar avaliação opcional
+            int? evaluation = closeEvaluation > 0 ? closeEvaluation : null;
+            await OrderService.CloseAsync(Id, evaluation);
+            showCloseDialog = false;
+            Snackbar.Add("Chamado fechado com sucesso!", Severity.Success);
+            await ReloadOrder();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao fechar chamado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isClosing = false;
         }
     }
 

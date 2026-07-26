@@ -1,0 +1,10 @@
+services:
+  postgres:
+    image: postgres:16
+    ports: !override
+      - "5433:5432"
+    restart: always
+  redis:
+    restart: always
+  rabbitmq:
+    restart: always

@@ -6,6 +6,7 @@ public record CommentViewModel(
     Guid OrderId,
     Guid UserId,
     string UserEmail,
+    bool IsInternal,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc,
     DateTime? DeletedAtUtc,

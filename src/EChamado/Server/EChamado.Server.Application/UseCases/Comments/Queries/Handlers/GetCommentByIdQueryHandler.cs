@@ -28,6 +28,7 @@ public class GetCommentByIdQueryHandler(
             comment.OrderId,
             comment.UserId,
             comment.UserEmail,
+            comment.IsInternal,
             comment.CreatedAtUtc,
             comment.UpdatedAtUtc,
             comment.DeletedAtUtc,

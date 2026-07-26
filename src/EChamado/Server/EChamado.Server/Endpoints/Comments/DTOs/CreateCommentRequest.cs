@@ -17,4 +17,6 @@ public class CreateCommentRequest
     [Required(ErrorMessage = "O campo {0} é obrigatório")]
     [EmailAddress(ErrorMessage = "O campo {0} deve conter um email válido")]
     public string UserEmail { get; set; } = string.Empty;
+
+    public bool IsInternal { get; set; }
 }

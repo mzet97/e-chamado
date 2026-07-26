@@ -1,0 +1,103 @@
+{
+  "techStack": {
+    "language": "C# 14 / .NET 10",
+    "backend": [
+      "ASP.NET Core Minimal API",
+      "Clean Architecture (Domain/Application/Infrastructure/API)",
+      "EF Core 9 + PostgreSQL 15 (Npgsql)",
+      "Paramore.Brighter (CQRS commands) + Paramore.Darker (queries)",
+      "FluentValidation",
+      "Gridify 2.16.3 + OData 9.0",
+      "Serilog + ELK Stack 8.15.1",
+      "Redis 7 (cache/output cache), RabbitMQ 3 (mensageria)",
+      "OpenTelemetry (tracing + metrics via OTLP)",
+      "Health Checks (Postgres, Redis, RabbitMQ)"
+    ],
+    "frontend": [
+      "Blazor WebAssembly",
+      "MudBlazor 8.x",
+      "HttpClient com AuthTokenHandler (Bearer automático)"
+    ],
+    "auth": "OpenIddict 7.2.0 + ASP.NET Core Identity (Auth Server separado, OIDC Authorization Code + PKCE)",
+    "ai": "OpenAI / Gemini / OpenRouter via factory + cache (NLToGridifyService) - DeepSeek DeepSeek-v4-flash via OpenRouter funcional",
+    "testing": "xUnit, FluentAssertions, Moq, Testcontainers, Playwright",
+    "cicd": "GitHub Actions (ci-cd.yml + code-coverage.yml), Codecov, SonarCloud, Trivy security scan, Docker build & push to GHCR"
+  },
+  "structure": {
+    "solutionRoot": "src/EChamado/EChamado.sln",
+    "globalJson": "src/EChamado/global.json (pinado .NET 10.0.109)",
+    "backend": {
+      "Domain": "Server/EChamado.Server.Domain — Entities (DDD), Domain Events, Validations (FluentValidation), Repository interfaces (IRepository<T>, IUnitOfWork, IXxxRepository), Service interfaces, Authorization (DepartmentRequirement, DepartmentAuthorizationHandler)",
+      "Application": "Server/EChamado.Server.Application — UseCases/{Entity}/{Commands,Queries,Notifications,ViewModels}, CQRS handlers (Brighter/Darker), AI Services (NLToGridifyService + 3 providers), Common (Gridify, Behaviours, Messaging), Configuration/DI, Events/IntegrationEvents.cs",
+      "Infrastructure": "Server/EChamado.Server.Infrastructure — EF ApplicationDbContext (PendingModelChangesWarning suprimido), Mappings (IEntityTypeConfiguration), Repositories (Repository<T> base + UnitOfWork), Migrations (4: InitialCreate, AddGridifyIndexes, RenameAuditColumnsToUtc, AddCommentIsInternal, AddUserDepartmentId), Events dispatcher (BrighterDomainEventDispatcher), Redis (fallback memória), MessageBus (RabbitMQ/Null), Identity/OpenIddict config, Authorization/DepartmentAuthorizationHandler",
+      "Api": "Server/EChamado.Server — Minimal API endpoints (Endpoints/{Entity}/...Endpoint.cs + DTOs), Controllers/OData, Configuration, Middlewares, Program.cs (top-level com try/catch + Serilog)",
+      "Auth": "Echamado.Auth — OpenIddict server 7.2.0 (Authorization Code + PKCE, Password, Client Credentials, Refresh, EndSession/logout), AuthorizationController, OpenIddictWorker (seed), Rate Limiting, Razor login UI"
+    },
+    "frontendLayers": "Client/EChamado.Client — Pages (Admin/Orders/Authentication), Services (Typed HttpClient por domínio), Authentication (CookieAuthenticationStateProvider, AuthTokenHandler, AuthService), Models, Components, Layout",
+    "shared": "EChamado.Shared — Domain base classes (Entity<T>, AggregateRoot<T>, SoftDeletable*, Auditable*, Validatable), Patterns (Specification, Result, Factory), Responses (BaseResult/BaseResultList/PagedResult), ViewModels, Settings, IDateTimeProvider, Constants (URLs corrigidas: Auth 7133)",
+    "tests": "Tests/{Server.UnitTests(231), Server.IntegrationTests(31), E2E.Tests(4), Shared.UnitTests(24), Auth.UnitTests(21), Client.UnitTests(13)} — total 289 testes, 0 falhas"
+  },
+  "conventions": {
+    "architecture": [
+      "Clean Architecture + DDD: Domain não depende de ninguém; Application usa Domain; Infrastructure implementa interfaces do Domain; API orquestra",
+      "Aggregate Root com Factory Method estático Create() + ctor privado/internal, setters private, eventos de domínio via AddEvent()",
+      "Soft-delete padrão: ISoftDeletable (IsDeleted, DeletedAtUtc) — Repository.DisableAsync faz soft-delete, fallback para físico",
+      "Auditoria: IAuditable (CreatedAtUtc, UpdatedAtUtc) via MarkCreated/MarkUpdated — IDateTimeProvider para testabilidade",
+      "CQRS: Commands via Paramore.Brighter (RequestHandlerAsync<T>), Queries via Paramore.Darker (QueryHandlerAsync<TQuery,TResult>)",
+      "Domain Events: entidade.AddEvent() → coletados no SaveChangesInterceptor → mapeados via IBrighterEventMapper → publicados no Brighter",
+      "Validação: FluentValidation (regra por entidade no Domain), pipeline behavior [RequestValidation] no Brighter",
+      "Comentários internos: Comment.IsInternal flag, visível apenas para equipe interna",
+      "Permissão por departamento: ApplicationUser.DepartmentId + DepartmentAuthorizationHandler"
+    ],
+    "naming": [
+      "PascalCase para classes/métodos/props; camelCase para variáveis/parâmetros; _camelCase para campos privados",
+      "Endpoints Minimal API: Classe static XXEndpoint : IEndpoint com Map(IEndpointRouteBuilder); registrado via Endpoint.MapEndpoints()",
+      "Commands: CreateXxxCommand : BrighterRequest<BaseResult<T>>, handler em Commands/Handlers/",
+      "Queries: GridifyXxxQuery (Darker), SearchXxxQuery, GetXxxByIdQuery; handlers em Queries/Handlers/",
+      "ViewModels: records (OrderViewModel, CategoryViewModel) — saída das queries",
+      "Response padrão: BaseResult<T> (single) / BaseResultList<T> (paged) — toda API retorna esses wrappers"
+    ],
+    "queries": [
+      "Listagem paginada via Gridify (ApplyGridifyAsync) — filtros dinâmicos string, ordenação, paginação server-side",
+      "OData exposto em Controllers/OData para queries avançadas ($filter, $orderby, $expand)",
+      "AI Natural Language Query: NLToGridifyService converte linguagem natural → string Gridify via LLM (OpenRouter/DeepSeek funcional)"
+    ],
+    "auth": [
+      "SSO/OIDC com Authorization Code Flow + PKCE via Auth Server OpenIddict separado",
+      "Roles: Admin, User, Support; endpoints protegidos com .RequireAuthorization() / [Authorize(Roles)]",
+      "Client: CookieAuthenticationStateProvider + AuthTokenHandler injeta Bearer automaticamente",
+      "DisableAccessTokenEncryption() no OpenIddict para JWT assinado (parse local no cliente)",
+      "Logout: /connect/logout endpoint implementado (EndSession passthrough)",
+      "Password grant: FindByEmailAsync antes de PasswordSignInAsync(UserName) — bug corrigido"
+    ]
+  },
+  "build": {
+    "build": "dotnet build src/EChamado/EChamado.sln",
+    "run": "Três processos: Auth (Echamado.Auth), API (Server/EChamado.Server), Client (Client/EChamado.Client). Scripts: start-auth.sh, start-server.sh",
+    "docker": "docker compose up -d postgres redis rabbitmq (Postgres:5433, Redis:6379, Rabbit:5672) + elasticsearch kibana logstash (ELK)",
+    "migrations": "Auto-aplicadas pelo DatabaseInitializer no startup do Server. Gerar: dotnet ef migrations add <Name> -p Server/EChamado.Server.Infrastructure -s Server/EChamado.Server",
+    "test": "dotnet test src/EChamado/EChamado.sln --filter 'FullyQualifiedName~UnitTests' (289 tests, 0 falhas)"
+  },
+  "notes": [
+    {
+      "category": "build",
+      "content": "URLs: Client https://localhost:7274 | Auth https://localhost:7133 | API/Scalar https://localhost:7296 | Kibana http://localhost:5601. Usuários: admin@echamado.com/Admin@123456, user@echamado.com/User@1234567 (12 chars min). global.json pinado .NET 10.0.109."
+    },
+    {
+      "category": "architecture",
+      "content": "Application/Orders/ legacy (27 arquivos) mantido por entrelaçamento com DI (ListOrdersQuery, GetOrderByIdQuery). Events consolidados em Application/Events/IntegrationEvents.cs. Remoção requer refator do DependencyInjection.cs."
+    },
+    {
+      "category": "architecture",
+      "content": "AI service: OpenRouter/DeepSeek funcional. Bugs corrigidos: (1) URL path /chat/completions→chat/completios + trailing slash no BaseAddress; (2) JSON camelCase→PropertyNameCaseInsensitive=true; (3) DeepSeek response usa reasoning não content→fallback. Provider: OpenRouterProvider (IHttpClientFactory 'OpenRouter'). DefaultProvider='OpenRouter'."
+    },
+    {
+      "category": "test",
+      "content": "Cobertura: ~7/48 handlers testados (CreateCategory, GridifyCategory, CreateComment, GridifyOrder, CreateOrderType, GetUserByEmail, SearchUsers). Novos testes: CreateOrderCommandHandler(6), AssignOrderCommandHandler(3), OpenIddictService(4). Gap: Departments/StatusTypes/Roles/SubCategories/services sem testes."
+    },
+    {
+      "category": "env",
+      "content": "Docker: docker-compose.override.yml com postgres:16 imagem, porta 5433 (Postgres nativo Win no 5432), restart:always. .env com senhas dsv@123. Kibana index pattern: echamado-logs-*. Serilog sink Elasticsearch funcional."
+    }
+  ]
+}

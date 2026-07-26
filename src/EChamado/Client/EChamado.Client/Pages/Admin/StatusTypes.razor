@@ -8,6 +8,7 @@
 @inject IODataService ODataService
 @inject INLQueryService NLQueryService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject NavigationManager NavigationManager
 @inject ILogger<StatusTypes> Logger
 @attribute [Authorize(Roles = "Admin")]
@@ -172,16 +173,20 @@
             { "ButtonText", "Excluir" },
             { "Color", Color.Error }
         };
-        // se houver dialog provider, poderia usar; por simplicidade excluir direto
-        try
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirmar Exclusão", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
         {
-            await LookupService.DeleteStatusTypeAsync(id);
-            Snackbar.Add("Status excluído com sucesso!", Severity.Success);
-            await LoadStatusTypes();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Erro ao excluir status: {ex.Message}", Severity.Error);
+            try
+            {
+                await LookupService.DeleteStatusTypeAsync(id);
+                Snackbar.Add("Status excluído com sucesso!", Severity.Success);
+                await LoadStatusTypes();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao excluir status: {ex.Message}", Severity.Error);
+            }
         }
     }
 }

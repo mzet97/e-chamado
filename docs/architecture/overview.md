@@ -343,14 +343,14 @@ graph TB
 
 ## 🧪 Testes
 
-### Estrategia de Testes (310+ Testes)
+### Estrategia de Testes (289 Testes)
 
 ```mermaid
 graph TB
     subgraph "Test Pyramid"
-        A[Unit Tests<br/>200+ cases]
-        B[Integration Tests<br/>60+ cases]
-        C[E2E Tests<br/>50+ cases]
+        A[Unit Tests<br/>289 cases]
+        B[Integration Tests<br/>31 cases]
+        C[E2E Tests<br/>4 cases]
     end
     
     subgraph "Coverage Areas"
@@ -405,21 +405,24 @@ graph LR
 
 ### Performance Metrics
 
-| Métrica | Target | Atual |
-|---------|--------|-------|
-| API Response Time | <2s | <1.5s |
-| Page Load Time | <3s | <2.5s |
-| Database Query Time | <500ms | <300ms |
-| Cache Hit Rate | >80% | >85% |
+| Métrica | Target | Status |
+|---------|--------|--------|
+| API Response Time | <2s | ⚠️ Não medido (OpenTelemetry configurado, endpoint OTLP precisa de collector) |
+| Page Load Time | <3s | ⚠️ Não medido |
+| Database Query Time | <500ms | ⚠️ Não medido |
+| Cache Hit Rate | >80% | ⚠️ Não medido |
+
+> **Nota:** OpenTelemetry está configurado em `OpenTelemetryConfig.cs` (tracing + metrics via OTLP gRPC).
+> Para ativar, configure um collector OTLP (ex: Jaeger, Grafana Tempo) e ajuste `OpenTelemetry:OtlpEndpoint` no appsettings.
 
 ### Business Metrics
 
-| Métrica | Target | Atual |
-|---------|--------|-------|
-| User Satisfaction | >4.5/5 | 4.7/5 |
-| System Availability | >99.5% | 99.8% |
-| Bug Rate | <1% | <0.5% |
-| Feature Delivery | On-time | 95% |
+| Métrica | Target | Status |
+|---------|--------|--------|
+| User Satisfaction | >4.5/5 | ⚠️ Não implementado |
+| System Availability | >99.5% | ⚠️ Não implementado (health checks disponíveis) |
+| Bug Rate | <1% | ✅ 0 falhas em 289 testes unitários |
+| Feature Delivery | On-time | N/A |
 
 ---
 

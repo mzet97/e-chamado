@@ -6,6 +6,7 @@ public record CommentResponse(
     Guid OrderId,
     Guid UserId,
     string UserEmail,
+    bool IsInternal,
     DateTime CreatedAt
 );
 
@@ -13,5 +14,6 @@ public record CreateCommentRequest(
     Guid OrderId,
     string Description,
     Guid UserId,
-    string UserEmail
+    string UserEmail,
+    bool IsInternal = false
 );

@@ -46,8 +46,6 @@
                         </MudStack>
                     </ActivatorContent>
                     <ChildContent>
-                        <MudMenuItem Icon="@Icons.Material.Rounded.Person">Perfil</MudMenuItem>
-                        <MudDivider />
                         <MudMenuItem Icon="@Icons.Material.Rounded.Logout" OnClick="BeginLogout">Sair</MudMenuItem>
                     </ChildContent>
                 </MudMenu>
@@ -113,6 +111,10 @@
                             Icon="@Icons.Material.Rounded.Category">
                     Categorias
                 </MudNavLink>
+                <MudNavLink Href="/admin/subcategories"
+                            Icon="@Icons.Material.Rounded.Category">
+                    Subcategorias
+                </MudNavLink>
                 <MudNavLink Href="/admin/departments"
                             Icon="@Icons.Material.Rounded.Business">
                     Departamentos
@@ -125,6 +127,17 @@
                             Icon="@Icons.Material.Rounded.RadioButtonChecked">
                     Status
                 </MudNavLink>
+                <MudDivider Class="my-1" />
+                <AuthorizeView Roles="Admin">
+                    <MudNavLink Href="/admin/users"
+                                Icon="@Icons.Material.Rounded.People">
+                        Usuários
+                    </MudNavLink>
+                    <MudNavLink Href="/admin/roles"
+                                Icon="@Icons.Material.Rounded.Security">
+                        Perfis
+                    </MudNavLink>
+                </AuthorizeView>
             </MudNavGroup>
         </MudNavMenu>
     </MudDrawer>

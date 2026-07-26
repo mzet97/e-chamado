@@ -11,7 +11,7 @@ Este guia foi criado para facilitar a entrada de novos desenvolvedores no projet
 ## 📋 Pré-requisitos
 
 ### Ferramentas Obrigatórias
-- **.NET 9 SDK** - [Download aqui](https://dotnet.microsoft.com/download/dotnet/9.0)
+- **.NET 10 SDK** - [Download aqui](https://dotnet.microsoft.com/download/dotnet/10.0)
 - **Git** - [Download aqui](https://git-scm.com/)
 - **Visual Studio 2022** ou **VS Code** (recomendado: VS Code)
 - **Docker Desktop** - [Download aqui](https://www.docker.com/products/docker-desktop)
@@ -64,30 +64,40 @@ cd src/EChamado
 Se preferir configurar manualmente:
 
 ```bash
-# 1. Subir serviços de infraestrutura
-docker-compose up -d
+# 1. Copiar variáveis de ambiente
+cp .env.example .env
+# Editar .env com suas senhas
 
-# 2. Aguardar os serviços subirem (30-60 segundos)
-# 3. Verificar status dos containers
-docker-compose ps
+# 2. Criar rede Docker (primeira vez)
+docker network create echamado-network
 
-# 4. Executar migrations do banco de dados
-cd Server/EChamado.Server
-dotnet ef database update
+# 3. Subir serviços de infraestrutura
+docker compose up -d postgres redis rabbitmq elasticsearch kibana logstash
+
+# 4. Aguardar os serviços subirem (30-60 segundos)
+docker compose ps
 
 # 5. Executar as aplicações em terminais separados:
-# Terminal 1 - Auth Server
+# Terminal 1 - Auth Server (porta 7133)
+# Usa WSL: wsl -- bash start-auth.sh
+# Ou manualmente:
 cd Echamado.Auth
-dotnet run
+dotnet run --urls "https://localhost:7133;http://localhost:5137"
 
-# Terminal 2 - API Server  
+# Terminal 2 - API Server (porta 7296)
+# Usa WSL: wsl -- bash start-server.sh
+# Ou manualmente:
 cd Server/EChamado.Server
-dotnet run
+dotnet run --urls "https://localhost:7296;http://localhost:5071"
 
-# Terminal 3 - Client
+# Terminal 3 - Client (porta 7274)
 cd Client/EChamado.Client
 dotnet run
 ```
+
+> **Nota importante:** As migrations são aplicadas **automaticamente** pelo `DatabaseInitializer` quando o API Server inicia. Não é necessário executar `dotnet ef database update` manualmente.
+
+> **Nota sobre porta do Postgres:** O compose usa porta **5433** (override) para evitar conflito com Postgres nativo do Windows. A connection string já está configurada para `localhost:5433`.
 
 ---
 
@@ -95,20 +105,23 @@ dotnet run
 
 ### URLs Principais
 - **Aplicação Cliente**: https://localhost:7274
-- **Servidor de Auth**: https://localhost:7132
-- **API Swagger**: https://localhost:7296/swagger
+- **Servidor de Auth**: https://localhost:7133
+- **API Scalar (Docs)**: https://localhost:7296/scalar
 - **Kibana (Logs)**: http://localhost:5601
+- **RabbitMQ Management**: http://localhost:15672
+- **pgAdmin**: http://localhost:15432
 
 ### Credenciais de Teste
 ```
 Admin:
   Email: admin@echamado.com
-  Senha: Admin@123
+  Senha: Admin@123456
 
 Usuário:
-  Email: user@echamado.com  
-  Senha: User@123
+  Email: user@echamado.com
+  Senha: User@1234567
 ```
+> **Nota:** As senhas devem ter no mínimo 12 caracteres (política de segurança do Identity).
 
 ---
 
@@ -197,7 +210,7 @@ dotnet test
 ### Semana 1: Fundamentos
 - [x] **Dia 1**: Configuração do ambiente + primeiro commit
 - [x] **Dia 2**: Entender arquitetura Clean Architecture
-- [x] **Dia 3**: Estudar CQRS e Mediator pattern
+- [x] **Dia 3**: Estudar CQRS (Paramore.Brighter para Commands, Paramore.Darker para Queries)
 - [x] **Dia 4**: Explorar Frontend Blazor + MudBlazor
 - [x] **Dia 5**: Primeiro bug fix pequeno
 
@@ -217,49 +230,52 @@ dotnet test
 ### Desenvolvimento Diário
 
 ```bash
-# Iniciar ambiente completo
-./start-all-projects.sh
+# Iniciar serviços de infraestrutura
+docker compose up -d postgres redis rabbitmq elasticsearch kibana logstash
 
-# Apenas subir serviços de infraestrutura
-docker-compose up -d postgres redis rabbitmq elasticsearch kibana logstash
+# Iniciar Auth Server (terminal 1)
+wsl -- bash start-auth.sh   # ou: cd Echamado.Auth && dotnet run
 
-# Executar migrations
-dotnet ef database update
+# Iniciar API Server (terminal 2)
+wsl -- bash start-server.sh  # ou: cd Server/EChamado.Server && dotnet run
 
-# Executar testes
-dotnet test
+# Iniciar Client (terminal 3)
+cd Client/EChamado.Client && dotnet run
 
-# Build do projeto
-dotnet build
+# Executar testes unitários (289 testes)
+dotnet test EChamado.sln --filter "FullyQualifiedName~UnitTests"
+
+# Build completo da solution
+dotnet build EChamado.sln
 
 # Limpar e rebuild
-dotnet clean && dotnet build
-
-# Executar apenas backend
-cd Server/EChamado.Server && dotnet run
-
-# Executar apenas frontend  
-cd Client/EChamado.Client && dotnet run
+dotnet clean EChamado.sln && dotnet build EChamado.sln
 ```
 
 ### Debug e Troubleshooting
 
 ```bash
 # Ver logs dos containers
-docker-compose logs -f
+docker compose logs -f
 
 # Ver logs específicos
-docker-compose logs -f api-server
-docker-compose logs -f postgres
+docker compose logs -f postgres
+docker compose logs -f redis
+docker compose logs -f rabbitmq
 
-# Resetar banco de dados
-docker-compose stop postgres
-docker volume rm echamado_postgres_data
-docker-compose up -d postgres
-dotnet ef database update
+# Resetar banco de dados (deleta dados!)
+docker compose down -v
+docker compose up -d postgres redis rabbitmq
 
 # Limpar cache Redis
-docker-compose exec redis redis-cli FLUSHALL
+docker compose exec redis redis-cli -a dsv@123 FLUSHALL
+
+# Verificar saúde dos serviços
+curl -sk https://localhost:7296/health   # API health check
+curl -sk https://localhost:7133/.well-known/openid-configuration  # Auth discovery
+
+# Ver logs do Serilog no Elasticsearch
+curl -sk -u 'elastic:dsv@123' 'http://localhost:9200/echamado-logs-*/_search?size=5'
 ```
 
 ---
@@ -269,7 +285,7 @@ docker-compose exec redis redis-cli FLUSHALL
 ### Documentação Interna
 - **[Arquitetura](../architecture/)** - Documentação técnica completa
 - **[Casos de Uso](../architecture/use-cases.md)** - Cenários de negócio
-- **[API Documentation](https://localhost:7296/swagger)** - Swagger da API
+- **[API Documentation](https://localhost:7296/scalar)** - Scalar (documentação da API)
 - **[Health Checks](https://localhost:7296/health)** - Status dos serviços
 
 ### Recursos Externos
@@ -385,6 +401,6 @@ Você completou o onboarding inicial do EChamado! Agora você está pronto para 
 
 ---
 
-**Última atualização:** 26 de novembro de 2025  
-**Versão:** 1.0.0  
-**Status:** ✅ Guia validado por novos desenvolvedores
+**Última atualização:** 26 de julho de 2026
+**Versão:** 2.0.0
+**Status:** ✅ Atualizado com URLs corretas, senhas 12 chars, porta Postgres 5433, Scalar, Brighter/Darker

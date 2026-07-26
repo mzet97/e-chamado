@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
@@ -33,7 +33,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\EChamado.Shared\EChamado.Shared.csproj" />
-    <ProjectReference Include="..\EChamado.Client.Application\EChamado.Client.Application.csproj" />
   </ItemGroup>
 
 </Project>

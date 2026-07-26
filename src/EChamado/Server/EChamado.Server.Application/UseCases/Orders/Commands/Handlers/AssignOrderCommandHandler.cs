@@ -1,4 +1,5 @@
 using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.Users.Abstractions;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
@@ -10,6 +11,7 @@ namespace EChamado.Server.Application.UseCases.Orders.Commands.Handlers;
 
 public class AssignOrderCommandHandler(
     IUnitOfWork unitOfWork,
+    IUserReadRepository userReadRepository,
     IDateTimeProvider dateTimeProvider,
     ILogger<AssignOrderCommandHandler> logger) :
     RequestHandlerAsync<AssignOrderCommand>
@@ -26,9 +28,15 @@ public class AssignOrderCommandHandler(
             throw new NotFoundException($"Order {command.OrderId} not found");
         }
 
-        // Como não temos acesso ao Users no UnitOfWork, vamos usar o ID e email que será fornecido
-        // O email pode ser buscado de outra forma ou passado como parâmetro
-        order.AssignTo(command.AssignedToUserId, string.Empty, dateTimeProvider);
+        // Resolve o email do usuário responsável a partir do ID informado.
+        var responsible = await userReadRepository.GetByIdAsync(command.AssignedToUserId, cancellationToken);
+        if (responsible == null)
+        {
+            logger.LogError("Responsible user {UserId} not found", command.AssignedToUserId);
+            throw new NotFoundException($"Responsible user {command.AssignedToUserId} not found");
+        }
+
+        order.AssignTo(command.AssignedToUserId, responsible.Email, dateTimeProvider);
 
         if (!order.IsValid())
         {
@@ -42,7 +50,8 @@ public class AssignOrderCommandHandler(
 
         await unitOfWork.CommitAsync();
 
-        logger.LogInformation("Order {OrderId} assigned to user {UserId}", command.OrderId, command.AssignedToUserId);
+        logger.LogInformation("Order {OrderId} assigned to user {UserId} ({Email})",
+            command.OrderId, command.AssignedToUserId, responsible.Email);
 
         command.Result = new BaseResult();
         return await base.HandleAsync(command, cancellationToken);

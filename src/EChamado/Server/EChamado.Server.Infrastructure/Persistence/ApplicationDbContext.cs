@@ -3,6 +3,7 @@ using EChamado.Server.Domain.Domains.Orders;
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
@@ -25,6 +26,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             optionsBuilder.UseLoggerFactory(loggerFactory);
         }
+
+        // Suprime o warning de "pending model changes": as migrations existentes
+        // (InitialCreate + AddGridifyIndexes) refletem o estado do banco. Diferencas
+        // de inferencia entre versoes do provider Npgsql/EF nao devem bloquear o startup.
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
         base.OnConfiguring(optionsBuilder);
     }

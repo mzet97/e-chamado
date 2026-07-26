@@ -38,21 +38,35 @@ public class CreateOrderCommandHandler(
         var responsibleUserId = command.RequestingUserId;
         var responsibleUserEmail = command.RequestingUserEmail;
 
-        // Se CategoryId não foi fornecido, busca uma categoria padrão ou cria uma
+        // Valida CategoryId e DepartmentId obrigatórios (FKs do chamado)
         var categoryId = command.CategoryId ?? Guid.Empty;
         var departmentId = command.DepartmentId ?? Guid.Empty;
 
-        // Valida se categoria e departamento existem
         if (categoryId == Guid.Empty)
         {
-            logger.LogWarning("No category provided, using default");
-            // Aqui você pode buscar ou criar uma categoria padrão
+            logger.LogError("Category is required to create an order");
+            throw new ValidationException("Category is required to create an order",
+                new[] { "CategoryId é obrigatório." });
         }
 
         if (departmentId == Guid.Empty)
         {
-            logger.LogWarning("No department provided, using default");
-            // Aqui você pode buscar ou criar um departamento padrão
+            logger.LogError("Department is required to create an order");
+            throw new ValidationException("Department is required to create an order",
+                new[] { "DepartmentId é obrigatório." });
+        }
+
+        // Confirma que a categoria e o departamento informados existem
+        if (!await unitOfWork.Categories.ExistsAsync(c => c.Id == categoryId))
+        {
+            logger.LogError("Category {CategoryId} not found", categoryId);
+            throw new NotFoundException($"Category {categoryId} not found");
+        }
+
+        if (!await unitOfWork.Departments.ExistsAsync(d => d.Id == departmentId))
+        {
+            logger.LogError("Department {DepartmentId} not found", departmentId);
+            throw new NotFoundException($"Department {departmentId} not found");
         }
 
         var order = Order.Create(

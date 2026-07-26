@@ -221,9 +221,6 @@ curl -X POST https://localhost:7133/connect/token \
                 c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
             }
 
-            // Operation filter para valores padrão
-            c.OperationFilter<SwaggerDefaultValues>();
-
             // Tags customizadas - agrupa por prefixo da rota
             c.TagActionsBy(api =>
             {

@@ -7,6 +7,8 @@ using EChamado.Server.Endpoints.Departments;
 using EChamado.Server.Endpoints.OrderTypes;
 using EChamado.Server.Endpoints.Orders;
 using EChamado.Server.Endpoints.Roles;
+using EChamado.Server.Endpoints.Attachments;
+using EChamado.Server.Endpoints.Reports;
 using EChamado.Server.Endpoints.StatusTypes;
 using EChamado.Server.Endpoints.SubCategories;
 using EChamado.Server.Endpoints.Users;
@@ -133,7 +135,8 @@ public static class Endpoint
             .MapEndpoint<UpdateOrderEndpoint>()
             .MapEndpoint<AssignOrderEndpoint>()
             .MapEndpoint<ChangeStatusOrderEndpoint>()
-            .MapEndpoint<CloseOrderEndpoint>();
+            .MapEndpoint<CloseOrderEndpoint>()
+            .MapEndpoint<SearchFullTextEndpoint>();
 
         // Comments v1
         endpoints.MapGroup("v1/comments")
@@ -143,17 +146,34 @@ public static class Endpoint
             .MapEndpoint<GetCommentsByOrderIdEndpoint>()
             .MapEndpoint<DeleteCommentEndpoint>();
 
+        // Attachments v1
+        endpoints.MapGroup("v1/attachments")
+            .WithTags("Attachment")
+            .RequireAuthorization()
+            .MapEndpoint<UploadAttachmentEndpoint>()
+            .MapEndpoint<DownloadAttachmentEndpoint>();
+
         // AI v1 - Natural Language to Gridify conversion
         endpoints.MapGroup("v1/ai")
             .WithTags("AI")
             .RequireAuthorization()
-            .MapEndpoint<ConvertNLToGridifyEndpoint>();
+            .MapEndpoint<ConvertNLToGridifyEndpoint>()
+            .MapEndpoint<ConvertWithOrderingEndpoint>()
+            .MapEndpoint<ConvertBatchEndpoint>();
 
         // Dashboard v1
         endpoints.MapGroup("v1/dashboard")
             .WithTags("Dashboard")
             .RequireAuthorization()
-            .MapEndpoint<GetDashboardStatsEndpoint>();
+            .MapEndpoint<GetDashboardStatsEndpoint>()
+            .MapEndpoint<GetSlaStatsEndpoint>()
+            .MapEndpoint<GetTeamStatsEndpoint>();
+
+        // Reports v1
+        endpoints.MapGroup("v1/reports")
+            .WithTags("Reports")
+            .RequireAuthorization()
+            .MapEndpoint<GenerateReportEndpoint>();
     }
 
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)
