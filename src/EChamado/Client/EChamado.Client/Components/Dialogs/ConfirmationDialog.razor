@@ -1,0 +1,39 @@
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6">@Title</MudText>
+        <MudText Typo="Typo.body1" Class="mt-2">@ContentText</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Confirm" Color="@Color" Variant="Variant.Filled">@ButtonText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private object? MudDialog { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "Confirmação";
+
+    [Parameter]
+    public string ContentText { get; set; } = "Tem certeza que deseja realizar esta ação?";
+
+    [Parameter]
+    public string ButtonText { get; set; } = "Confirmar";
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    private void Cancel()
+    {
+        (MudDialog as dynamic)?.Cancel();
+    }
+
+    private void Confirm()
+    {
+        (MudDialog as dynamic)?.Close(DialogResult.Ok(true));
+    }
+}

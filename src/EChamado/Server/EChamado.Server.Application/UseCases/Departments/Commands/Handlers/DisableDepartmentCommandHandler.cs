@@ -1,28 +1,31 @@
-﻿using EChamado.Server.Application.UseCases.Departments.Notifications;
+﻿using EChamado.Server.Application.Common.Behaviours;
+using EChamado.Server.Application.UseCases.Departments.Notifications;
 using EChamado.Server.Domain.Exceptions;
 using EChamado.Server.Domain.Repositories;
 using EChamado.Shared.Responses;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Paramore.Brighter;
 
 namespace EChamado.Server.Application.UseCases.Departments.Commands.Handlers;
 
 public class DisableDepartmentCommandHandler(IUnitOfWork unitOfWork,
-    IMediator mediator,
+    IAmACommandProcessor commandProcessor,
     ILogger<DisableDepartmentCommandHandler> logger) :
-    IRequestHandler<DisableDepartmentCommand, BaseResult>
+    RequestHandlerAsync<DisableDepartmentCommand>
 {
-    public async Task<BaseResult> Handle(DisableDepartmentCommand request, CancellationToken cancellationToken)
+    [RequestLogging(0, HandlerTiming.Before)]
+    [RequestValidation(1, HandlerTiming.Before)]
+    public override async Task<DisableDepartmentCommand> HandleAsync(DisableDepartmentCommand command, CancellationToken cancellationToken = default)
     {
-        if (request == null)
+        if (command == null)
         {
             logger.LogError("DisableDepartmentCommand is null");
-            throw new ArgumentNullException(nameof(request));
+            throw new ArgumentNullException(nameof(command));
         }
 
         var entity = await unitOfWork
             .Departments
-            .GetByIdAsync(request.Id);
+            .GetByIdAsync(command.Id);
 
         if (entity == null)
         {
@@ -33,16 +36,17 @@ public class DisableDepartmentCommandHandler(IUnitOfWork unitOfWork,
         await unitOfWork.BeginTransactionAsync();
 
         await unitOfWork.Departments
-            .DisableAsync(request.Id);
+            .DisableAsync(command.Id);
 
         await unitOfWork.CommitAsync();
 
-        await mediator.Publish(
+        await commandProcessor.PublishAsync(
             new DeletedDepartmentNotification(
                 entity.Id,
                 entity.Name,
-                entity.Description));
+                entity.Description), cancellationToken: cancellationToken);
 
-        return new BaseResult(true, "Desativado com sucesso");
+        command.Result = new BaseResult(true, "Desativado com sucesso");
+        return await base.HandleAsync(command, cancellationToken);
     }
 }

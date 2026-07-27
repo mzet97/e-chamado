@@ -23,8 +23,12 @@ public record OrderViewModel(
     Guid? ResponsibleUserId,
     string? ResponsibleUserEmail,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
-);
+    DateTime? UpdatedAt,
+    List<CommentResponse>? Comments = null
+)
+{
+    public bool IsOverdue => DueDate.HasValue && DueDate.Value < DateTime.Now && !ClosingDate.HasValue;
+};
 
 public record OrderListViewModel(
     Guid Id,
@@ -59,18 +63,31 @@ public record CreateOrderRequest(
     Guid? CategoryId,
     Guid? SubCategoryId,
     Guid? DepartmentId,
-    DateTime? DueDate
+    DateTime? DueDate,
+    Guid RequestingUserId,
+    string RequestingUserEmail
 );
 
 public record UpdateOrderRequest(
+    Guid Id,
     string Title,
     string Description,
+    Guid TypeId,
     Guid? CategoryId,
     Guid? SubCategoryId,
     Guid? DepartmentId,
     DateTime? DueDate
 );
 
-public record CloseOrderRequest(int Evaluation);
+public record CloseOrderRequest(Guid OrderId, int? Evaluation);
+public record ChangeStatusRequest(Guid OrderId, Guid StatusTypeId);
+public record AssignOrderRequest(Guid OrderId, Guid AssignedToUserId);
+public record AddCommentRequest(Guid OrderId, string Description, Guid UserId, string UserEmail, bool IsInternal = false);
 
-public record AssignOrderRequest(Guid ResponsibleUserId, string ResponsibleUserEmail);
+public class DashboardStatsResponse
+{
+    public int TotalTickets { get; set; }
+    public int MyTickets { get; set; }
+    public int AssignedToMe { get; set; }
+    public int OverdueTickets { get; set; }
+}

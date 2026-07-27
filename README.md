@@ -1,322 +1,175 @@
 # EChamado - Sistema de Gerenciamento de Chamados
 
-Sistema completo de gestão de tickets/chamados com autenticação SSO/OIDC, desenvolvido com .NET 9, Blazor WebAssembly e MudBlazor.
+Sistema de gestao de tickets/chamados com autenticacao SSO/OIDC, desenvolvido com .NET 9, Blazor WebAssembly e MudBlazor.
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
 [![Blazor](https://img.shields.io/badge/Blazor-WebAssembly-512BD4)](https://blazor.net/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
 
-## 🚀 Status do Projeto
+## Funcionalidades
 
-**Versão Atual**: 0.8.0 (75-80% completo)
-**Status**: Em desenvolvimento - FASES 1-3 concluídas
+**Autenticacao e Autorizacao** - SSO/OIDC com Authorization Code Flow + PKCE, refresh token automatico, roles (Admin, User, Support), OpenIddict 6.1.1.
 
-| Componente | Status | Progresso |
-|------------|--------|-----------|
-| Backend (CQRS + API) | ✅ Completo | 85% |
-| Frontend (Blazor WASM) | ✅ Principal completo | 70% |
-| SSO/OIDC | ✅ Completo | 100% |
-| Admin Pages | ⚠️ Em desenvolvimento | 0% |
-| Testes Automatizados | ❌ Não iniciado | 0% |
-| CI/CD | ❌ Não iniciado | 0% |
+**Gestao de Chamados** - CRUD completo, listagem com paginacao server-side, 7 filtros avancados, atribuicao de responsavel, sistema de comentarios, subcategorias.
 
----
+**Dashboard** - Cards com estatisticas, grafico donut (status), grafico de barras (departamento), ultimos chamados, acoes rapidas.
 
-## 📋 Funcionalidades Implementadas
+**API** - 55 endpoints Minimal API com Gridify (filtros dinamicos), OData (queries avancadas), AI Natural Language Query (converte linguagem natural para Gridify via OpenAI/Gemini), FluentValidation, responses padronizadas.
 
-### ✅ Autenticação & Autorização
-- Login com credenciais
-- SSO/OIDC com Authorization Code Flow + PKCE
-- Refresh Token automático
-- Roles (Admin, User, Support)
-- Cookie seguro (SameSite=None)
+**Paginas Admin** - Categories, Departments, OrderTypes, StatusTypes, SubCategories (protegidas com `[Authorize(Roles = "Admin")]`).
 
-### ✅ Gestão de Chamados
-- Criar, editar, visualizar chamados
-- Listagem com paginação server-side
-- 7 filtros avançados (texto, status, departamento, tipo, período, vencidos)
-- Atribuição de responsável
-- Mudança de status
-- Sistema de comentários (frontend pronto, backend em desenvolvimento)
-
-### ✅ Dashboard
-- Cards com estatísticas (Total, Meus Chamados, Atribuídos, Vencidos)
-- Gráfico Donut (distribuição por status)
-- Gráfico de Barras (chamados por departamento)
-- Tabela de últimos 5 chamados
-- Ações rápidas
-
-### ✅ APIs REST
-- 31 endpoints RESTful
-- 6 Controllers (Orders, Categories, Departments, OrderTypes, StatusTypes, Auth)
-- Paginação, filtros, busca
-- Validação com FluentValidation
-- Responses padronizadas
+**Monitoramento** - Health Checks (PostgreSQL, Redis, RabbitMQ), endpoints /health, /ready, /live, Serilog + ELK Stack.
 
 ---
 
-## 🏗️ Arquitetura
+## Arquitetura
 
-### Backend
-- **Clean Architecture** (Domain, Application, Infrastructure, API)
-- **CQRS** com MediatR
-- **Domain Events**
-- **Repository Pattern**
-- **FluentValidation**
-- **Entity Framework Core** (PostgreSQL)
+**Backend** - Clean Architecture (Domain, Application, Infrastructure, API) com CQRS via Paramore.Brighter, Domain Events, Repository Pattern, Entity Framework Core 9 + PostgreSQL 15.
 
-### Frontend
-- **Blazor WebAssembly**
-- **MudBlazor** (Material Design)
-- **HttpClient** com autenticação automática
-- **In-memory caching** (LookupService)
+**Frontend** - Blazor WebAssembly + MudBlazor 8.x, HttpClient com autenticacao automatica, in-memory caching via LookupService, ErrorBoundary global.
 
-### Infraestrutura
-- **Docker Compose** (8 serviços)
-- **PostgreSQL** (banco principal)
-- **Redis** (cache distribuído)
-- **RabbitMQ** (mensageria)
-- **ELK Stack** (Elasticsearch, Logstash, Kibana)
-- **Serilog** (logging estruturado)
+**Infraestrutura** - Docker Compose (8 servicos: PostgreSQL, Redis, RabbitMQ, Elasticsearch, Logstash, Kibana, pgAdmin, setup), named volumes, secrets via environment variables.
 
 ---
 
-## 🛠️ Tecnologias
+## Tecnologias
 
 | Categoria | Tecnologia |
 |-----------|-----------|
 | Backend | .NET 9, C# 13, ASP.NET Core |
-| Frontend | Blazor WASM, MudBlazor 7.x |
-| Autenticação | OpenIddict 6.1.1, ASP.NET Core Identity |
-| Banco de Dados | PostgreSQL 15, Entity Framework Core 9 |
+| Frontend | Blazor WASM, MudBlazor 8.x |
+| Autenticacao | OpenIddict 6.1.1, ASP.NET Core Identity |
+| Banco de Dados | PostgreSQL 15, EF Core 9 |
+| Queries | Gridify 2.16.3, OData 9.0 |
+| IA | OpenAI GPT-4o-mini, Google Gemini 2.0, OpenRouter |
 | Cache | Redis 7.x |
 | Mensageria | RabbitMQ 3.x |
-| Logging | Serilog, ELK Stack |
-| Containerização | Docker, Docker Compose |
-| Testes | xUnit, FluentAssertions, Moq, Testcontainers (planejado) |
+| Logging | Serilog 4.3.0, ELK Stack 8.15.1 |
+| Testes | xUnit, FluentAssertions, Moq, Testcontainers, Playwright |
 
 ---
 
-## 📦 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 e-chamado/
-├── src/
-│   └── EChamado/
-│       ├── Server/
-│       │   ├── EChamado.Server/              # API REST
-│       │   ├── EChamado.Server.Application/  # CQRS (Commands, Queries, Handlers)
-│       │   ├── EChamado.Server.Domain/       # Entidades, Eventos, Interfaces
-│       │   └── EChamado.Server.Infrastructure/ # EF Core, Repositories, Configurações
-│       ├── Client/
-│       │   └── EChamado.Client/              # Blazor WebAssembly
-│       │       ├── Pages/                    # Páginas Razor
-│       │       ├── Services/                 # HTTP Services
-│       │       ├── Models/                   # DTOs
-│       │       └── Layout/                   # Layouts e componentes
-│       └── Echamado.Auth/                    # Servidor de autenticação (Blazor Server)
-├── tests/ (planejado)
-│   ├── EChamado.Server.UnitTests/
-│   └── EChamado.Server.IntegrationTests/
-├── docs/
-│   ├── PLANO-IMPLEMENTACAO.md                # FASES 1-3 (concluídas)
-│   ├── PLANO-FASES-4-6.md                    # Plano detalhado das próximas fases
-│   ├── ANALISE-COMPLETA.md                   # Análise técnica completa
-│   ├── MATRIZ-FEATURES.md                    # Matriz comparativa de features
-│   ├── PRÓXIMOS-PASSOS.md                    # Resumo executivo
-│   └── SSO-SETUP.md                          # Guia de configuração SSO
+├── src/EChamado/
+│   ├── Server/
+│   │   ├── EChamado.Server/              # API (Minimal API endpoints)
+│   │   ├── EChamado.Server.Application/  # CQRS (Brighter)
+│   │   ├── EChamado.Server.Domain/       # Entities, Events, Interfaces
+│   │   └── EChamado.Server.Infrastructure/ # EF Core, Repositories
+│   ├── Client/EChamado.Client/           # Blazor WASM + MudBlazor
+│   ├── Echamado.Auth/                    # Auth server (OpenIddict 6.1.1)
+│   ├── EChamado.Shared/                  # DTOs, Responses
+│   └── Tests/                            # 6 test projects
+│       ├── EChamado.Server.UnitTests/
+│       ├── EChamado.Server.IntegrationTests/
+│       ├── EChamado.E2E.Tests/
+│       ├── EChamado.Shared.UnitTests/
+│       ├── Echamado.Auth.UnitTests/
+│       └── EChamado.Client.UnitTests/
+├── docs/                                 # Technical documentation
 ├── docker-compose.yml
 └── README.md
 ```
 
 ---
 
-## 🚀 Como Executar
+## Como Executar
 
-### Pré-requisitos
+### Pre-requisitos
 - .NET 9 SDK
-- Docker & Docker Compose
-- PostgreSQL (ou usar o container)
+- Docker e Docker Compose
 
-### 1. Clonar o repositório
+### Setup
+
 ```bash
 git clone https://github.com/mzet97/e-chamado.git
-cd e-chamado
+cd e-chamado/src/EChamado
+cp .env.example .env
+# Edite .env com suas configuracoes
+docker-compose up -d
 ```
 
-### 2. Subir serviços de infraestrutura
-```bash
-docker-compose up -d postgres redis rabbitmq elasticsearch logstash kibana
-```
+### Banco de dados
 
-### 3. Configurar banco de dados
 ```bash
-cd src/EChamado/Server/EChamado.Server
+cd Server/EChamado.Server
 dotnet ef database update
 ```
 
-### 4. Executar aplicações
+### Executar (3 terminais)
 
-**Servidor de Autenticação (porta 5000):**
 ```bash
-cd src/EChamado/Echamado.Auth
-dotnet run
+# Auth server
+cd Echamado.Auth && dotnet run
+
+# API server
+cd Server/EChamado.Server && dotnet run
+
+# Blazor client
+cd Client/EChamado.Client && dotnet run
 ```
 
-**API Server (porta 5001):**
-```bash
-cd src/EChamado/Server/EChamado.Server
-dotnet run
-```
+### URLs
 
-**Cliente Blazor (porta 5002):**
-```bash
-cd src/EChamado/Client/EChamado.Client
-dotnet run
-```
-
-### 5. Acessar aplicação
-- **Cliente**: https://localhost:5002
-- **Auth**: https://localhost:5000
-- **API**: https://localhost:5001/swagger
+- **Cliente**: https://localhost:7274
+- **Auth**: https://localhost:7132
+- **API/Swagger**: https://localhost:7296/swagger
 - **Kibana**: http://localhost:5601
 
-### Usuários padrão
-```
-Admin:
-  Email: admin@echamado.com
-  Senha: Admin@123
+### Usuarios padrao
 
-User:
-  Email: user@echamado.com
-  Senha: User@123
-```
+| Perfil | Email | Senha |
+|--------|-------|-------|
+| Admin | admin@echamado.com | Admin@123 |
+| User | user@echamado.com | User@123 |
 
 ---
 
-## 📚 Documentação
+## Testes
 
-### Guias de Implementação
-- **[PRÓXIMOS-PASSOS.md](PRÓXIMOS-PASSOS.md)** - Resumo executivo do que falta implementar
-- **[PLANO-FASES-4-6.md](PLANO-FASES-4-6.md)** - Plano detalhado (1.088 linhas) com código de exemplo
-- **[PLANO-IMPLEMENTACAO.md](PLANO-IMPLEMENTACAO.md)** - Histórico das FASES 1-3 concluídas
-- **[SSO-SETUP.md](SSO-SETUP.md)** - Guia completo de configuração SSO/OIDC
+**276 unit tests passando** (222 Server + 24 Shared + 17 Auth + 13 Client). Integration tests (31) requerem Docker com Postgres e Redis. E2E tests (4) requerem ambiente completo rodando.
 
-### Análises Técnicas
-- **[ANALISE-COMPLETA.md](ANALISE-COMPLETA.md)** - Análise detalhada de cada camada do sistema
-- **[MATRIZ-FEATURES.md](MATRIZ-FEATURES.md)** - Matriz comparativa de features implementadas
-
----
-
-## 🎯 Roadmap
-
-### ✅ FASES 1-3 (Concluídas)
-- [x] SSO/OIDC com Authorization Code + PKCE
-- [x] Backend CQRS completo (6 controllers, 31 endpoints)
-- [x] Frontend - Dashboard, Lista, Criar/Editar, Detalhes
-- [x] Navegação com MudDrawer
-- [x] 4 serviços HTTP autenticados
-
-### 🔄 FASE 4: Interface Completa (5-6 dias)
-- [ ] Comments API (Backend)
-- [ ] Admin/Categories.razor
-- [ ] Admin/Departments.razor
-- [ ] Admin/OrderTypes.razor
-- [ ] Admin/StatusTypes.razor
-
-### 🔄 FASE 5: Monitoramento (1-2 dias)
-- [ ] Health Checks (PostgreSQL, Redis, RabbitMQ)
-- [ ] Endpoints /health, /ready, /live
-- [ ] Docker health checks
-- [ ] Request/Performance logging
-
-### 🔄 FASE 6: Qualidade & CI/CD (6-8 dias)
-- [ ] 20+ Unit Tests (Handlers)
-- [ ] 10+ Unit Tests (Validators)
-- [ ] 15+ Integration Tests (API)
-- [ ] GitHub Actions CI/CD pipeline
-- [ ] Code coverage > 70%
-
-### 📋 FASE 7: Features Avançadas (opcional)
-- [ ] Sistema de Anexos (file storage)
-- [ ] Notificações por Email
-- [ ] Relatórios PDF/Excel
-- [ ] Sistema de Auditoria (LGPD)
-- [ ] SLA Tracking
-- [ ] 2FA (Two-Factor Authentication)
-
----
-
-## 🧪 Testes
-
-**Status**: Planejado para FASE 6
-
-### Estrutura Planejada
 ```bash
-tests/
-├── EChamado.Server.UnitTests/
-│   ├── Application/Commands/
-│   ├── Application/Queries/
-│   ├── Application/Validators/
-│   └── Domain/Entities/
-└── EChamado.Server.IntegrationTests/
-    ├── Controllers/
-    └── Infrastructure/Repositories/
+# Unit tests
+dotnet test src/EChamado/EChamado.sln --filter "FullyQualifiedName~UnitTests"
+
+# Todos (inclui integration - precisa de Docker)
+dotnet test src/EChamado/EChamado.sln
 ```
 
-### Tecnologias de Teste
-- xUnit
-- FluentAssertions
-- Moq
-- AutoFixture
-- Testcontainers (PostgreSQL)
-- WebApplicationFactory
+Scripts de teste de autenticacao na raiz do projeto: `test-openiddict-login.sh`, `test-openiddict-login.ps1`, `test-openiddict-login.py`.
 
 ---
 
-## 📊 Métricas
+## Documentacao
 
-| Métrica | Valor |
-|---------|-------|
-| Arquivos C# | 242 |
-| Páginas Blazor | 29 |
-| Controllers | 6 |
-| Endpoints REST | 31 |
-| Linhas de Código | ~15.000 |
-| Commits | 10+ |
-| Documentação | 4.000+ linhas |
-
----
-
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+| Documento | Descricao |
+|-----------|-----------|
+| [docs/README.md](docs/README.md) | Ponto de entrada da documentacao |
+| [docs/INDEX.md](docs/INDEX.md) | Indice navegacional |
+| [docs/architecture/overview.md](docs/architecture/overview.md) | Arquitetura geral com diagramas Mermaid |
+| [docs/architecture/class-diagram.md](docs/architecture/class-diagram.md) | Diagramas de classes |
+| [docs/architecture/sequence-diagrams.md](docs/architecture/sequence-diagrams.md) | Fluxos de processos |
+| [docs/architecture/use-cases.md](docs/architecture/use-cases.md) | Cenarios de negocio |
+| [docs/onboarding/developer-onboarding.md](docs/onboarding/developer-onboarding.md) | Guia para novos desenvolvedores |
+| [docs/features/implementation-process.md](docs/features/implementation-process.md) | Processo de implementacao |
+| [docs/style-guide/csharp-style.md](docs/style-guide/csharp-style.md) | Padroes de codigo C# |
+| [docs/AI-NATURAL-LANGUAGE-QUERY.md](docs/AI-NATURAL-LANGUAGE-QUERY.md) | Feature AI (natural language query) |
+| [docs/AI-QUICKSTART.md](docs/AI-QUICKSTART.md) | Setup rapido da feature AI |
 
 ---
 
-## 📝 Licença
+## Licenca
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
----
-
-## 👨‍💻 Autor
-
-**Marcelo Azevedo**
-- GitHub: [@mzet97](https://github.com/mzet97)
+MIT. Veja [LICENSE](LICENSE).
 
 ---
 
-## 📞 Suporte
+## Autor
 
-Para reportar bugs ou solicitar features, abra uma [issue](https://github.com/mzet97/e-chamado/issues).
-
----
-
-**Desenvolvido com ❤️ usando .NET 9 e Blazor WebAssembly**
+**Marcelo Azevedo** - [@mzet97](https://github.com/mzet97)

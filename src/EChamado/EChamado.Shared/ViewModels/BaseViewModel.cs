@@ -3,18 +3,21 @@
 public abstract class BaseViewModel
 {
     public Guid Id { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public DateTime? DeletedAt { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime? UpdatedAtUtc { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
+    public bool IsDeleted { get; set; }
 
     protected BaseViewModel(Guid id,
-                            DateTime createdAt,
-                            DateTime? updatedAt,
-                            DateTime? deletedAt)
+                            DateTime createdAtUtc,
+                            DateTime? updatedAtUtc,
+                            DateTime? deletedAtUtc,
+                            bool isDeleted)
     {
         Id = id;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
-        DeletedAt = deletedAt;
+        CreatedAtUtc = createdAtUtc;
+        UpdatedAtUtc = updatedAtUtc;
+        DeletedAtUtc = deletedAtUtc;
+        IsDeleted = isDeleted;
     }
 }

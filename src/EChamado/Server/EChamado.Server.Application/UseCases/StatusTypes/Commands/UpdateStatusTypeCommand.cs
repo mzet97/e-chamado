@@ -1,10 +1,22 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 
-public record UpdateStatusTypeCommand(
-    Guid Id,
-    string Name,
-    string Description
-) : IRequest<BaseResult>;
+public class UpdateStatusTypeCommand : BrighterRequest<BaseResult>
+{
+    public Guid Id { get; set; } = default!;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+
+    public UpdateStatusTypeCommand()
+    {
+    }
+
+    public UpdateStatusTypeCommand(Guid id, string name, string description)
+    {
+        Id = id;
+        Name = name;
+        Description = description;
+    }
+}

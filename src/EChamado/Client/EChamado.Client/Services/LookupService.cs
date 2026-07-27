@@ -28,8 +28,7 @@ public class LookupService
         if (!forceRefresh && _cachedOrderTypes != null)
             return _cachedOrderTypes;
 
-        var result = await _httpClient.GetFromJsonAsync<BaseResultList<OrderTypeResponse>>("v1/ordertypes?PageSize=1000");
-        _cachedOrderTypes = result?.Data?.ToList() ?? new List<OrderTypeResponse>();
+        _cachedOrderTypes = await FetchWithFallback<OrderTypeResponse>("v1/ordertypes?PageSize=100", "v1/ordertypes?pageIndex=1&pageSize=50");
         return _cachedOrderTypes;
     }
 
@@ -41,8 +40,7 @@ public class LookupService
         if (!forceRefresh && _cachedStatusTypes != null)
             return _cachedStatusTypes;
 
-        var result = await _httpClient.GetFromJsonAsync<BaseResultList<StatusTypeResponse>>("v1/statustypes?PageSize=1000");
-        _cachedStatusTypes = result?.Data?.ToList() ?? new List<StatusTypeResponse>();
+        _cachedStatusTypes = await FetchWithFallback<StatusTypeResponse>("v1/statustypes?PageSize=100", "v1/statustypes?pageIndex=1&pageSize=50");
         return _cachedStatusTypes;
     }
 
@@ -54,8 +52,7 @@ public class LookupService
         if (!forceRefresh && _cachedDepartments != null)
             return _cachedDepartments;
 
-        var result = await _httpClient.GetFromJsonAsync<BaseResultList<DepartmentResponse>>("v1/departments?PageSize=1000");
-        _cachedDepartments = result?.Data?.ToList() ?? new List<DepartmentResponse>();
+        _cachedDepartments = await FetchWithFallback<DepartmentResponse>("v1/departments?PageSize=100", "v1/departments?pageIndex=1&pageSize=50");
         return _cachedDepartments;
     }
 
@@ -67,8 +64,7 @@ public class LookupService
         if (!forceRefresh && _cachedCategories != null)
             return _cachedCategories;
 
-        var result = await _httpClient.GetFromJsonAsync<BaseResultList<CategoryResponse>>("v1/categories?PageSize=1000");
-        _cachedCategories = result?.Data?.ToList() ?? new List<CategoryResponse>();
+        _cachedCategories = await FetchWithFallback<CategoryResponse>("v1/categories?PageSize=100", "v1/categories?pageIndex=1&pageSize=50");
         return _cachedCategories;
     }
 
@@ -98,7 +94,7 @@ public class LookupService
     /// </summary>
     public async Task<Guid> CreateOrderTypeAsync(CreateOrderTypeRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("v1/ordertype", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/ordertypes", request);
         response.EnsureSuccessStatusCode();
         ClearCache();
         var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
@@ -110,7 +106,7 @@ public class LookupService
     /// </summary>
     public async Task UpdateOrderTypeAsync(Guid id, UpdateOrderTypeRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"v1/ordertype/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/ordertypes/{id}", request);
         response.EnsureSuccessStatusCode();
         ClearCache();
     }
@@ -120,7 +116,7 @@ public class LookupService
     /// </summary>
     public async Task DeleteOrderTypeAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"v1/ordertype/{id}");
+        var response = await _httpClient.DeleteAsync($"v1/ordertypes/{id}");
         response.EnsureSuccessStatusCode();
         ClearCache();
     }
@@ -130,7 +126,7 @@ public class LookupService
     /// </summary>
     public async Task<Guid> CreateStatusTypeAsync(CreateStatusTypeRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("v1/statustype", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/statustypes", request);
         response.EnsureSuccessStatusCode();
         ClearCache();
         var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
@@ -142,7 +138,7 @@ public class LookupService
     /// </summary>
     public async Task UpdateStatusTypeAsync(Guid id, UpdateStatusTypeRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"v1/statustype/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/statustypes/{id}", request);
         response.EnsureSuccessStatusCode();
         ClearCache();
     }
@@ -152,8 +148,30 @@ public class LookupService
     /// </summary>
     public async Task DeleteStatusTypeAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"v1/statustype/{id}");
+        var response = await _httpClient.DeleteAsync($"v1/statustypes/{id}");
         response.EnsureSuccessStatusCode();
         ClearCache();
+    }
+
+    private async Task<List<T>> FetchWithFallback<T>(string primaryUrl, string fallbackUrl)
+    {
+        try
+        {
+            var result = await _httpClient.GetFromJsonAsync<BaseResultList<T>>(primaryUrl);
+            return result?.Data?.ToList() ?? new List<T>();
+        }
+        catch (HttpRequestException)
+        {
+            // tenta sem o page size agressivo
+            try
+            {
+                var result = await _httpClient.GetFromJsonAsync<BaseResultList<T>>(fallbackUrl);
+                return result?.Data?.ToList() ?? new List<T>();
+            }
+            catch
+            {
+                return new List<T>();
+            }
+        }
     }
 }

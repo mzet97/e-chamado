@@ -29,7 +29,7 @@ public class CategoryService
     {
         try
         {
-            var result = await _httpClient.GetFromJsonAsync<BaseResult<CategoryResponse>>($"v1/category/{id}");
+            var result = await _httpClient.GetFromJsonAsync<BaseResult<CategoryResponse>>($"v1/categories/{id}");
             return result?.Data;
         }
         catch (HttpRequestException)
@@ -43,7 +43,7 @@ public class CategoryService
     /// </summary>
     public async Task<Guid> CreateAsync(CreateCategoryRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("v1/category", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/categories", request);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
         return result?.Data ?? Guid.Empty;
@@ -54,7 +54,7 @@ public class CategoryService
     /// </summary>
     public async Task UpdateAsync(Guid id, UpdateCategoryRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"v1/category/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/categories/{id}", request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -63,7 +63,7 @@ public class CategoryService
     /// </summary>
     public async Task DeleteAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"v1/category/{id}");
+        var response = await _httpClient.DeleteAsync($"v1/categories/{id}");
         response.EnsureSuccessStatusCode();
     }
 
@@ -72,7 +72,7 @@ public class CategoryService
     /// </summary>
     public async Task<Guid> CreateSubCategoryAsync(CreateSubCategoryRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("v1/subcategory", request);
+        var response = await _httpClient.PostAsJsonAsync("v1/subcategories", request);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<BaseResult<Guid>>();
         return result?.Data ?? Guid.Empty;
@@ -83,7 +83,7 @@ public class CategoryService
     /// </summary>
     public async Task UpdateSubCategoryAsync(Guid id, UpdateSubCategoryRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"v1/subcategory/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"v1/subcategories/{id}", request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -92,7 +92,7 @@ public class CategoryService
     /// </summary>
     public async Task DeleteSubCategoryAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"v1/subcategory/{id}");
+        var response = await _httpClient.DeleteAsync($"v1/subcategories/{id}");
         response.EnsureSuccessStatusCode();
     }
 
@@ -116,7 +116,7 @@ public class CategoryService
     {
         try
         {
-            var result = await _httpClient.GetFromJsonAsync<BaseResult<SubCategoryResponse>>($"v1/subcategory/{id}");
+            var result = await _httpClient.GetFromJsonAsync<BaseResult<SubCategoryResponse>>($"v1/subcategories/{id}");
             return result?.Data;
         }
         catch (HttpRequestException)

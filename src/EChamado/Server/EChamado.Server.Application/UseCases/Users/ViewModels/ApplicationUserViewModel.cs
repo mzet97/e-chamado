@@ -17,10 +17,11 @@ public class ApplicationUserViewModel
     public DateTimeOffset? LockoutEnd { get; set; }
     public bool LockoutEnabled { get; set; }
     public int AccessFailedCount { get; set; }
+    public Guid? DepartmentId { get; set; }
 
     public ApplicationUserViewModel()
     {
-        
+
     }
 
     public ApplicationUserViewModel(
@@ -36,7 +37,8 @@ public class ApplicationUserViewModel
         bool twoFactorEnabled,
         DateTimeOffset? lockoutEnd,
         bool lockoutEnabled,
-        int accessFailedCount)
+        int accessFailedCount,
+        Guid? departmentId = null)
     {
         Id = id;
         Photo = photo;
@@ -51,6 +53,7 @@ public class ApplicationUserViewModel
         LockoutEnd = lockoutEnd;
         LockoutEnabled = lockoutEnabled;
         AccessFailedCount = accessFailedCount;
+        DepartmentId = departmentId;
     }
 
     public ApplicationUserViewModel(ApplicationUser user)
@@ -68,5 +71,6 @@ public class ApplicationUserViewModel
         LockoutEnd = user.LockoutEnd;
         LockoutEnabled = user.LockoutEnabled;
         AccessFailedCount = user.AccessFailedCount;
+        DepartmentId = user.DepartmentId;
     }
 }

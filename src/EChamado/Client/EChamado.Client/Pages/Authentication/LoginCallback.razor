@@ -1,6 +1,175 @@
 @page "/authentication/login-callback"
 @inject NavigationManager Navigation
+@inject ILogger<LoginCallback> Logger
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Authorization
+@using EChamado.Client.Authentication
+@using EChamado.Client.Services
+@inject EChamado.Client.Authentication.AuthService AuthService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@inject PersistentLogger PersistentLog
 
 <PageTitle>Login Callback</PageTitle>
 
-<RemoteAuthenticatorView Action="login-callback" />
+<div style="text-align: center; padding: 50px;">
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    <p>Processando login...</p>
+</div>
+
+@code {
+    private static bool _isProcessing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Previne execução duplicada causada por re-renders
+        if (_isProcessing)
+        {
+            await PersistentLog.WarnAsync("CALLBACK", "⚠️ Callback already processing - skipping duplicate execution");
+            return;
+        }
+
+        _isProcessing = true;
+
+        try
+        {
+            // ========== ETAPA 1: Início do Callback ==========
+            await PersistentLog.AuthAsync("🔥 LOGIN CALLBACK STARTED", $"URL: {Navigation.Uri}");
+            Logger.LogInformation("Login callback received. URL: {Uri}", Navigation.Uri);
+
+            // Extrai parâmetros da URL
+            var uri = new Uri(Navigation.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var code = query["code"];
+            var state = query["state"];
+
+            // ========== ETAPA 2: Parâmetros Extraídos ==========
+            await PersistentLog.AuthAsync("📋 Parameters extracted",
+                $"Code: {code?.Length ?? 0} chars, State: {state?.Length ?? 0} chars, Query: {uri.Query}");
+            Logger.LogInformation("Code: {CodeLen} chars, State: {StateLen} chars",
+                code?.Length ?? 0, state?.Length ?? 0);
+
+            if (!string.IsNullOrEmpty(code) && !string.IsNullOrEmpty(state))
+            {
+                // ========== ETAPA 3: Parâmetros Válidos ==========
+                await PersistentLog.AuthAsync("✅ Code and State VALID - Starting exchange");
+                Logger.LogInformation("Processing authorization code exchange");
+
+                // ========== ETAPA 3a: Validação do state (proteção CSRF) ==========
+                // Compara o state retornado pela Auth Server com o state gerado e
+                // armazenado em localStorage no início do fluxo (InitiateLoginAsync).
+                var expectedState = await JS.InvokeAsync<string?>("localStorage.getItem", "pkce_state");
+                if (string.IsNullOrEmpty(expectedState) || !CryptographicEquals(state, expectedState))
+                {
+                    await PersistentLog.AuthErrorAsync("❌ STATE MISMATCH - possível ataque CSRF ou sessão expirada",
+                        $"Expected: {expectedState?.Length ?? 0} chars, Received: {state.Length} chars");
+                    Logger.LogError("State mismatch detected - aborting token exchange (CSRF protection)");
+                    // Limpa o state comprometido e redireciona para o login
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_state");
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_code_verifier");
+                    Navigation.NavigateTo("/authentication/login", forceLoad: true);
+                    return;
+                }
+                await PersistentLog.AuthAsync("✅ State validated successfully (CSRF protection passed)");
+
+                // Obtém o code verifier do localStorage
+                var codeVerifier = await AuthService.GetCodeVerifierAsync();
+
+                // ========== ETAPA 4: Code Verifier Obtido ==========
+                await PersistentLog.AuthAsync($"🔑 Code verifier retrieved: {codeVerifier?.Length ?? 0} chars");
+                Logger.LogInformation("Code verifier length: {Length}", codeVerifier?.Length ?? 0);
+
+                // ========== ETAPA 5: Iniciando Troca de Token ==========
+                await PersistentLog.AuthAsync("🔄 Starting ExchangeCodeForTokenAsync...");
+
+                // Troca o código por token
+                var success = await AuthService.ExchangeCodeForTokenAsync(code, state, codeVerifier ?? "");
+
+                // ========== ETAPA 6: Resultado do Exchange ==========
+                await PersistentLog.AuthAsync($"📡 Exchange completed: {(success ? "SUCCESS ✅" : "FAILED ❌")}");
+
+                if (success)
+                {
+                    Logger.LogInformation("Token exchange successful");
+
+                    // ========== ETAPA 7: Verificando Token em localStorage ==========
+                    var storedToken = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+                    var tokenPreview = storedToken != null
+                        ? storedToken.Substring(0, Math.Min(30, storedToken.Length)) + "..."
+                        : "NULL";
+
+                    await PersistentLog.AuthAsync("💾 Token verification",
+                        $"Token in localStorage: {(storedToken != null ? $"{storedToken.Length} chars" : "NOT FOUND")} - Preview: {tokenPreview}");
+                    Logger.LogInformation("Token stored: {Preview}", tokenPreview);
+
+                    // ========== ETAPA 8: Limpando Code Verifier ==========
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "pkce_code_verifier");
+                    await PersistentLog.DebugAsync("CLEANUP", "Code verifier removed from localStorage");
+
+                    // ========== ETAPA 9: Notificando AuthenticationStateProvider ==========
+                    var authStateProvider = AuthStateProvider as CookieAuthenticationStateProvider;
+                    if (authStateProvider != null)
+                    {
+                        await PersistentLog.AuthAsync("🔔 Calling NotifyUserAuthenticated()...");
+                        authStateProvider.NotifyUserAuthenticated();
+                        await PersistentLog.AuthAsync("✅ AUTHENTICATION STATE NOTIFIED - User should be logged in now");
+                    }
+                    else
+                    {
+                        await PersistentLog.AuthErrorAsync("❌ AuthStateProvider is NULL or wrong type");
+                    }
+
+                    Logger.LogInformation("✅ Authentication state notified");
+                }
+                else
+                {
+                    // ========== FALHA NO EXCHANGE ==========
+                    await PersistentLog.AuthErrorAsync("❌ Token exchange returned FALSE");
+                    Logger.LogWarning("Token exchange failed - no success flag received");
+                }
+            }
+            else
+            {
+                // ========== PARÂMETROS INVÁLIDOS ==========
+                await PersistentLog.AuthErrorAsync($"❌ MISSING PARAMETERS - Code: {string.IsNullOrEmpty(code)}, State: {string.IsNullOrEmpty(state)}");
+                Logger.LogWarning("Missing code or state in callback URL");
+            }
+
+            // ========== ETAPA 10: Redirecionando ==========
+            await PersistentLog.AuthAsync("🔀 Redirecting to home page NOW (no delay to prevent re-render)");
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            // ========== ERRO CRÍTICO ==========
+            await PersistentLog.AuthErrorAsync($"❌ CRITICAL EXCEPTION: {ex.Message}", ex.StackTrace);
+            Logger.LogError(ex, "Error processing login callback");
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        finally
+        {
+            // Reset flag após 2 segundos (tempo suficiente para o redirect acontecer)
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                _isProcessing = false;
+                await PersistentLog.DebugAsync("CALLBACK", "Processing flag reset - ready for new login");
+            });
+        }
+    }
+
+    /// <summary>
+    /// Comparação de strings em tempo constante para evitar timing attacks
+    /// na validação do parâmetro state do OIDC.
+    /// </summary>
+    private static bool CryptographicEquals(string a, string b)
+    {
+        if (a is null || b is null || a.Length != b.Length)
+            return false;
+
+        var result = 0;
+        for (var i = 0; i < a.Length; i++)
+            result |= a[i] ^ b[i];
+
+        return result == 0;
+    }
+}

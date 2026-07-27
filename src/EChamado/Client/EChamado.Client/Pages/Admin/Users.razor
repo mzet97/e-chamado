@@ -1,0 +1,120 @@
+@page "/admin/users"
+@using EChamado.Client.Services
+@using EChamado.Client.Models
+@using MudBlazor
+@inject UserService UserService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Users> Logger
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Usuários - EChamado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Usuários</MudText>
+    </div>
+
+    <MudCard Elevation="3">
+        <MudCardContent>
+            @if (isLoading)
+            {
+                <MudSkeleton Height="120px" />
+            }
+            else if (!users.Any())
+            {
+                <MudAlert Severity="Severity.Info">Nenhum usuário encontrado.</MudAlert>
+            }
+            else
+            {
+                <MudDataGrid T="UserResponse"
+                             Items="@users"
+                             Hover="true"
+                             Bordered="true"
+                             Dense="true"
+                             Striped="true"
+                             Filterable="true"
+                             SortMode="SortMode.Single">
+                    <Columns>
+                        <PropertyColumn Property="x => x.Email" Title="Email" />
+                        <PropertyColumn Property="x => x.UserName" Title="Usuário" />
+                        <TemplateColumn Title="Email Confirmado">
+                            <CellTemplate>
+                                @if (context.Item.EmailConfirmed)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error" Size="Size.Small" />
+                                }
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="2FA">
+                            <CellTemplate>
+                                @if (context.Item.TwoFactorEnabled)
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Info">Sim</MudChip>
+                                }
+                                else
+                                {
+                                    <MudText Color="Color.Secondary">-</MudText>
+                                }
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Status">
+                            <CellTemplate>
+                                @if (context.Item.LockoutEnd.HasValue && context.Item.LockoutEnd > DateTimeOffset.UtcNow)
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Error">Bloqueado</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Success">Ativo</MudChip>
+                                }
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <NoRecordsContent>
+                        <div class="d-flex flex-column align-center justify-center py-4">
+                            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Color="Color.Secondary" Class="mt-2">Nenhum usuário encontrado</MudText>
+                        </div>
+                    </NoRecordsContent>
+                </MudDataGrid>
+            }
+        </MudCardContent>
+    </MudCard>
+
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4">
+        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
+        Gestão completa de usuários (criar/editar/bloquear) requer endpoints adicionais na API.
+    </MudText>
+</MudContainer>
+
+@code {
+    private List<UserResponse> users = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        try
+        {
+            users = await UserService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar usuários: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -1,9 +1,20 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.StatusTypes.Commands;
 
-public record CreateStatusTypeCommand(
-    string Name,
-    string Description
-) : IRequest<BaseResult<Guid>>;
+public class CreateStatusTypeCommand : BrighterRequest<BaseResult<Guid>>
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+
+    public CreateStatusTypeCommand()
+    {
+    }
+
+    public CreateStatusTypeCommand(string name, string description)
+    {
+        Name = name;
+        Description = description;
+    }
+}

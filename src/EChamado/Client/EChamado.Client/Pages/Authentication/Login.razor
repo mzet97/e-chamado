@@ -1,6 +1,45 @@
 @page "/authentication/login"
-@inject NavigationManager Navigation
+@using EChamado.Client.Services
+@using EChamado.Client.Authentication
+@inject AuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Login - EChamado</PageTitle>
 
-<RemoteAuthenticatorView Action="login" />
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8" Width="100%">
+        <div class="d-flex flex-column align-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+            <MudText Typo="Typo.h5" GutterBottom="true">Redirecionando para autenticação...</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                Você está sendo redirecionado para o servidor de identidade seguro do EChamado.
+            </MudText>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Se já estiver logado, vai para a home
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
+        try
+        {
+            // Inicia o fluxo Authorization Code com PKCE
+            var authUrl = await AuthService.InitiateLoginAsync();
+            NavigationManager.NavigateTo(authUrl);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao iniciar login: {ex.Message}", Severity.Error);
+        }
+    }
+}

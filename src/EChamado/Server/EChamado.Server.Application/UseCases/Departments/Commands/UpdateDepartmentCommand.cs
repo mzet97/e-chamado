@@ -1,11 +1,22 @@
-﻿using EChamado.Shared.Responses;
-using MediatR;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Shared.Responses;
 
 namespace EChamado.Server.Application.UseCases.Departments.Commands;
 
-public class UpdateDepartmentCommand : IRequest<BaseResult>
+public class UpdateDepartmentCommand : BrighterRequest<BaseResult>
 {
-    public required Guid Id { get; set; }
-    public required string Name { get; set; }
-    public required string Description { get; set; }
+    public Guid Id { get; set; } = default!;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+
+    public UpdateDepartmentCommand()
+    {
+    }
+
+    public UpdateDepartmentCommand(Guid id, string name, string description)
+    {
+        Id = id;
+        Name = name;
+        Description = description;
+    }
 }

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          
+          <!-- Exclus�es -->
+          <Exclude>
+            [*.Tests]*,
+            [*]*.Migrations.*,
+            [*]*.Program,
+            [*]*.Startup,
+            [EChamado.Server]EChamado.Server.Program,
+            [EChamado.Client]EChamado.Client.Program
+          </Exclude>
+          
+          <!-- Exclus�es por atributo -->
+          <ExcludeByAttribute>
+            Obsolete,
+            GeneratedCodeAttribute,
+            CompilerGeneratedAttribute,
+            ExcludeFromCodeCoverageAttribute
+          </ExcludeByAttribute>
+          
+          <!-- Exclus�es por arquivo -->
+          <ExcludeByFile>
+            **/Migrations/**/*.cs,
+            **/wwwroot/**/*.*,
+            **/*.Designer.cs,
+            **/*.g.cs,
+            **/*.g.i.cs
+          </ExcludeByFile>
+          
+          <!-- Configura��es adicionais -->
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          
+          <!-- Thresholds -->
+          <Threshold>85</Threshold>
+          <ThresholdType>line,branch,method</ThresholdType>
+          <ThresholdStat>minimum</ThresholdStat>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+  
+  <!-- Configura��es de teste -->
+  <RunConfiguration>
+    <MaxCpuCount>0</MaxCpuCount>
+    <ResultsDirectory>./TestResults</ResultsDirectory>
+  </RunConfiguration>
+</RunSettings>

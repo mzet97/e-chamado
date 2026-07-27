@@ -134,7 +134,7 @@ public class ApplicationUserService : IApplicationUserService
 
     public async Task TrySignInAsync(ApplicationUser user)
     {
-       await _signInManager.SignInAsync(user, false);
+        await _signInManager.SignInAsync(user, false);
     }
 
     public async Task<SignInResult> CheckPasswordSignInAsync(ApplicationUser user, string password, bool lockoutOnFailure)

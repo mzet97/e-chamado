@@ -1,10 +1,20 @@
-﻿using EChamado.Shared.Responses;
-using MediatR;
+﻿using EChamado.Server.Application.Common.Messaging;
+using EChamado.Shared.Responses;
 
 namespace EChamado.Server.Application.UseCases.Departments.Commands;
 
-public class CreateDepartmentCommand : IRequest<BaseResult<Guid>>
+public class CreateDepartmentCommand : BrighterRequest<BaseResult<Guid>>
 {
-    public required string Name { get; set; }
-    public required string Description { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+
+    public CreateDepartmentCommand()
+    {
+    }
+
+    public CreateDepartmentCommand(string name, string description)
+    {
+        Name = name;
+        Description = description;
+    }
 }

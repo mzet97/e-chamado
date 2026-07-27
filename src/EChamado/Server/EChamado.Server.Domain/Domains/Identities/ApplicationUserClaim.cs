@@ -8,7 +8,7 @@ public class ApplicationUserClaim : IdentityUserClaim<Guid>
 
     public ApplicationUserClaim()
     {
-        
+
     }
 
     public ApplicationUserClaim(Claim claim)

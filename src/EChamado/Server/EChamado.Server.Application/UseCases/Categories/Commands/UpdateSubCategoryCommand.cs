@@ -1,10 +1,24 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Categories.Commands;
 
-public record UpdateSubCategoryCommand(
-    Guid Id,
-    string Name,
-    string Description
-) : IRequest<BaseResult>;
+public class UpdateSubCategoryCommand : BrighterRequest<BaseResult>
+{
+    public Guid Id { get; set; } = default!;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public Guid CategoryId { get; set; } = default!;
+
+    public UpdateSubCategoryCommand()
+    {
+    }
+
+    public UpdateSubCategoryCommand(Guid id, string name, string description, Guid categoryId)
+    {
+        Id = id;
+        Name = name;
+        Description = description;
+        CategoryId = categoryId;
+    }
+}

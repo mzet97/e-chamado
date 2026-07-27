@@ -29,15 +29,32 @@ namespace EChamado.Server.Infrastructure.Persistence.Mappings
                 .WithMany(x => x.SubCategories)
                 .HasForeignKey(x => x.CategoryId);
 
-            builder.Property(x => x.CreatedAt)
+            builder.Property(x => x.CreatedAtUtc)
                 .IsRequired();
 
-            builder.Property(x => x.UpdatedAt);
+            builder.Property(x => x.UpdatedAtUtc);
 
-            builder.Property(x => x.DeletedAt);
+            builder.Property(x => x.DeletedAtUtc);
 
             builder.Property(x => x.IsDeleted)
                 .IsRequired();
+
+            // Indexes for Gridify query performance
+            builder.HasIndex(x => x.Name)
+                .HasDatabaseName("IX_SubCategory_Name");
+
+            builder.HasIndex(x => x.CreatedAtUtc)
+                .HasDatabaseName("IX_SubCategory_CreatedAtUtc");
+
+            builder.HasIndex(x => x.IsDeleted)
+                .HasDatabaseName("IX_SubCategory_IsDeleted");
+
+            builder.HasIndex(x => x.CategoryId)
+                .HasDatabaseName("IX_SubCategory_CategoryId");
+
+            // Composite index for common filtering scenario
+            builder.HasIndex(x => new { x.IsDeleted, x.Name })
+                .HasDatabaseName("IX_SubCategory_IsDeleted_Name");
         }
     }
 }

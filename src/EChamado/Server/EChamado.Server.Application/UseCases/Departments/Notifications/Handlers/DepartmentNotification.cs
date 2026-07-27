@@ -1,23 +1,19 @@
-﻿using EChamado.Server.Infrastructure.MessageBus;
-using MediatR;
+﻿using EChamado.Server.Domain.Services.Interface;
+using Paramore.Brighter;
 using Microsoft.Extensions.Logging;
 
 namespace EChamado.Server.Application.UseCases.Departments.Notifications.Handlers;
 
-public class DepartmentNotification(
+public class CreatedDepartmentNotificationHandler(
     IMessageBusClient messageBusClient,
-    ILogger<DepartmentNotification> logger) :
-    INotificationHandler<CreatedDepartmentNotification>,
-    INotificationHandler<UpdatedDepartmentNotification>,
-    INotificationHandler<DeletedDepartmentNotification>,
-    INotificationHandler<DisabledDepartmentNotification>
+    ILogger<CreatedDepartmentNotificationHandler> logger) : RequestHandlerAsync<CreatedDepartmentNotification>
 {
-    public async Task Handle(CreatedDepartmentNotification notification, CancellationToken cancellationToken)
+    public override async Task<CreatedDepartmentNotification> HandleAsync(CreatedDepartmentNotification notification, CancellationToken cancellationToken = default)
     {
-        if(notification == null)
+        if (notification == null)
         {
             logger.LogError("CreatedDepartmentNotification is null");
-            return;
+            return await base.HandleAsync(notification, cancellationToken);
         }
 
         await messageBusClient.Publish(notification.ToString(),
@@ -27,14 +23,21 @@ public class DepartmentNotification(
             "create-departament");
 
         logger.LogInformation("CreatedDepartmentNotification: " + notification);
-    }
 
-    public async Task Handle(UpdatedDepartmentNotification notification, CancellationToken cancellationToken)
+        return await base.HandleAsync(notification, cancellationToken);
+    }
+}
+
+public class UpdatedDepartmentNotificationHandler(
+    IMessageBusClient messageBusClient,
+    ILogger<UpdatedDepartmentNotificationHandler> logger) : RequestHandlerAsync<UpdatedDepartmentNotification>
+{
+    public override async Task<UpdatedDepartmentNotification> HandleAsync(UpdatedDepartmentNotification notification, CancellationToken cancellationToken = default)
     {
         if (notification == null)
         {
             logger.LogError("UpdatedDepartmentNotification is null");
-            return;
+            return await base.HandleAsync(notification, cancellationToken);
         }
 
         await messageBusClient.Publish(notification.ToString(),
@@ -44,14 +47,21 @@ public class DepartmentNotification(
             "update-departament");
 
         logger.LogInformation("UpdatedDepartmentNotification: " + notification);
-    }
 
-    public async Task Handle(DisabledDepartmentNotification notification, CancellationToken cancellationToken)
+        return await base.HandleAsync(notification, cancellationToken);
+    }
+}
+
+public class DisabledDepartmentNotificationHandler(
+    IMessageBusClient messageBusClient,
+    ILogger<DisabledDepartmentNotificationHandler> logger) : RequestHandlerAsync<DisabledDepartmentNotification>
+{
+    public override async Task<DisabledDepartmentNotification> HandleAsync(DisabledDepartmentNotification notification, CancellationToken cancellationToken = default)
     {
         if (notification == null)
         {
             logger.LogError("DisabledDepartmentNotification is null");
-            return;
+            return await base.HandleAsync(notification, cancellationToken);
         }
 
         await messageBusClient.Publish(notification.ToString(),
@@ -61,14 +71,21 @@ public class DepartmentNotification(
             "disable-departament");
 
         logger.LogInformation("DisabledDepartmentNotification: " + notification);
-    }
 
-    public async Task Handle(DeletedDepartmentNotification notification, CancellationToken cancellationToken)
+        return await base.HandleAsync(notification, cancellationToken);
+    }
+}
+
+public class DeletedDepartmentNotificationHandler(
+    IMessageBusClient messageBusClient,
+    ILogger<DeletedDepartmentNotificationHandler> logger) : RequestHandlerAsync<DeletedDepartmentNotification>
+{
+    public override async Task<DeletedDepartmentNotification> HandleAsync(DeletedDepartmentNotification notification, CancellationToken cancellationToken = default)
     {
         if (notification == null)
         {
             logger.LogError("DeletedDepartmentNotification is null");
-            return;
+            return await base.HandleAsync(notification, cancellationToken);
         }
 
         await messageBusClient.Publish(notification.ToString(),
@@ -78,5 +95,7 @@ public class DepartmentNotification(
             "delete-departament");
 
         logger.LogInformation("DeletedDepartmentNotification: " + notification);
+
+        return await base.HandleAsync(notification, cancellationToken);
     }
 }

@@ -1,9 +1,7 @@
-﻿using Elastic.Channels;
-using Elastic.Ingest.Elasticsearch;
-using Elastic.Ingest.Elasticsearch.DataStreams;
-using Elastic.Serilog.Sinks;
-using Elastic.Transport;
 using Serilog;
+using Serilog.Debugging;
+using Serilog.Events;
+using Serilog.Sinks.Elasticsearch;
 
 namespace EChamado.Server.Configuration;
 
@@ -11,34 +9,60 @@ public static class SerilogConfig
 {
     public static void ConfigureSerilog(this IHostBuilder builder, IConfiguration configuration)
     {
-        var elasticUri = configuration["ElasticSettings:Uri"]
-                      ?? "http://localhost:9200";
-        var elasticUsername = configuration["ElasticSettings:Username"]
-                      ?? "elastic";
-        var elasticPassword = configuration["ElasticSettings:Password"]
-                      ?? "changeme";
+        var elasticUri = configuration["ElasticSettings:Uri"];
+        var elasticEnabled = string.Equals(configuration["ElasticSettings:Enabled"], "true", StringComparison.OrdinalIgnoreCase);
+        var username = configuration["ElasticSettings:Username"];
+        var password = configuration["ElasticSettings:Password"];
+
+        // Habilita SelfLog para diagnosticar erros internos do Serilog
+        SelfLog.Enable(msg => Console.WriteLine($"[Serilog SelfLog] {msg}"));
 
         builder.UseSerilog((ctx, loggerConfig) =>
         {
             loggerConfig
                 .ReadFrom.Configuration(ctx.Configuration)
                 .Enrich.FromLogContext()
-                .MinimumLevel.Debug()
-                .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Information)
-                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug)
-                .WriteTo.Elasticsearch(new[] { new Uri(elasticUri) }, opts =>
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Information)
+                .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Debug);
+
+            // Sink Elasticsearch (Serilog.Sinks.Elasticsearch)
+            if (elasticEnabled && !string.IsNullOrEmpty(elasticUri))
+            {
+                try
                 {
-                    opts.DataStream = new DataStreamName("logs", "EChamado", "all");
-                    opts.BootstrapMethod = BootstrapMethod.Failure;
-                    opts.ConfigureChannel = channelOpts =>
+                    var options = new ElasticsearchSinkOptions(new Uri(elasticUri))
                     {
-                        channelOpts.BufferOptions = new BufferOptions();
+                        IndexFormat = "echamado-logs-{0:yyyy.MM.dd}",
+                        AutoRegisterTemplate = true,
+                        AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv8,
+                        OverwriteTemplate = true,
+                        ModifyConnectionSettings = conn =>
+                        {
+                            if (ctx.HostingEnvironment.IsDevelopment())
+                                conn.ServerCertificateValidationCallback((_, _, _, _) => true);
+
+                            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+                                conn.BasicAuthentication(username, password);
+
+                            return conn;
+                        }
                     };
-                }, transport =>
+
+                    loggerConfig.WriteTo.Elasticsearch(options);
+
+                    Console.WriteLine($"[Serilog] Elasticsearch sink configurado: {elasticUri}");
+                }
+                catch (Exception ex)
                 {
-                    transport.Authentication(new BasicAuthentication(elasticUsername, elasticPassword));
-                });
+                    Console.WriteLine($"[Serilog] Falha ao configurar Elasticsearch sink: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[Serilog] Elasticsearch desabilitado (Enabled={elasticEnabled}, Uri={elasticUri})");
+            }
         });
     }
 }

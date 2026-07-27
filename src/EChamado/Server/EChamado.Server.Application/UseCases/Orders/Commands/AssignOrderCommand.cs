@@ -1,9 +1,20 @@
+using EChamado.Server.Application.Common.Messaging;
 using EChamado.Shared.Responses;
-using MediatR;
 
 namespace EChamado.Server.Application.UseCases.Orders.Commands;
 
-public record AssignOrderCommand(
-    Guid OrderId,
-    Guid AssignedToUserId
-) : IRequest<BaseResult>;
+public class AssignOrderCommand : BrighterRequest<BaseResult>
+{
+    public Guid OrderId { get; set; } = default!;
+    public Guid AssignedToUserId { get; set; } = default!;
+
+    public AssignOrderCommand()
+    {
+    }
+
+    public AssignOrderCommand(Guid orderId, Guid assignedToUserId)
+    {
+        OrderId = orderId;
+        AssignedToUserId = assignedToUserId;
+    }
+}

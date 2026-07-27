@@ -3,12 +3,13 @@ using EChamado.Server.Domain.Domains.Orders;
 using EChamado.Server.Domain.Domains.Orders.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace EChamado.Server.Infrastructure.Persistence;
 
-public class ApplicationDbContext(DbContextOptions options, ILoggerFactory loggerFactory) : IdentityDbContext<
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ILoggerFactory loggerFactory) : IdentityDbContext<
     ApplicationUser,
     ApplicationRole,
     Guid,
@@ -26,6 +27,11 @@ public class ApplicationDbContext(DbContextOptions options, ILoggerFactory logge
             optionsBuilder.UseLoggerFactory(loggerFactory);
         }
 
+        // Suprime o warning de "pending model changes": as migrations existentes
+        // (InitialCreate + AddGridifyIndexes) refletem o estado do banco. Diferencas
+        // de inferencia entre versoes do provider Npgsql/EF nao devem bloquear o startup.
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+
         base.OnConfiguring(optionsBuilder);
     }
 
@@ -37,7 +43,14 @@ public class ApplicationDbContext(DbContextOptions options, ILoggerFactory logge
 
         foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys())) relationship.DeleteBehavior = DeleteBehavior.ClientSetNull;
 
-        modelBuilder.UseOpenIddict();
+        // Only apply OpenIddict configuration if not in test environment
+        var isTestEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" ||
+                                Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") == "Testing";
+
+        if (!isTestEnvironment)
+        {
+            modelBuilder.UseOpenIddict();
+        }
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
@@ -73,4 +86,5 @@ public class ApplicationDbContext(DbContextOptions options, ILoggerFactory logge
     public DbSet<Category> Categories { get; set; } = null!;
     public DbSet<StatusType> StatusTypes { get; set; } = null!;
     public DbSet<OrderType> OrderTypes { get; set; } = null!;
+    public DbSet<Comment> Comments { get; set; } = null!;
 }

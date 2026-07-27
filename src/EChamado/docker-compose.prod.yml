@@ -1,0 +1,96 @@
+# docker-compose.prod.yml — Produção com apps containerizados
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+version: '3.8'
+
+services:
+  # === INFRAESTRUTURA (herda do compose principal) ===
+  # postgres, redis, rabbitmq, elasticsearch, kibana, logstash
+
+  # === APLICAÇÕES ===
+  echamado-auth:
+    build:
+      context: .
+      dockerfile: Echamado.Auth/Dockerfile
+    container_name: echamado-auth
+    ports:
+      - "7133:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=e-chamado;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-dsv@123}
+      - AppSettings__Secret=${APP_SECRET:-CHANGE_ME_IN_PRODUCTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - echamado-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/.well-known/openid-configuration"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  echamado-server:
+    build:
+      context: .
+      dockerfile: Server/EChamado.Server/Dockerfile
+    container_name: echamado-server
+    ports:
+      - "7296:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=e-chamado;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-dsv@123}
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD:-dsv@123}
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=${RABBITMQ_USER:-admin}
+      - RabbitMQ__Password=${RABBITMQ_PASS:-dsv@123}
+      - AppSettings__Secret=${APP_SECRET:-CHANGE_ME_IN_PRODUCTION}
+      - AppSettings__ValidOn=https://localhost:7133
+      - AISettings__DefaultProvider=${AI_PROVIDER:-OpenRouter}
+      - AISettings__OpenRouter__ApiKey=${OPENROUTER_API_KEY:-}
+      - ElasticSettings__Uri=http://elasticsearch:9200
+      - ElasticSettings__Username=elastic
+      - ElasticSettings__Password=${ELASTIC_PASSWORD:-dsv@123}
+      - ElasticSettings__Enabled=true
+      - OpenTelemetry__ServiceName=EChamado.Api
+      - OpenTelemetry__OtlpEndpoint=http://jaeger:4317
+    depends_on:
+      echamado-auth:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - echamado-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  echamado-client:
+    build:
+      context: .
+      dockerfile: Client/EChamado.Client/Dockerfile
+    container_name: echamado-client
+    ports:
+      - "7274:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    depends_on:
+      echamado-server:
+        condition: service_healthy
+    networks:
+      - echamado-network
+    restart: unless-stopped

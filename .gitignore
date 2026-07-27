@@ -396,3 +396,21 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/.claude
+/.dotnetcli
+/_out
+*.env
+
+# IDE and tool artifacts
+.trae/
+.ruff_cache/
+.vs/
+.vscode/
+TestResults/
+*.slnLaunch.user
+
+# Build output
+_out/
+
+# Appsettings - track base config, ignore environment overrides
+**/appsettings.*.json

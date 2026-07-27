@@ -1,4 +1,4 @@
-﻿using EChamado.Shared.Shared;
+﻿using EChamado.Shared.Domain;
 using FluentValidation;
 
 namespace EChamado.Server.Domain.Domains.Orders.Entities.Validations;
@@ -7,7 +7,7 @@ public class StatusTypeValidation : AbstractValidator<StatusType>
 {
     public StatusTypeValidation()
     {
-        Include(new EntityValidation());
+        Include(new EntityValidation<StatusType>());
 
         RuleFor(statusType => statusType.Name)
             .NotEmpty().WithMessage("Name is required.")

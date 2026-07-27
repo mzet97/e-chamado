@@ -7,12 +7,20 @@ using System.Security.Claims;
 namespace EChamado.Server.Application.Services;
 
 public class OpenIddictService(
-     IApplicationUserService applicationUserService) : 
+     IApplicationUserService applicationUserService) :
     IOpenIddictService
 {
     public async Task<ClaimsIdentity> LoginOpenIddictAsync(string email, string password)
     {
-        var result = await applicationUserService.PasswordSignInAsync(email, password, false, false);
+        // O SignInManager.PasswordSignInAsync resolve pelo UserName, não pelo Email.
+        // Por isso é necessário localizar o usuário via e-mail e usar o UserName dele.
+        var user = await applicationUserService.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return null;
+        }
+
+        var result = await applicationUserService.PasswordSignInAsync(user.UserName!, password, false, false);
 
         if (result.Succeeded)
         {
